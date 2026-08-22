@@ -1,0 +1,57 @@
+.admin-status-panel {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 20px;
+  border: 1px solid #b9d9f2;
+  border-radius: 15px;
+  background: var(--color-blue-soft);
+}
+
+.admin-status-panel > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  color: var(--color-blue);
+}
+
+.admin-status-panel h2 {
+  margin: 0 0 4px;
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.admin-status-panel p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.admin-status-panel form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-status-panel .form-message {
+  margin: 0;
+}
+
+.admin-occurrence-detail .occurrence-detail__metadata {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 680px) {
+  .admin-status-panel form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-status-panel form .button {
+    width: 100%;
+  }
+
+  .admin-occurrence-detail .occurrence-detail__metadata {
+    grid-template-columns: 1fr;
+  }
+}

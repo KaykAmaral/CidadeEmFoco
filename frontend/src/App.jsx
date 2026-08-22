@@ -5,6 +5,8 @@ import PublicLayout from './layouts/PublicLayout'
 import CitizenHomePage from './pages/CitizenHomePage'
 import AlertsPage from './pages/AlertsPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
+import AdminOccurrenceDetailPage from './pages/AdminOccurrenceDetailPage'
+import AdminOccurrencesPage from './pages/AdminOccurrencesPage'
 import LoginPage from './pages/LoginPage'
 import NewOccurrencePage from './pages/NewOccurrencePage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -66,14 +68,9 @@ function App() {
           />
           <Route
             path="ocorrencias"
-            element={
-              <PlaceholderPage
-                eyebrow="Administração"
-                title="Gerenciar ocorrências"
-                description="Consulta, análise e atualização do status das ocorrências."
-              />
-            }
+            element={<AdminOccurrencesPage />}
           />
+          <Route path="ocorrencias/:id" element={<AdminOccurrenceDetailPage />} />
           <Route
             path="alertas"
             element={

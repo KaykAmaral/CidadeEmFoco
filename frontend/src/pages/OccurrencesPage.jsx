@@ -8,6 +8,7 @@ import occurrenceStatusConfig from '../constants/occurrenceStatus'
 import {
   occurrenceCategoryLabels,
   occurrenceTypeLabels,
+  occurrenceTypesByCategory,
 } from '../constants/occurrencePresentation'
 import useAuth from '../hooks/useAuth'
 import {
@@ -32,6 +33,9 @@ function OccurrencesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const availableTypes = filters.category
+    ? occurrenceTypesByCategory[filters.category]
+    : Object.keys(occurrenceTypeLabels)
 
   useEffect(() => {
     let isCurrent = true
@@ -68,7 +72,19 @@ function OccurrencesPage() {
 
   function handleFilterChange(event) {
     const { name, value } = event.target
-    setFilters((currentFilters) => ({ ...currentFilters, [name]: value }))
+    setFilters((currentFilters) => {
+      const shouldResetType =
+        name === 'category' &&
+        value &&
+        currentFilters.type &&
+        !occurrenceTypesByCategory[value].includes(currentFilters.type)
+
+      return {
+        ...currentFilters,
+        [name]: value,
+        ...(shouldResetType ? { type: '' } : {}),
+      }
+    })
   }
 
   function handleFilterSubmit(event) {
@@ -162,8 +178,8 @@ function OccurrencesPage() {
               value={filters.type}
             >
               <option value="">Todos</option>
-              {Object.entries(occurrenceTypeLabels).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+              {availableTypes.map((value) => (
+                <option key={value} value={value}>{occurrenceTypeLabels[value]}</option>
               ))}
             </select>
           </div>

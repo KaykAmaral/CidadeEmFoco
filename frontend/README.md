@@ -118,3 +118,18 @@ A rota `/admin` consulta `GET /api/admin/occurrences` e
 
 O dashboard é somente para consulta. Atualizações de status e gerenciamento de
 alertas permanecem nas telas administrativas específicas.
+
+## Administração de ocorrências
+
+A rota `/admin/ocorrencias` permite filtrar e consultar os registros usando
+`GET /api/admin/occurrences`. Cada resultado abre a rota
+`/admin/ocorrencias/:id`, que mostra descrição, risco percebido, datas,
+localização e foto.
+
+Somente nessa área o status pode ser alterado. A atualização envia:
+
+```text
+PATCH /api/admin/occurrences/{id}/status
+```
+
+O valor deve ser um dos cinco status oficiais do backend.
