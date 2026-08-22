@@ -21,4 +21,9 @@ function getAlertSeverityLabel(severity) {
   return alertSeverityLabels[severity] ?? severity
 }
 
-export { getAlertSeverityLabel, getAlertTypeLabel }
+export {
+  alertSeverityLabels,
+  alertTypeLabels,
+  getAlertSeverityLabel,
+  getAlertTypeLabel,
+}

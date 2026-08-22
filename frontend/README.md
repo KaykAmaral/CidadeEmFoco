@@ -119,6 +119,19 @@ A rota `/admin` consulta `GET /api/admin/occurrences` e
 O dashboard é somente para consulta. Atualizações de status e gerenciamento de
 alertas permanecem nas telas administrativas específicas.
 
+## Administração de alertas
+
+A rota `/admin/alertas`, exclusiva para `ADMIN`, permite:
+
+- consultar todos os alertas cadastrados;
+- criar um alerta demonstrativo, inicialmente inativo;
+- ativar ou desativar um alerta.
+
+O formulário envia as datas em formato ISO para `POST /api/admin/alerts`. As
+ações utilizam `PATCH /api/admin/alerts/{id}/activate` e
+`PATCH /api/admin/alerts/{id}/deactivate`. A ativação não altera o período de
+validade informado no cadastro.
+
 ## Administração de ocorrências
 
 A rota `/admin/ocorrencias` permite filtrar e consultar os registros usando

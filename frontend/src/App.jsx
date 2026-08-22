@@ -4,6 +4,7 @@ import CitizenLayout from './layouts/CitizenLayout'
 import PublicLayout from './layouts/PublicLayout'
 import CitizenHomePage from './pages/CitizenHomePage'
 import AlertsPage from './pages/AlertsPage'
+import AdminAlertsPage from './pages/AdminAlertsPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminOccurrenceDetailPage from './pages/AdminOccurrenceDetailPage'
 import AdminOccurrencesPage from './pages/AdminOccurrencesPage'
@@ -73,13 +74,7 @@ function App() {
           <Route path="ocorrencias/:id" element={<AdminOccurrenceDetailPage />} />
           <Route
             path="alertas"
-            element={
-              <PlaceholderPage
-                eyebrow="Administração"
-                title="Gerenciar alertas"
-                description="Criação, consulta, ativação e desativação dos alertas climáticos."
-              />
-            }
+            element={<AdminAlertsPage />}
           />
         </Route>
       </Route>

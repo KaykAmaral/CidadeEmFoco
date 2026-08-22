@@ -31,7 +31,32 @@ function getAdminAlerts(token) {
   return apiRequest('/api/admin/alerts', { token })
 }
 
+function createAdminAlert(token, alert) {
+  return apiRequest('/api/admin/alerts', {
+    method: 'POST',
+    body: JSON.stringify(alert),
+    token,
+  })
+}
+
+function activateAdminAlert(token, id) {
+  return apiRequest(`/api/admin/alerts/${id}/activate`, {
+    method: 'PATCH',
+    token,
+  })
+}
+
+function deactivateAdminAlert(token, id) {
+  return apiRequest(`/api/admin/alerts/${id}/deactivate`, {
+    method: 'PATCH',
+    token,
+  })
+}
+
 export {
+  activateAdminAlert,
+  createAdminAlert,
+  deactivateAdminAlert,
   getAdminAlerts,
   getAdminOccurrenceById,
   getAdminOccurrences,
