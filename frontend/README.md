@@ -104,3 +104,17 @@ alertas ativos e dentro do período de validade retornados pelo backend. Cada
 alerta mostra tipo, severidade, descrição, início, fim e o aviso demonstrativo.
 
 O frontend não consulta serviços meteorológicos e não produz previsão própria.
+
+## Dashboard administrativo
+
+A rota `/admin` consulta `GET /api/admin/occurrences` e
+`GET /api/admin/alerts`. A partir dessas respostas, o frontend apresenta:
+
+- total de ocorrências e contagens por status;
+- mapa com os registros cadastrados;
+- ocorrências mais recentes;
+- distribuição visual dos cinco status oficiais;
+- alertas recentes e quantidade marcada como ativa.
+
+O dashboard é somente para consulta. Atualizações de status e gerenciamento de
+alertas permanecem nas telas administrativas específicas.

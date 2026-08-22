@@ -4,6 +4,7 @@ import CitizenLayout from './layouts/CitizenLayout'
 import PublicLayout from './layouts/PublicLayout'
 import CitizenHomePage from './pages/CitizenHomePage'
 import AlertsPage from './pages/AlertsPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
 import LoginPage from './pages/LoginPage'
 import NewOccurrencePage from './pages/NewOccurrencePage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -61,13 +62,7 @@ function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route
             index
-            element={
-              <PlaceholderPage
-                eyebrow="Administração"
-                title="Visão geral"
-                description="Resumo administrativo das ocorrências e alertas do sistema."
-              />
-            }
+            element={<AdminDashboardPage />}
           />
           <Route
             path="ocorrencias"

@@ -1,0 +1,342 @@
+.admin-dashboard {
+  width: min(100%, 1380px);
+  display: grid;
+  gap: 22px;
+  margin: 0 auto;
+}
+
+.admin-dashboard__heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.admin-dashboard__heading > div > span,
+.admin-card-heading > div > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--color-blue);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-dashboard__heading h1 {
+  margin: 0 0 8px;
+  color: var(--color-navy);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.admin-dashboard__heading p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.admin-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-metric {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 5px 12px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 15px;
+  background: white;
+  box-shadow: var(--shadow-card);
+}
+
+.admin-metric > div {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  grid-row: span 2;
+  border-radius: 12px;
+}
+
+.admin-metric > span {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-metric > strong {
+  color: var(--color-navy);
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.admin-metric--blue > div {
+  color: var(--color-blue);
+  background: var(--color-blue-soft);
+}
+
+.admin-metric--yellow > div {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.admin-metric--purple > div {
+  color: var(--color-purple);
+  background: var(--color-purple-soft);
+}
+
+.admin-metric--green > div {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.admin-dashboard__main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.7fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.admin-dashboard__secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+}
+
+.admin-dashboard-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 17px;
+  background: white;
+  box-shadow: var(--shadow-card);
+}
+
+.admin-card-heading {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 15px;
+}
+
+.admin-card-heading > div > span {
+  margin-bottom: 4px;
+  font-size: 0.62rem;
+}
+
+.admin-card-heading h2 {
+  margin: 0;
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.admin-card-heading > a {
+  color: var(--color-blue);
+  font-size: 0.74rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.admin-map-card .occurrence-map {
+  height: 470px;
+}
+
+.admin-recent-list {
+  display: grid;
+  gap: 9px;
+}
+
+.status-distribution {
+  display: grid;
+  gap: 14px;
+}
+
+.status-distribution__item > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.status-distribution__item span {
+  color: var(--color-muted);
+  font-size: 0.76rem;
+}
+
+.status-distribution__item strong {
+  color: var(--color-navy);
+  font-size: 0.8rem;
+}
+
+.status-distribution__track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-background);
+}
+
+.status-distribution__bar {
+  height: 100%;
+  display: block;
+  min-width: 0;
+  border-radius: inherit;
+}
+
+.status-distribution__bar--blue {
+  background: var(--color-blue);
+}
+
+.status-distribution__bar--yellow {
+  background: var(--color-yellow);
+}
+
+.status-distribution__bar--purple {
+  background: var(--color-purple);
+}
+
+.status-distribution__bar--green {
+  background: var(--color-success);
+}
+
+.status-distribution__bar--gray {
+  background: #8190a0;
+}
+
+.admin-alert-summary {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-alert-summary__count {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 12px;
+  color: var(--color-blue);
+  background: var(--color-blue-soft);
+}
+
+.admin-alert-summary__count > div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-alert-summary__count strong {
+  color: var(--color-navy);
+  font-size: 1.2rem;
+}
+
+.admin-alert-summary__count span {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+}
+
+.admin-alert-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-alert-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-alert-list article:last-child {
+  border-bottom: 0;
+}
+
+.admin-alert-list article > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.admin-alert-list strong,
+.admin-alert-list span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-alert-list strong {
+  color: var(--color-navy);
+  font-size: 0.78rem;
+}
+
+.admin-alert-list span,
+.admin-alert-list time {
+  color: var(--color-muted);
+  font-size: 0.66rem;
+}
+
+.admin-alert-list time {
+  flex: 0 0 auto;
+}
+
+.admin-alert-summary__empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.admin-dashboard-error {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+@media (max-width: 1180px) {
+  .admin-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard__main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-dashboard__secondary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-dashboard__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-dashboard__heading > .button {
+    width: 100%;
+  }
+
+  .admin-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard-card {
+    padding: 15px;
+  }
+
+  .admin-map-card .occurrence-map {
+    height: 360px;
+  }
+}
