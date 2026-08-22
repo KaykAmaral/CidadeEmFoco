@@ -1,12 +1,14 @@
 package br.com.cidadeemfoco.security;
 
 import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
+import br.com.cidadeemfoco.dto.CreateClimateAlertRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
+import br.com.cidadeemfoco.service.ClimateAlertService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +57,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private OccurrenceService occurrenceService;
+
+    @MockitoBean
+    private ClimateAlertService climateAlertService;
 
     @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
@@ -201,6 +206,47 @@ class SecurityIntegrationTest {
         verify(occurrenceService).updateStatus(10L, OccurrenceStatus.RESOLVIDA);
     }
 
+    @Test
+    void shouldRequireAuthenticationToReadActiveAlerts() throws Exception {
+        mockMvc.perform(get("/api/alerts/active"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Autenticacao necessaria"));
+    }
+
+    @Test
+    void shouldAllowCitizenToReadActiveAlertsButNotManageThem() throws Exception {
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(climateAlertService.findCurrentlyActive()).thenReturn(List.of());
+        String token = jwtService.generateToken(citizen);
+
+        mockMvc.perform(get("/api/alerts/active")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/admin/alerts")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validAlertJson()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Acesso proibido"));
+    }
+
+    @Test
+    void shouldAllowAdminToCreateAlert() throws Exception {
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String token = jwtService.generateToken(admin);
+
+        mockMvc.perform(post("/api/admin/alerts")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validAlertJson()))
+                .andExpect(status().isCreated());
+
+        verify(climateAlertService).create(any(CreateClimateAlertRequest.class));
+    }
+
     private User citizen() {
         return new User(
                 "Ana",
@@ -228,6 +274,19 @@ class SecurityIntegrationTest {
                   "perceivedRisk": "ALTO",
                   "latitude": -24.005000,
                   "longitude": -46.402000
+                }
+                """;
+    }
+
+    private String validAlertJson() {
+        return """
+                {
+                  "title": "Alerta de chuva intensa",
+                  "type": "CHUVA_INTENSA",
+                  "severity": "ALTA",
+                  "description": "Possibilidade de chuva intensa em Praia Grande",
+                  "startAt": "2026-08-21T12:00:00Z",
+                  "endAt": "2026-08-21T18:00:00Z"
                 }
                 """;
     }

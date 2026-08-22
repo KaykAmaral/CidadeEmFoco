@@ -1,5 +1,6 @@
 package br.com.cidadeemfoco;
 
+import br.com.cidadeemfoco.repository.ClimateAlertRepository;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 				+ "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration"
 })
 class CidadeEmFocoApplicationTests {
+
+	@MockitoBean
+	private ClimateAlertRepository climateAlertRepository;
 
 	@MockitoBean
 	private OccurrenceRepository occurrenceRepository;
