@@ -19,6 +19,33 @@ const occurrenceCategoryLabels = {
   INFRAESTRUTURA_URBANA: 'Infraestrutura urbana',
 }
 
+const occurrenceTypesByCategory = {
+  EVENTO_NATURAL: [
+    'ALAGAMENTO',
+    'ENCHENTE',
+    'QUEDA_ARVORE',
+    'DESLIZAMENTO',
+    'VENTOS_FORTES',
+    'RESSACA_MARITIMA',
+    'OUTRO',
+  ],
+  INFRAESTRUTURA_URBANA: [
+    'BURACO_RUA',
+    'BUEIRO_ENTUPIDO',
+    'POSTE_DANIFICADO',
+    'SEMAFORO_COM_PROBLEMA',
+    'RUA_BLOQUEADA',
+    'FALTA_ILUMINACAO',
+    'OUTRO',
+  ],
+}
+
+const perceivedRiskLabels = {
+  BAIXO: 'Baixo',
+  MEDIO: 'Médio',
+  ALTO: 'Alto',
+}
+
 function getOccurrenceTypeLabel(type) {
   return occurrenceTypeLabels[type] ?? type
 }
@@ -32,4 +59,6 @@ export {
   getOccurrenceTypeLabel,
   occurrenceCategoryLabels,
   occurrenceTypeLabels,
+  occurrenceTypesByCategory,
+  perceivedRiskLabels,
 }

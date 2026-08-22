@@ -10,7 +10,12 @@ class ApiError extends Error {
 }
 
 async function apiRequest(path, options = {}) {
-  const { token, headers: customHeaders, ...fetchOptions } = options
+  const {
+    token,
+    responseType = 'json',
+    headers: customHeaders,
+    ...fetchOptions
+  } = options
   const isFormData = fetchOptions.body instanceof FormData
   const headers = new Headers(customHeaders)
 
@@ -36,9 +41,13 @@ async function apiRequest(path, options = {}) {
   }
 
   const contentType = response.headers.get('content-type') ?? ''
-  const data = contentType.includes('application/json')
-    ? await response.json()
-    : null
+  let data = null
+
+  if (response.ok && responseType === 'blob') {
+    data = await response.blob()
+  } else if (contentType.includes('application/json')) {
+    data = await response.json()
+  }
 
   if (!response.ok) {
     throw new ApiError(

@@ -5,6 +5,7 @@ import {
   getOccurrenceTypeLabel,
 } from '../../constants/occurrencePresentation'
 import StatusBadge from '../ui/StatusBadge'
+import './Map.css'
 
 const PRAIA_GRANDE_CENTER = [-24.005833, -46.405833]
 

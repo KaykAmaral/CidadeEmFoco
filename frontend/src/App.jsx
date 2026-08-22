@@ -4,7 +4,10 @@ import CitizenLayout from './layouts/CitizenLayout'
 import PublicLayout from './layouts/PublicLayout'
 import CitizenHomePage from './pages/CitizenHomePage'
 import LoginPage from './pages/LoginPage'
+import NewOccurrencePage from './pages/NewOccurrencePage'
 import NotFoundPage from './pages/NotFoundPage'
+import OccurrenceDetailPage from './pages/OccurrenceDetailPage'
+import OccurrencesPage from './pages/OccurrencesPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -29,24 +32,13 @@ function App() {
           />
           <Route
             path="ocorrencias"
-            element={
-              <PlaceholderPage
-                eyebrow="Ocorrências"
-                title="Ocorrências da cidade"
-                description="Listagem e filtros das ocorrências registradas em Praia Grande."
-              />
-            }
+            element={<OccurrencesPage />}
           />
           <Route
             path="ocorrencias/nova"
-            element={
-              <PlaceholderPage
-                eyebrow="Nova ocorrência"
-                title="Registrar ocorrência"
-                description="O formulário completo, localização e foto serão adicionados na etapa de ocorrências."
-              />
-            }
+            element={<NewOccurrencePage />}
           />
+          <Route path="ocorrencias/:id" element={<OccurrenceDetailPage />} />
           <Route
             path="alertas"
             element={

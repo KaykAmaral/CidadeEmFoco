@@ -1,0 +1,68 @@
+.occurrence-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: inherit;
+  background: white;
+  text-decoration: none;
+}
+
+.occurrence-card--link {
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.occurrence-card--link:hover {
+  border-color: #a8c8e3;
+  transform: translateY(-1px);
+}
+
+.occurrence-card__symbol {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  grid-row: span 2;
+  border-radius: 50%;
+}
+
+.occurrence-card__symbol--evento_natural {
+  color: var(--color-blue);
+  background: var(--color-blue-soft);
+}
+
+.occurrence-card__symbol--infraestrutura_urbana {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.occurrence-card__content {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.occurrence-card__content strong {
+  overflow: hidden;
+  color: var(--color-navy);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.occurrence-card__content span,
+.occurrence-card__content time {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.occurrence-card > .status-badge {
+  grid-column: 2;
+}

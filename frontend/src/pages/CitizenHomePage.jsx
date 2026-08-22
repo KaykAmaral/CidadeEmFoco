@@ -134,7 +134,11 @@ function CitizenHomePage() {
           {recentOccurrences.length > 0 ? (
             <div className="recent-occurrences__list">
               {recentOccurrences.map((occurrence) => (
-                <OccurrenceCard occurrence={occurrence} key={occurrence.id} />
+                <OccurrenceCard
+                  occurrence={occurrence}
+                  key={occurrence.id}
+                  to={`/app/ocorrencias/${occurrence.id}`}
+                />
               ))}
             </div>
           ) : (

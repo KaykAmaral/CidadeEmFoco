@@ -50,6 +50,7 @@ serão reutilizados nas páginas das próximas etapas.
 | `/app` | Início do cidadão |
 | `/app/ocorrencias` | Ocorrências para o cidadão |
 | `/app/ocorrencias/nova` | Registro de ocorrência |
+| `/app/ocorrencias/:id` | Detalhes da ocorrência |
 | `/app/alertas` | Alertas para o cidadão |
 | `/app/perfil` | Perfil do cidadão |
 | `/admin` | Visão geral administrativa |
@@ -79,3 +80,19 @@ A rota `/app` consulta em paralelo:
 O mapa utiliza Leaflet com os tiles públicos do OpenStreetMap e exibe a
 atribuição obrigatória. Ele não usa geocodificação, não envia ocorrências para
 serviços externos e não oferece download de mapas para uso offline.
+
+## Ocorrências e fotos
+
+A listagem permite consultar todas as ocorrências, aplicar os filtros aceitos
+pelo backend e alternar para os registros do usuário autenticado.
+
+O cadastro da ocorrência e o envio da foto são duas requisições:
+
+1. `POST /api/occurrences` cria a ocorrência e devolve seu ID;
+2. se uma foto foi selecionada, `POST /api/occurrences/{id}/image` envia o
+   arquivo como `multipart/form-data`.
+
+A foto é opcional e deve ser JPEG, PNG ou WebP com até 5 MB. Se a ocorrência for
+criada e somente o envio da foto falhar, o registro é preservado e o frontend
+mostra um aviso. Como a consulta da imagem exige autenticação, o frontend baixa
+o arquivo com o JWT e cria uma URL temporária apenas para exibi-lo.

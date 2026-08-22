@@ -1,0 +1,35 @@
+.leaflet-container {
+  font-family: inherit;
+}
+
+.occurrence-marker-container {
+  background: transparent;
+  border: 0;
+}
+
+.occurrence-marker {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 3px solid white;
+  border-radius: 50% 50% 50% 4px;
+  box-shadow: 0 4px 12px rgba(6, 43, 82, 0.35);
+  transform: rotate(-45deg);
+}
+
+.occurrence-marker > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+.occurrence-marker--natural,
+.occurrence-marker--selected {
+  background: var(--color-blue);
+}
+
+.occurrence-marker--infrastructure {
+  background: var(--color-yellow);
+}

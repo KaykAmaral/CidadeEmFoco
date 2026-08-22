@@ -1,0 +1,148 @@
+.occurrence-detail {
+  width: min(100%, 1000px);
+  margin: 0 auto;
+}
+
+.occurrence-detail__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.occurrence-detail__heading > div > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--color-blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.occurrence-detail__heading h1 {
+  margin: 0 0 9px;
+  color: var(--color-navy);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.occurrence-detail__heading p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.occurrence-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+}
+
+.occurrence-detail__card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 17px;
+  background: white;
+  box-shadow: var(--shadow-card);
+}
+
+.occurrence-detail__card h2 {
+  margin: 0 0 16px;
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.occurrence-detail__description > p {
+  margin: 0;
+  color: var(--color-text);
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.occurrence-detail__metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.occurrence-detail__metadata > div {
+  display: grid;
+  gap: 4px;
+  padding: 13px;
+  border-radius: 11px;
+  color: var(--color-blue);
+  background: var(--color-background);
+}
+
+.occurrence-detail__metadata span {
+  color: var(--color-muted);
+  font-size: 0.68rem;
+}
+
+.occurrence-detail__metadata strong {
+  color: var(--color-navy);
+  font-size: 0.8rem;
+}
+
+.occurrence-detail .occurrence-map {
+  height: 330px;
+}
+
+.occurrence-detail__coordinates {
+  margin: 10px 0 0;
+  color: var(--color-muted);
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.occurrence-detail__photo {
+  grid-column: 1 / -1;
+}
+
+.occurrence-detail__photo img {
+  width: 100%;
+  max-height: 560px;
+  display: block;
+  border-radius: 12px;
+  object-fit: contain;
+  background: var(--color-background);
+}
+
+.occurrence-detail-error {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+
+@media (max-width: 760px) {
+  .occurrence-detail__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .occurrence-detail__photo {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .occurrence-detail__heading {
+    flex-direction: column;
+  }
+
+  .occurrence-detail__card {
+    padding: 17px;
+  }
+
+  .occurrence-detail__metadata {
+    grid-template-columns: 1fr;
+  }
+}

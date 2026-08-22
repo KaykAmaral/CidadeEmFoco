@@ -1,14 +1,16 @@
 import { MapPin } from 'lucide-react'
+import { Link } from 'react-router'
 import { getOccurrenceTypeLabel } from '../../constants/occurrencePresentation'
 import { formatDateTime } from '../../utils/date'
 import StatusBadge from '../ui/StatusBadge'
+import './OccurrenceCard.css'
 
-function OccurrenceCard({ occurrence }) {
+function OccurrenceCard({ occurrence, to }) {
   const location =
     occurrence.address || occurrence.neighborhood || 'Localização no mapa'
 
-  return (
-    <article className="occurrence-card">
+  const content = (
+    <>
       <div
         className={`occurrence-card__symbol occurrence-card__symbol--${occurrence.category.toLowerCase()}`}
         aria-hidden="true"
@@ -25,8 +27,18 @@ function OccurrenceCard({ occurrence }) {
       </div>
 
       <StatusBadge status={occurrence.status} />
-    </article>
+    </>
   )
+
+  if (to) {
+    return (
+      <Link className="occurrence-card occurrence-card--link" to={to}>
+        {content}
+      </Link>
+    )
+  }
+
+  return <article className="occurrence-card">{content}</article>
 }
 
 export default OccurrenceCard
