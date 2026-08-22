@@ -1,0 +1,124 @@
+.setup-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(8, 117, 209, 0.12), transparent 32%),
+    var(--color-background);
+}
+
+.setup-card {
+  width: min(100%, 620px);
+  padding: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+  box-shadow: 0 24px 70px rgba(6, 43, 82, 0.12);
+}
+
+.setup-logo {
+  width: 96px;
+  height: 96px;
+  display: block;
+  margin-bottom: 28px;
+  border-radius: 22px;
+}
+
+.setup-heading {
+  margin-bottom: 28px;
+}
+
+.setup-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  color: var(--color-navy);
+  background: var(--color-yellow-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.setup-heading h1 {
+  margin: 0 0 10px;
+  color: var(--color-navy);
+  font-size: clamp(2rem, 7vw, 3.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.setup-heading p {
+  max-width: 50ch;
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.setup-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-weight: 600;
+}
+
+.setup-list svg {
+  flex: 0 0 auto;
+  color: var(--color-blue);
+}
+
+.api-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+
+.api-info code {
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--color-navy);
+  background: var(--color-blue-soft);
+  font-family: Consolas, 'Courier New', monospace;
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .setup-page {
+    padding: 16px;
+  }
+
+  .setup-card {
+    padding: 24px;
+    border-radius: 20px;
+  }
+
+  .setup-logo {
+    width: 80px;
+    height: 80px;
+  }
+
+  .api-info {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
