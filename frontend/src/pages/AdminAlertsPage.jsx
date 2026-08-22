@@ -266,7 +266,7 @@ function AdminAlertsPage() {
       ) : error ? (
         <div className="admin-page-error">
           <FeedbackState type="error" message={error} />
-          <Button onClick={retry} variant="outline"><RotateCw size={17} />Tentar novamente</Button>
+          <Button onClick={retry} variant="outline"><RotateCw aria-hidden="true" size={17} />Tentar novamente</Button>
         </div>
       ) : alerts.length === 0 ? (
         <FeedbackState type="empty" title="Nenhum alerta cadastrado" message="Crie o primeiro alerta demonstrativo do sistema." />
@@ -289,7 +289,7 @@ function AdminAlertsPage() {
                 </div>
               </div>
               <Button disabled={changingId === alert.id} onClick={() => toggleAlert(alert)} variant={alert.active ? 'outline' : 'primary'}>
-                {changingId === alert.id ? <LoaderCircle className="button__spinner" size={17} /> : alert.active ? <PowerOff size={17} /> : <Power size={17} />}
+                {changingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : alert.active ? <PowerOff aria-hidden="true" size={17} /> : <Power aria-hidden="true" size={17} />}
                 {changingId === alert.id ? 'Atualizando...' : alert.active ? 'Desativar' : 'Ativar'}
               </Button>
             </article>

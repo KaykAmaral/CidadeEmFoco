@@ -158,7 +158,11 @@ function AdminDashboardPage() {
           {recentOccurrences.length > 0 ? (
             <div className="admin-recent-list">
               {recentOccurrences.map((occurrence) => (
-                <OccurrenceCard occurrence={occurrence} key={occurrence.id} />
+                <OccurrenceCard
+                  occurrence={occurrence}
+                  key={occurrence.id}
+                  to={`/admin/ocorrencias/${occurrence.id}`}
+                />
               ))}
             </div>
           ) : (

@@ -1,6 +1,6 @@
 import { FilterX, Plus, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
@@ -25,8 +25,11 @@ const emptyFilters = {
 }
 
 function OccurrencesPage() {
+  const location = useLocation()
   const { logout, token } = useAuth()
-  const [mode, setMode] = useState('all')
+  const [mode, setMode] = useState(() =>
+    location.state?.mode === 'mine' ? 'mine' : 'all',
+  )
   const [filters, setFilters] = useState(emptyFilters)
   const [appliedFilters, setAppliedFilters] = useState(emptyFilters)
   const [occurrences, setOccurrences] = useState([])

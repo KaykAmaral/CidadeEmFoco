@@ -167,7 +167,9 @@ function ProfilePage() {
               <div className="profile-recent">
                 <div className="profile-recent__heading">
                   <h3>Registros recentes</h3>
-                  <Link to="/app/ocorrencias">Ver todas</Link>
+                  <Link state={{ mode: 'mine' }} to="/app/ocorrencias">
+                    Ver todas
+                  </Link>
                 </div>
 
                 {recentOccurrences.length === 0 ? (

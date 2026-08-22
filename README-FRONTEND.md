@@ -10,15 +10,15 @@ Frontend do MVP Cidade em Foco, construído com React, JavaScript e Vite.
 ## Executar
 
 ```powershell
-npm.cmd install
-npm.cmd run dev
+npm.cmd --prefix frontend install
+npm.cmd --prefix frontend run dev
 ```
 
 A aplicação abre por padrão em `http://localhost:5173`.
 
 ## Variável de ambiente
 
-Copie `.env.example` para `.env.local` caso precise alterar a URL da API:
+Copie `frontend/.env.example` para `frontend/.env.local` caso precise alterar a URL da API:
 
 ```env
 VITE_API_URL=http://localhost:8080
@@ -27,16 +27,16 @@ VITE_API_URL=http://localhost:8080
 ## Verificações
 
 ```powershell
-npm.cmd run lint
-npm.cmd run build
+npm.cmd --prefix frontend run lint
+npm.cmd --prefix frontend run build
 ```
 
 ## Organização visual
 
-- `src/components/ui`: componentes visuais reutilizáveis;
-- `src/constants`: textos e configurações compartilhadas;
-- `src/styles/ui.css`: estilos dos componentes básicos;
-- `src/index.css`: cores, tipografia e estilos globais.
+- `frontend/src/components/ui`: componentes visuais reutilizáveis;
+- `frontend/src/constants`: textos e configurações compartilhadas;
+- `frontend/src/styles/ui.css`: estilos dos componentes básicos;
+- `frontend/src/index.css`: cores, tipografia e estilos globais.
 
 Os componentes visuais não acessam a API e não possuem regras de negócio. Eles
 serão reutilizados nas páginas das próximas etapas.
@@ -156,3 +156,23 @@ PATCH /api/admin/occurrences/{id}/status
 ```
 
 O valor deve ser um dos cinco status oficiais do backend.
+
+## Checklist de validação manual
+
+Com o backend e o frontend em execução, valide no navegador:
+
+1. cadastro de uma conta cidadã e login;
+2. acesso às rotas protegidas e encerramento da sessão;
+3. registro de ocorrência com e sem foto;
+4. consulta do mapa, filtros, detalhes e próprias ocorrências;
+5. consulta dos alertas ativos pelo cidadão;
+6. login como administrador;
+7. filtros administrativos e atualização de status;
+8. criação, ativação e desativação de alerta;
+9. navegação em largura de celular e de computador;
+10. mensagens de validação, carregamento, lista vazia e erro de conexão.
+
+O frontend não possui uma suíte automatizada própria nesta versão. As
+verificações disponíveis são `npm.cmd --prefix frontend run lint` e
+`npm.cmd --prefix frontend run build`; as regras
+e permissões da API são cobertas pelos testes automatizados do backend.
