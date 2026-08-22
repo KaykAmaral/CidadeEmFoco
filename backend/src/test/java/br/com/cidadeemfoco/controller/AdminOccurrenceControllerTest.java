@@ -108,6 +108,7 @@ class AdminOccurrenceControllerTest {
                 new BigDecimal("-46.402000"),
                 "Boqueirao",
                 null,
+                null,
                 status,
                 Instant.parse("2026-08-21T18:00:00Z"),
                 Instant.parse("2026-08-21T18:00:00Z")

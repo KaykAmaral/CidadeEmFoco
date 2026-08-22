@@ -19,6 +19,7 @@ public record OccurrenceResponse(
         BigDecimal longitude,
         String neighborhood,
         String address,
+        String imageUrl,
         OccurrenceStatus status,
         Instant createdAt,
         Instant updatedAt
@@ -35,6 +36,9 @@ public record OccurrenceResponse(
                 occurrence.getLongitude(),
                 occurrence.getNeighborhood(),
                 occurrence.getAddress(),
+                occurrence.getImagePath() == null
+                        ? null
+                        : "/api/occurrences/" + occurrence.getId() + "/image",
                 occurrence.getStatus(),
                 occurrence.getCreatedAt(),
                 occurrence.getUpdatedAt()

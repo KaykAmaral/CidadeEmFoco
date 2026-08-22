@@ -125,6 +125,12 @@ public class Occurrence {
         this.status = Objects.requireNonNull(status);
     }
 
+    public String replaceImage(String imagePath) {
+        String previousImagePath = this.imagePath;
+        this.imagePath = Objects.requireNonNull(imagePath);
+        return previousImagePath;
+    }
+
     public Long getId() {
         return id;
     }

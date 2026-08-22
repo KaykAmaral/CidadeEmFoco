@@ -9,12 +9,14 @@ import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
+import br.com.cidadeemfoco.service.OccurrenceImageService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,7 +31,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -60,6 +65,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private ClimateAlertService climateAlertService;
+
+    @MockitoBean
+    private OccurrenceImageService occurrenceImageService;
 
     @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
@@ -129,6 +137,15 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/occurrences"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Autenticacao necessaria"));
+    }
+
+    @Test
+    void shouldAllowCorsPreflightFromConfiguredFrontend() throws Exception {
+        mockMvc.perform(options("/api/occurrences")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
     }
 
     @Test
@@ -245,6 +262,45 @@ class SecurityIntegrationTest {
                 .andExpect(status().isCreated());
 
         verify(climateAlertService).create(any(CreateClimateAlertRequest.class));
+    }
+
+    @Test
+    void shouldAllowOnlyCitizenToUploadOccurrenceImage() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "foto.jpg",
+                "image/jpeg",
+                new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}
+        );
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        String citizenToken = jwtService.generateToken(citizen);
+
+        mockMvc.perform(multipart("/api/occurrences/10/image")
+                        .file(file)
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isOk());
+
+        verify(occurrenceImageService).upload(eq("ana@example.com"), eq(10L), any());
+    }
+
+    @Test
+    void shouldForbidAdminFromUploadingOccurrenceImage() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "foto.jpg",
+                "image/jpeg",
+                new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}
+        );
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(multipart("/api/occurrences/10/image")
+                        .file(file)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Acesso proibido"));
     }
 
     private User citizen() {

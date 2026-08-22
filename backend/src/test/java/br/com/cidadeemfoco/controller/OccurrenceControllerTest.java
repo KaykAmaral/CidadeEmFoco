@@ -148,6 +148,7 @@ class OccurrenceControllerTest {
                 new BigDecimal("-46.402000"),
                 "Boqueirao",
                 "Avenida Presidente Costa e Silva",
+                null,
                 OccurrenceStatus.REGISTRADA,
                 Instant.parse("2026-08-21T18:00:00Z"),
                 Instant.parse("2026-08-21T18:00:00Z")
