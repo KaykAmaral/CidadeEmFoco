@@ -1,0 +1,122 @@
+.climate-alert-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-left-width: 5px;
+  border-radius: 15px;
+  background: white;
+  box-shadow: var(--shadow-card);
+}
+
+.climate-alert-card--alta {
+  border-left-color: var(--color-danger);
+}
+
+.climate-alert-card--moderada {
+  border-left-color: var(--color-yellow);
+}
+
+.climate-alert-card--baixa {
+  border-left-color: var(--color-blue);
+}
+
+.climate-alert-card__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+}
+
+.climate-alert-card--alta .climate-alert-card__icon {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.climate-alert-card--moderada .climate-alert-card__icon {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.climate-alert-card--baixa .climate-alert-card__icon {
+  color: var(--color-blue);
+  background: var(--color-blue-soft);
+}
+
+.climate-alert-card__content {
+  min-width: 0;
+}
+
+.climate-alert-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 9px;
+}
+
+.climate-alert-card__meta span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--color-muted);
+  background: var(--color-background);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.climate-alert-card h2 {
+  margin: 0 0 8px;
+  color: var(--color-navy);
+  font-size: 1.12rem;
+}
+
+.climate-alert-card__content > p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.87rem;
+  line-height: 1.58;
+  white-space: pre-wrap;
+}
+
+.climate-alert-card__validity {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 17px;
+  padding: 11px;
+  border-radius: 10px;
+  color: var(--color-blue);
+  background: var(--color-background);
+}
+
+.climate-alert-card__validity > div {
+  display: grid;
+  gap: 2px;
+}
+
+.climate-alert-card__validity span {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+
+.climate-alert-card small {
+  display: block;
+  margin-top: 13px;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  font-style: italic;
+}
+
+@media (max-width: 520px) {
+  .climate-alert-card {
+    grid-template-columns: 1fr;
+    padding: 17px;
+  }
+
+  .climate-alert-card__icon {
+    width: 42px;
+    height: 42px;
+  }
+}
