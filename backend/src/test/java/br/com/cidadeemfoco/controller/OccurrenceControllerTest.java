@@ -16,6 +16,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -50,11 +52,11 @@ class OccurrenceControllerTest {
 
     @Test
     void shouldCreateOccurrence() throws Exception {
-        when(occurrenceService.create(eq(7L), any(CreateOccurrenceRequest.class)))
+        when(occurrenceService.create(eq("citizen@example.com"), any(CreateOccurrenceRequest.class)))
                 .thenReturn(response());
 
         mockMvc.perform(post("/api/occurrences")
-                        .header("X-User-Id", "7")
+                        .principal(authentication())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -76,7 +78,7 @@ class OccurrenceControllerTest {
     @Test
     void shouldReturnValidationErrors() throws Exception {
         mockMvc.perform(post("/api/occurrences")
-                        .header("X-User-Id", "7")
+                        .principal(authentication())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -126,11 +128,11 @@ class OccurrenceControllerTest {
     }
 
     @Test
-    void shouldListOccurrencesFromTemporaryUserHeader() throws Exception {
-        when(occurrenceService.findByUser(7L)).thenReturn(List.of(response()));
+    void shouldListOccurrencesFromAuthenticatedUser() throws Exception {
+        when(occurrenceService.findByUser("citizen@example.com")).thenReturn(List.of(response()));
 
         mockMvc.perform(get("/api/occurrences/mine")
-                        .header("X-User-Id", "7"))
+                        .principal(authentication()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(15));
     }
@@ -149,6 +151,14 @@ class OccurrenceControllerTest {
                 OccurrenceStatus.REGISTRADA,
                 Instant.parse("2026-08-21T18:00:00Z"),
                 Instant.parse("2026-08-21T18:00:00Z")
+        );
+    }
+
+    private Authentication authentication() {
+        return UsernamePasswordAuthenticationToken.authenticated(
+                "citizen@example.com",
+                null,
+                List.of()
         );
     }
 }

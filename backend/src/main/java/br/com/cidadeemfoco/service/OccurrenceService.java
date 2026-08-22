@@ -37,8 +37,8 @@ public class OccurrenceService {
     }
 
     @Transactional
-    public OccurrenceResponse create(Long userId, CreateOccurrenceRequest request) {
-        User user = userRepository.findById(userId)
+    public OccurrenceResponse create(String userEmail, CreateOccurrenceRequest request) {
+        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(userEmail))
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
 
         if (user.getRole() != UserRole.CITIZEN) {
@@ -75,18 +75,15 @@ public class OccurrenceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
     }
 
-    public List<OccurrenceResponse> findByUser(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("Usuario nao encontrado");
-        }
+    public List<OccurrenceResponse> findByUser(String userEmail) {
         OccurrenceFilter emptyFilter = new OccurrenceFilter(null, null, null, null);
-        return occurrenceRepository.findAll(toSpecification(emptyFilter, userId), NEWEST_FIRST)
+        return occurrenceRepository.findAll(toSpecification(emptyFilter, normalizeEmail(userEmail)), NEWEST_FIRST)
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
     }
 
-    private Specification<Occurrence> toSpecification(OccurrenceFilter filter, Long userId) {
+    private Specification<Occurrence> toSpecification(OccurrenceFilter filter, String userEmail) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (filter.category() != null) {
@@ -102,8 +99,11 @@ public class OccurrenceService {
                 String neighborhood = "%" + filter.neighborhood().trim().toLowerCase(Locale.ROOT) + "%";
                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("neighborhood")), neighborhood));
             }
-            if (userId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("user").get("id"), userId));
+            if (userEmail != null) {
+                predicates.add(criteriaBuilder.equal(
+                        criteriaBuilder.lower(root.get("user").get("email")),
+                        userEmail
+                ));
             }
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
@@ -120,5 +120,9 @@ public class OccurrenceService {
 
     private String normalizeOptional(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

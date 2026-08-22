@@ -53,11 +53,11 @@ class OccurrenceServiceTest {
     @Test
     void shouldCreateRegisteredOccurrenceForCitizen() {
         User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(occurrenceRepository.save(any(Occurrence.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OccurrenceResponse response = occurrenceService.create(1L, validRequest());
+        OccurrenceResponse response = occurrenceService.create("ana@example.com", validRequest());
 
         assertThat(response.category()).isEqualTo(OccurrenceCategory.EVENTO_NATURAL);
         assertThat(response.type()).isEqualTo(OccurrenceType.ALAGAMENTO);
@@ -68,9 +68,9 @@ class OccurrenceServiceTest {
     @Test
     void shouldRejectOccurrenceCreatedByAdmin() {
         User admin = new User("Admin", "admin@example.com", "hash", UserRole.ADMIN);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
 
-        assertThatThrownBy(() -> occurrenceService.create(1L, validRequest()))
+        assertThatThrownBy(() -> occurrenceService.create("admin@example.com", validRequest()))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("Somente cidadaos podem registrar ocorrencias");
         verify(occurrenceRepository, never()).save(any());
@@ -79,7 +79,7 @@ class OccurrenceServiceTest {
     @Test
     void shouldRejectTypeFromAnotherCategory() {
         User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         CreateOccurrenceRequest request = new CreateOccurrenceRequest(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.BURACO_RUA,
@@ -91,7 +91,7 @@ class OccurrenceServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> occurrenceService.create(1L, request))
+        assertThatThrownBy(() -> occurrenceService.create("ana@example.com", request))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("O tipo informado nao pertence a categoria selecionada");
         verify(occurrenceRepository, never()).save(any());
@@ -143,11 +143,10 @@ class OccurrenceServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void shouldListOnlyOccurrencesFromRequestedUser() {
-        when(userRepository.existsById(1L)).thenReturn(true);
         when(occurrenceRepository.findAll(any(Specification.class), any(Sort.class)))
                 .thenReturn(List.of());
 
-        List<OccurrenceResponse> responses = occurrenceService.findByUser(1L);
+        List<OccurrenceResponse> responses = occurrenceService.findByUser("ANA@EXAMPLE.COM");
 
         assertThat(responses).isEmpty();
         verify(occurrenceRepository).findAll(any(Specification.class), any(Sort.class));

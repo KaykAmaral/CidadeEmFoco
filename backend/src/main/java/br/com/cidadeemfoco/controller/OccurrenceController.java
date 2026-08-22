@@ -10,12 +10,12 @@ import br.com.cidadeemfoco.service.OccurrenceService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -29,9 +29,6 @@ import java.util.List;
 @RequestMapping("/api/occurrences")
 public class OccurrenceController {
 
-    // Temporario ate a etapa 5, quando o usuario sera obtido do token JWT.
-    private static final String TEMPORARY_USER_HEADER = "X-User-Id";
-
     private final OccurrenceService occurrenceService;
 
     public OccurrenceController(OccurrenceService occurrenceService) {
@@ -41,10 +38,10 @@ public class OccurrenceController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OccurrenceResponse create(
-            @RequestHeader(TEMPORARY_USER_HEADER) @Positive Long userId,
+            Authentication authentication,
             @Valid @RequestBody CreateOccurrenceRequest request
     ) {
-        return occurrenceService.create(userId, request);
+        return occurrenceService.create(authentication.getName(), request);
     }
 
     @GetMapping
@@ -58,10 +55,8 @@ public class OccurrenceController {
     }
 
     @GetMapping("/mine")
-    public List<OccurrenceResponse> findMine(
-            @RequestHeader(TEMPORARY_USER_HEADER) @Positive Long userId
-    ) {
-        return occurrenceService.findByUser(userId);
+    public List<OccurrenceResponse> findMine(Authentication authentication) {
+        return occurrenceService.findByUser(authentication.getName());
     }
 
     @GetMapping("/{id}")
