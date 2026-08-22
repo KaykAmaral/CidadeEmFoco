@@ -30,3 +30,13 @@ VITE_API_URL=http://localhost:8080
 npm.cmd run lint
 npm.cmd run build
 ```
+
+## Organização visual
+
+- `src/components/ui`: componentes visuais reutilizáveis;
+- `src/constants`: textos e configurações compartilhadas;
+- `src/styles/ui.css`: estilos dos componentes básicos;
+- `src/index.css`: cores, tipografia e estilos globais.
+
+Os componentes visuais não acessam a API e não possuem regras de negócio. Eles
+serão reutilizados nas páginas das próximas etapas.

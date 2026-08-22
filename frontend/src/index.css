@@ -1,6 +1,7 @@
 :root {
   --color-navy: #062b52;
   --color-blue: #0875d1;
+  --color-blue-dark: #0564b3;
   --color-yellow: #ffb800;
   --color-yellow-soft: #fff2c7;
   --color-blue-soft: #e8f3fc;
@@ -9,6 +10,15 @@
   --color-text: #102a43;
   --color-muted: #526477;
   --color-border: #dce5ee;
+  --color-success: #16835d;
+  --color-success-soft: #e6f6ef;
+  --color-warning: #9a6500;
+  --color-warning-soft: #fff4d6;
+  --color-danger: #c33b32;
+  --color-danger-soft: #fdecea;
+  --color-purple: #6b55b6;
+  --color-purple-soft: #eeeafd;
+  --shadow-card: 0 16px 45px rgba(6, 43, 82, 0.08);
 
   color: var(--color-text);
   background: var(--color-background);
@@ -36,6 +46,11 @@ body {
 }
 
 button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
 input,
 select,
 textarea {
@@ -44,4 +59,9 @@ textarea {
 
 img {
   max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(8, 117, 209, 0.35);
+  outline-offset: 3px;
 }
