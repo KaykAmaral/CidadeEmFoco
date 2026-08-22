@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import AdminLayout from './layouts/AdminLayout'
 import CitizenLayout from './layouts/CitizenLayout'
 import PublicLayout from './layouts/PublicLayout'
+import CitizenHomePage from './pages/CitizenHomePage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import PlaceholderPage from './pages/PlaceholderPage'
@@ -24,13 +25,7 @@ function App() {
         <Route path="/app" element={<CitizenLayout />}>
           <Route
             index
-            element={
-              <PlaceholderPage
-                eyebrow="Área do cidadão"
-                title="Início"
-                description="Aqui ficarão o alerta climático ativo, o mapa e as ocorrências recentes."
-              />
-            }
+            element={<CitizenHomePage />}
           />
           <Route
             path="ocorrencias"

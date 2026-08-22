@@ -68,3 +68,14 @@ sempre cria um cidadão, conforme a regra do backend.
 Para manter a sessão após atualizar a página, o JWT e os dados públicos do
 usuário ficam no `localStorage` até o logout ou o vencimento do token. A senha
 nunca é armazenada pelo frontend.
+
+## Dashboard do cidadão
+
+A rota `/app` consulta em paralelo:
+
+- `GET /api/alerts/active` para o alerta climático atual;
+- `GET /api/occurrences` para o mapa e as ocorrências recentes.
+
+O mapa utiliza Leaflet com os tiles públicos do OpenStreetMap e exibe a
+atribuição obrigatória. Ele não usa geocodificação, não envia ocorrências para
+serviços externos e não oferece download de mapas para uso offline.
