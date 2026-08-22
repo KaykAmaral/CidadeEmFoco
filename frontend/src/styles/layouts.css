@@ -156,6 +156,32 @@
   font-weight: 750;
 }
 
+.citizen-header__account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logout-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--color-muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.logout-button:hover {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
 .citizen-main {
   padding-top: 44px;
   padding-bottom: 44px;
@@ -289,10 +315,43 @@
   white-space: nowrap;
 }
 
-.admin-sidebar__account a {
+.admin-sidebar__account button {
   display: grid;
   place-items: center;
+  padding: 6px;
+  border: 0;
   color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  cursor: pointer;
+}
+
+.form-message {
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.form-message--error {
+  border-color: #f1c7c3;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.form-message--success {
+  border-color: #b8dfcf;
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.field-error {
+  color: var(--color-danger) !important;
+}
+
+.form-control[aria-invalid='true'] {
+  border-color: var(--color-danger);
 }
 
 .admin-main {
@@ -434,6 +493,10 @@
   }
 
   .citizen-header .brand__text span {
+    display: none;
+  }
+
+  .logout-button span {
     display: none;
   }
 

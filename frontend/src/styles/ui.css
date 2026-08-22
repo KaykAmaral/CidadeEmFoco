@@ -71,6 +71,10 @@
   opacity: 0.55;
 }
 
+.button__spinner {
+  animation: spin 1s linear infinite;
+}
+
 .button--primary {
   color: white;
   background: var(--color-blue);
@@ -254,6 +258,10 @@ textarea.form-control {
   }
 
   .feedback-state--loading .feedback-state__icon {
+    animation: none;
+  }
+
+  .button__spinner {
     animation: none;
   }
 }

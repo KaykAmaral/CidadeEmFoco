@@ -1,6 +1,7 @@
 import { Bell, LayoutDashboard, ListChecks, LogOut } from 'lucide-react'
-import { Link, NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet } from 'react-router'
 import Brand from '../components/ui/Brand'
+import useAuth from '../hooks/useAuth'
 
 const navigationItems = [
   { to: '/admin', label: 'Visão geral', icon: LayoutDashboard, end: true },
@@ -9,6 +10,8 @@ const navigationItems = [
 ]
 
 function AdminLayout() {
+  const { logout, user } = useAuth()
+
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
@@ -34,12 +37,12 @@ function AdminLayout() {
 
         <div className="admin-sidebar__account">
           <div>
-            <strong>Administrador</strong>
-            <span>Painel administrativo</span>
+            <strong>{user.name}</strong>
+            <span>{user.email}</span>
           </div>
-          <Link to="/login" aria-label="Sair">
+          <button onClick={logout} type="button" aria-label="Sair">
             <LogOut size={19} aria-hidden="true" />
-          </Link>
+          </button>
         </div>
       </aside>
 

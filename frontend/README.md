@@ -56,5 +56,15 @@ serão reutilizados nas páginas das próximas etapas.
 | `/admin/ocorrencias` | Gestão de ocorrências |
 | `/admin/alertas` | Gestão de alertas |
 
-As rotas privadas ainda exibem somente conteúdo estrutural. A proteção por
-perfil será aplicada junto da autenticação, antes da integração com dados reais.
+As rotas `/app/*` exigem um usuário `CITIZEN` e as rotas `/admin/*` exigem um
+usuário `ADMIN`. Usuários sem sessão são redirecionados para `/login`.
+
+## Autenticação
+
+O login utiliza `POST /api/auth/login` e o cadastro utiliza
+`POST /api/auth/register`. O cadastro público não permite escolher perfil e
+sempre cria um cidadão, conforme a regra do backend.
+
+Para manter a sessão após atualizar a página, o JWT e os dados públicos do
+usuário ficam no `localStorage` até o logout ou o vencimento do token. A senha
+nunca é armazenada pelo frontend.
