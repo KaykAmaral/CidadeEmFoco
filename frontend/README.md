@@ -96,3 +96,11 @@ A foto é opcional e deve ser JPEG, PNG ou WebP com até 5 MB. Se a ocorrência 
 criada e somente o envio da foto falhar, o registro é preservado e o frontend
 mostra um aviso. Como a consulta da imagem exige autenticação, o frontend baixa
 o arquivo com o JWT e cria uma URL temporária apenas para exibi-lo.
+
+## Alertas para o cidadão
+
+A rota `/app/alertas` utiliza `GET /api/alerts/active` e apresenta somente os
+alertas ativos e dentro do período de validade retornados pelo backend. Cada
+alerta mostra tipo, severidade, descrição, início, fim e o aviso demonstrativo.
+
+O frontend não consulta serviços meteorológicos e não produz previsão própria.
