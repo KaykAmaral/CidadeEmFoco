@@ -4,6 +4,7 @@ import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.UserRole;
+import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -164,6 +166,39 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/occurrences")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldForbidCitizenFromUpdatingOccurrenceStatus() throws Exception {
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        String token = jwtService.generateToken(citizen);
+
+        mockMvc.perform(patch("/api/admin/occurrences/10/status")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "RESOLVIDA"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Acesso proibido"));
+    }
+
+    @Test
+    void shouldAllowAdminToUpdateOccurrenceStatus() throws Exception {
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String token = jwtService.generateToken(admin);
+
+        mockMvc.perform(patch("/api/admin/occurrences/10/status")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "RESOLVIDA"}
+                                """))
+                .andExpect(status().isOk());
+
+        verify(occurrenceService).updateStatus(10L, OccurrenceStatus.RESOLVIDA);
     }
 
     private User citizen() {

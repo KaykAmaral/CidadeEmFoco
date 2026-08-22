@@ -6,6 +6,7 @@ import br.com.cidadeemfoco.dto.OccurrenceResponse;
 import br.com.cidadeemfoco.entity.Occurrence;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
+import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
@@ -73,6 +74,14 @@ public class OccurrenceService {
         return occurrenceRepository.findById(id)
                 .map(OccurrenceResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
+    }
+
+    @Transactional
+    public OccurrenceResponse updateStatus(Long id, OccurrenceStatus status) {
+        Occurrence occurrence = occurrenceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
+        occurrence.changeStatus(status);
+        return OccurrenceResponse.from(occurrenceRepository.saveAndFlush(occurrence));
     }
 
     public List<OccurrenceResponse> findByUser(String userEmail) {

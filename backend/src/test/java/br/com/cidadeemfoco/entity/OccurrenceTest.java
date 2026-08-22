@@ -54,5 +54,23 @@ class OccurrenceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("categoria");
     }
-}
 
+    @Test
+    void shouldAllowChangingToAnyOfficialStatus() {
+        Occurrence occurrence = new Occurrence(
+                OccurrenceCategory.EVENTO_NATURAL,
+                OccurrenceType.ALAGAMENTO,
+                "Alagamento observado na via",
+                PerceivedRisk.ALTO,
+                new BigDecimal("-24.008100"),
+                new BigDecimal("-46.412000"),
+                "Boqueirao",
+                null,
+                citizen
+        );
+
+        occurrence.changeStatus(OccurrenceStatus.NAO_CONFIRMADA);
+
+        assertThat(occurrence.getStatus()).isEqualTo(OccurrenceStatus.NAO_CONFIRMADA);
+    }
+}

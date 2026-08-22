@@ -107,6 +107,28 @@ class OccurrenceServiceTest {
     }
 
     @Test
+    void shouldUpdateOccurrenceStatus() {
+        Occurrence occurrence = occurrence();
+        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(occurrence));
+        when(occurrenceRepository.saveAndFlush(occurrence)).thenReturn(occurrence);
+
+        OccurrenceResponse response = occurrenceService.updateStatus(10L, OccurrenceStatus.EM_ATENDIMENTO);
+
+        assertThat(response.status()).isEqualTo(OccurrenceStatus.EM_ATENDIMENTO);
+        verify(occurrenceRepository).saveAndFlush(occurrence);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenUpdatingMissingOccurrence() {
+        when(occurrenceRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> occurrenceService.updateStatus(99L, OccurrenceStatus.RESOLVIDA))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Ocorrencia nao encontrada");
+        verify(occurrenceRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void shouldListOccurrencesUsingFiltersAndNewestFirst() {
         User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
@@ -162,6 +184,21 @@ class OccurrenceServiceTest {
                 new BigDecimal("-46.402000"),
                 "Boqueirao",
                 "Avenida Presidente Costa e Silva"
+        );
+    }
+
+    private Occurrence occurrence() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        return new Occurrence(
+                OccurrenceCategory.EVENTO_NATURAL,
+                OccurrenceType.ALAGAMENTO,
+                "Via alagada",
+                PerceivedRisk.ALTO,
+                new BigDecimal("-24.005000"),
+                new BigDecimal("-46.402000"),
+                "Boqueirao",
+                null,
+                citizen
         );
     }
 }
