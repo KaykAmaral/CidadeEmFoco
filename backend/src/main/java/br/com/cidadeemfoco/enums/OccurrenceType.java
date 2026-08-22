@@ -1,0 +1,18 @@
+package br.com.cidadeemfoco.enums;
+
+public enum OccurrenceType {
+    ALAGAMENTO,
+    ENCHENTE,
+    QUEDA_ARVORE,
+    DESLIZAMENTO,
+    VENTOS_FORTES,
+    RESSACA_MARITIMA,
+    BURACO_RUA,
+    BUEIRO_ENTUPIDO,
+    POSTE_DANIFICADO,
+    SEMAFORO_COM_PROBLEMA,
+    RUA_BLOQUEADA,
+    FALTA_ILUMINACAO,
+    OUTRO
+}
+
