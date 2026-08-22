@@ -55,6 +55,7 @@
   cursor: pointer;
   font-weight: 700;
   line-height: 1;
+  text-decoration: none;
   transition:
     background-color 160ms ease,
     border-color 160ms ease,

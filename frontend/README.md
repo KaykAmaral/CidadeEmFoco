@@ -40,3 +40,21 @@ npm.cmd run build
 
 Os componentes visuais não acessam a API e não possuem regras de negócio. Eles
 serão reutilizados nas páginas das próximas etapas.
+
+## Rotas atuais
+
+| Rota | Área |
+| --- | --- |
+| `/login` | Login público |
+| `/cadastro` | Cadastro de cidadão |
+| `/app` | Início do cidadão |
+| `/app/ocorrencias` | Ocorrências para o cidadão |
+| `/app/ocorrencias/nova` | Registro de ocorrência |
+| `/app/alertas` | Alertas para o cidadão |
+| `/app/perfil` | Perfil do cidadão |
+| `/admin` | Visão geral administrativa |
+| `/admin/ocorrencias` | Gestão de ocorrências |
+| `/admin/alertas` | Gestão de alertas |
+
+As rotas privadas ainda exibem somente conteúdo estrutural. A proteção por
+perfil será aplicada junto da autenticação, antes da integração com dados reais.
