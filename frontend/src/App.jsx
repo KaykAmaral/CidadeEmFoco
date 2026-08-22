@@ -13,7 +13,7 @@ import NewOccurrencePage from './pages/NewOccurrencePage'
 import NotFoundPage from './pages/NotFoundPage'
 import OccurrenceDetailPage from './pages/OccurrenceDetailPage'
 import OccurrencesPage from './pages/OccurrencesPage'
-import PlaceholderPage from './pages/PlaceholderPage'
+import ProfilePage from './pages/ProfilePage'
 import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './routes/ProtectedRoute'
 import PublicOnlyRoute from './routes/PublicOnlyRoute'
@@ -50,13 +50,7 @@ function App() {
           />
           <Route
             path="perfil"
-            element={
-              <PlaceholderPage
-                eyebrow="Conta"
-                title="Meu perfil"
-                description="Dados básicos do cidadão e acesso às suas próprias ocorrências."
-              />
-            }
+            element={<ProfilePage />}
           />
         </Route>
       </Route>

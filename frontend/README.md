@@ -105,6 +105,16 @@ alerta mostra tipo, severidade, descrição, início, fim e o aviso demonstrativ
 
 O frontend não consulta serviços meteorológicos e não produz previsão própria.
 
+## Perfil do cidadão
+
+A rota `/app/perfil` apresenta os dados públicos devolvidos no login: nome,
+e-mail, perfil de acesso e data de cadastro. Ela também consulta
+`GET /api/occurrences/mine` para mostrar as quantidades e os registros recentes
+do próprio cidadão.
+
+O MVP não possui endpoints para editar o perfil ou alterar a senha. Por isso,
+essas ações não são exibidas pelo frontend.
+
 ## Dashboard administrativo
 
 A rota `/admin` consulta `GET /api/admin/occurrences` e
