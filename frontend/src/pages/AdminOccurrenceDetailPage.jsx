@@ -9,6 +9,8 @@ import {
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import OccurrenceMap from '../components/map/OccurrenceMap'
+import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
+import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
@@ -23,7 +25,6 @@ import {
   getAdminOccurrenceById,
   updateAdminOccurrenceStatus,
 } from '../services/adminService'
-import { getOccurrenceImage } from '../services/occurrenceService'
 import { formatDateTime } from '../utils/date'
 import './OccurrenceDetailPage.css'
 import './AdminOccurrenceDetailPage.css'
@@ -33,8 +34,6 @@ function AdminOccurrenceDetailPage() {
   const { logout, token } = useAuth()
   const [occurrence, setOccurrence] = useState(null)
   const [selectedStatus, setSelectedStatus] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
-  const [imageError, setImageError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState('')
@@ -67,33 +66,6 @@ function AdminOccurrenceDetailPage() {
       isCurrent = false
     }
   }, [id, logout, token])
-
-  useEffect(() => {
-    if (!occurrence?.imageUrl) return undefined
-
-    let isCurrent = true
-    let objectUrl = ''
-
-    getOccurrenceImage(token, occurrence.id)
-      .then((imageBlob) => {
-        if (!isCurrent) return
-        objectUrl = URL.createObjectURL(imageBlob)
-        setImageUrl(objectUrl)
-      })
-      .catch((requestError) => {
-        if (!isCurrent) return
-        if (requestError.status === 401) {
-          logout()
-          return
-        }
-        setImageError('Não foi possível carregar a foto desta ocorrência.')
-      })
-
-    return () => {
-      isCurrent = false
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  }, [logout, occurrence?.id, occurrence?.imageUrl, token])
 
   async function handleStatusUpdate(event) {
     event.preventDefault()
@@ -146,7 +118,8 @@ function AdminOccurrenceDetailPage() {
       </Link>
 
       <header className="occurrence-detail__heading">
-        <div>
+        <OccurrenceTypeIcon className="occurrence-detail__type-icon" size={28} type={occurrence.type} />
+        <div className="occurrence-detail__heading-content">
           <span>{getOccurrenceCategoryLabel(occurrence.category)} · #{occurrence.id}</span>
           <h1>{getOccurrenceTypeLabel(occurrence.type)}</h1>
           <p><MapPin size={16} aria-hidden="true" />{displayedLocation}</p>
@@ -194,16 +167,10 @@ function AdminOccurrenceDetailPage() {
           <p className="occurrence-detail__coordinates">{occurrence.latitude}, {occurrence.longitude}</p>
         </section>
 
-        {occurrence.imageUrl && (
+        {(occurrence.imageUrls?.length > 0 || occurrence.imageUrl) && (
           <section className="occurrence-detail__card occurrence-detail__photo">
-            <h2>Foto enviada pelo cidadão</h2>
-            {imageUrl ? (
-              <img src={imageUrl} alt={`Foto da ocorrência: ${getOccurrenceTypeLabel(occurrence.type)}`} />
-            ) : imageError ? (
-              <p className="field-error">{imageError}</p>
-            ) : (
-              <FeedbackState type="loading" message="Carregando foto..." />
-            )}
+            <h2>Imagens enviadas pelo cidadão</h2>
+            <OccurrenceImageGallery occurrence={occurrence} onUnauthorized={logout} token={token} />
           </section>
         )}
       </div>

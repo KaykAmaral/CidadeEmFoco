@@ -44,8 +44,14 @@ function uploadOccurrenceImage(token, id, file) {
   })
 }
 
-function getOccurrenceImage(token, id) {
-  return apiRequest(`/api/occurrences/${id}/image`, {
+function uploadOccurrenceImages(token, id, files) {
+  const formData = new FormData()
+  files.forEach((file) => formData.append('files', file))
+  return apiRequest(`/api/occurrences/${id}/images`, { method: 'POST', body: formData, token })
+}
+
+function getOccurrenceImage(token, id, imageUrl) {
+  return apiRequest(imageUrl || `/api/occurrences/${id}/image`, {
     responseType: 'blob',
     token,
   })
@@ -58,4 +64,5 @@ export {
   getOccurrenceImage,
   getOccurrences,
   uploadOccurrenceImage,
+  uploadOccurrenceImages,
 }

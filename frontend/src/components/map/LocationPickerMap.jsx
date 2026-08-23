@@ -13,9 +13,9 @@ const PRAIA_GRANDE_CENTER = [-24.005833, -46.405833]
 
 const selectedLocationIcon = divIcon({
   className: 'occurrence-marker-container',
-  html: '<span class="occurrence-marker occurrence-marker--selected"><span></span></span>',
-  iconAnchor: [17, 34],
-  iconSize: [34, 34],
+  html: '<span class="occurrence-marker occurrence-marker--selected" style="--marker-color:#1677c8"><span class="selected-location-dot"></span></span>',
+  iconAnchor: [20, 20],
+  iconSize: [40, 40],
 })
 
 function MapClickHandler({ onChange }) {
@@ -62,7 +62,7 @@ function LocationPickerMap({ latitude, longitude, onChange }) {
         />
         <MapClickHandler onChange={onChange} />
         <MapFocus position={position} />
-        {position && <Marker icon={selectedLocationIcon} position={position} />}
+        {position && <Marker draggable eventHandlers={{ dragend(event) { const point = event.target.getLatLng(); onChange({ latitude: point.lat.toFixed(6), longitude: point.lng.toFixed(6) }) } }} icon={selectedLocationIcon} position={position} />}
       </MapContainer>
     </div>
   )

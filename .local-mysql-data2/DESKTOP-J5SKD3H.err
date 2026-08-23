@@ -1,0 +1,20 @@
+2026-08-22T21:00:48.298802Z 0 [System] [MY-015015] [Server] MySQL Server - start.
+2026-08-22T21:00:48.737753Z 0 [System] [MY-010116] [Server] C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqld.exe (mysqld 8.4.9) starting as process 7264
+2026-08-22T21:00:48.771885Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-08-22T21:00:49.231641Z 1 [ERROR] [MY-013039] [InnoDB] Can't create UNDO tablespace innodb_undo_001  since '.\undo_001' already exists.
+2026-08-22T21:00:49.234057Z 1 [ERROR] [MY-012930] [InnoDB] Plugin initialization aborted with error Generic error.
+2026-08-22T21:00:49.474725Z 1 [ERROR] [MY-010334] [Server] Failed to initialize DD Storage Engine
+2026-08-22T21:00:49.476595Z 0 [ERROR] [MY-010020] [Server] Data Dictionary initialization failed.
+2026-08-22T21:00:49.477378Z 0 [ERROR] [MY-010119] [Server] Aborting
+2026-08-22T21:00:49.479980Z 0 [System] [MY-010910] [Server] C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqld.exe: Shutdown complete (mysqld 8.4.9)  MySQL Community Server - GPL.
+2026-08-22T21:00:49.481248Z 0 [System] [MY-015016] [Server] MySQL Server - end.
+2026-08-22T21:04:44.674275Z 0 [System] [MY-015015] [Server] MySQL Server - start.
+2026-08-22T21:04:45.024598Z 0 [System] [MY-010116] [Server] C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqld.exe (mysqld 8.4.9) starting as process 63724
+2026-08-22T21:04:45.104934Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-08-22T21:04:45.351032Z 1 [ERROR] [MY-013039] [InnoDB] Can't create UNDO tablespace innodb_undo_002  since '.\undo_002' already exists.
+2026-08-22T21:04:45.353574Z 1 [ERROR] [MY-012930] [InnoDB] Plugin initialization aborted with error Generic error.
+2026-08-22T21:04:45.429753Z 1 [ERROR] [MY-010334] [Server] Failed to initialize DD Storage Engine
+2026-08-22T21:04:45.431619Z 0 [ERROR] [MY-010020] [Server] Data Dictionary initialization failed.
+2026-08-22T21:04:45.432570Z 0 [ERROR] [MY-010119] [Server] Aborting
+2026-08-22T21:04:45.436483Z 0 [System] [MY-010910] [Server] C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqld.exe: Shutdown complete (mysqld 8.4.9)  MySQL Community Server - GPL.
+2026-08-22T21:04:45.437730Z 0 [System] [MY-015016] [Server] MySQL Server - end.

@@ -5,11 +5,14 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import static br.com.cidadeemfoco.enums.OccurrenceType.ALAGAMENTO;
+import static br.com.cidadeemfoco.enums.OccurrenceType.ARVORE_OBSTRUINDO_VIA;
 import static br.com.cidadeemfoco.enums.OccurrenceType.BUEIRO_ENTUPIDO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.BURACO_RUA;
 import static br.com.cidadeemfoco.enums.OccurrenceType.DESLIZAMENTO;
+import static br.com.cidadeemfoco.enums.OccurrenceType.CHUVA_INTENSA;
 import static br.com.cidadeemfoco.enums.OccurrenceType.ENCHENTE;
 import static br.com.cidadeemfoco.enums.OccurrenceType.FALTA_ILUMINACAO;
+import static br.com.cidadeemfoco.enums.OccurrenceType.INCENDIO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.OUTRO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.POSTE_DANIFICADO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.QUEDA_ARVORE;
@@ -26,6 +29,8 @@ public enum OccurrenceCategory {
             DESLIZAMENTO,
             VENTOS_FORTES,
             RESSACA_MARITIMA,
+            INCENDIO,
+            CHUVA_INTENSA,
             OUTRO
     ),
     INFRAESTRUTURA_URBANA(
@@ -35,6 +40,7 @@ public enum OccurrenceCategory {
             SEMAFORO_COM_PROBLEMA,
             RUA_BLOQUEADA,
             FALTA_ILUMINACAO,
+            ARVORE_OBSTRUINDO_VIA,
             OUTRO
     );
 

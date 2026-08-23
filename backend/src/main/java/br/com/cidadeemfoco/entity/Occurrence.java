@@ -14,6 +14,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -23,6 +26,9 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Table(name = "occurrences")
@@ -64,6 +70,10 @@ public class Occurrence {
 
     @Column(name = "image_path", length = 500)
     private String imagePath;
+
+    @OneToMany(mappedBy = "occurrence", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
+    private List<OccurrenceImage> images = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -170,6 +180,16 @@ public class Occurrence {
     public String getImagePath() {
         return imagePath;
     }
+
+    public List<OccurrenceImage> getImages() { return Collections.unmodifiableList(images); }
+
+    public OccurrenceImage addImage(String path) {
+        OccurrenceImage image = new OccurrenceImage(this, path);
+        images.add(image);
+        return image;
+    }
+
+    public void removeImage(OccurrenceImage image) { images.remove(image); }
 
     public OccurrenceStatus getStatus() {
         return status;
