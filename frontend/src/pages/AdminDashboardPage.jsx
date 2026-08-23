@@ -24,8 +24,8 @@ import './AdminDashboardPage.css'
 
 const metricConfig = [
   { key: 'total', label: 'Total de ocorrências', icon: ClipboardList, tone: 'blue' },
-  { key: 'REGISTRADA', label: 'Registradas', icon: Clock3, tone: 'yellow' },
-  { key: 'EM_ATENDIMENTO', label: 'Em atendimento', icon: SearchCheck, tone: 'purple' },
+  { key: 'REGISTRADA', label: 'Registradas', icon: Clock3, tone: 'blue' },
+  { key: 'EM_ATENDIMENTO', label: 'Em atendimento', icon: SearchCheck, tone: 'orange' },
   { key: 'RESOLVIDA', label: 'Resolvidas', icon: CheckCircle2, tone: 'green' },
 ]
 

@@ -1,13 +1,14 @@
 .admin-occurrences-page {
-  width: min(100%, 1380px);
+  width: min(100%, 1320px);
   display: grid;
   gap: 22px;
   margin: 0 auto;
 }
 
 .admin-page-heading {
+  min-height: 92px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
 }
@@ -25,7 +26,7 @@
 .admin-page-heading h1 {
   margin: 0 0 8px;
   color: var(--color-navy);
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-size: clamp(2.15rem, 4vw, 3rem);
   line-height: 1;
   letter-spacing: -0.04em;
 }
@@ -33,11 +34,16 @@
 .admin-page-heading p {
   margin: 0;
   color: var(--color-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
 .admin-page-count {
   flex: 0 0 auto;
-  padding: 8px 11px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
   border-radius: 999px;
   color: var(--color-blue);
   background: var(--color-blue-soft);
@@ -47,26 +53,25 @@
 
 .admin-occurrence-filters {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  padding: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid var(--color-border);
-  border-radius: 15px;
+  border-radius: 16px;
   background: white;
   box-shadow: var(--shadow-card);
 }
 
 .admin-occurrence-filters__actions {
   display: flex;
-  flex-wrap: wrap;
-  grid-column: 1 / -1;
-  gap: 10px;
+  gap: 8px;
 }
 
 .admin-occurrences-table-wrapper {
   overflow-x: auto;
   border: 1px solid var(--color-border);
-  border-radius: 15px;
+  border-radius: 16px;
   background: white;
   box-shadow: var(--shadow-card);
 }
@@ -78,15 +83,15 @@
 
 .admin-occurrences-table th,
 .admin-occurrences-table td {
-  padding: 14px 16px;
+  padding: 15px 16px;
   border-bottom: 1px solid var(--color-border);
   text-align: left;
   vertical-align: middle;
 }
 
 .admin-occurrences-table th {
-  color: var(--color-muted);
-  background: var(--color-background);
+  color: #40566d;
+  background: #edf3f8;
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -95,7 +100,16 @@
 .admin-occurrences-table td {
   max-width: 280px;
   color: var(--color-muted);
-  font-size: 0.76rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.admin-occurrences-table tbody tr {
+  transition: background-color 150ms ease;
+}
+
+.admin-occurrences-table tbody tr:hover {
+  background: #f8fbfe;
 }
 
 .admin-occurrences-table tbody tr:last-child td {
@@ -105,7 +119,7 @@
 .admin-occurrences-table td:nth-child(2) {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 5px;
 }
 
 .admin-occurrences-table td:nth-child(2) > div { min-width: 0; display: grid; gap: 3px; }
@@ -125,9 +139,16 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 8px;
   color: var(--color-blue);
   font-weight: 750;
   text-decoration: none;
+}
+
+.admin-occurrences-table td:last-child a:hover {
+  background: var(--color-blue-soft);
 }
 
 .admin-page-error {
@@ -136,9 +157,13 @@
   gap: 12px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .admin-occurrence-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-occurrence-filters__actions {
+    grid-column: 1 / -1;
   }
 }
 
