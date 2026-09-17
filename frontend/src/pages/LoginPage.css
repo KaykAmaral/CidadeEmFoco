@@ -1,0 +1,282 @@
+.login-page {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  overflow: hidden;
+  background: #f9fbfe;
+}
+
+.login-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(32px, 4.2vw, 64px);
+  overflow: hidden;
+  color: white;
+  background-image:
+    linear-gradient(180deg, rgba(4, 39, 75, 0.2), rgba(4, 37, 70, 0.58) 50%, rgba(3, 28, 55, 0.94)),
+    url('/images/praia-grande-orla.png');
+  background-position: center;
+  background-size: cover;
+}
+
+.login-hero__brand {
+  position: relative;
+  isolation: isolate;
+  width: fit-content;
+  flex: 0 0 auto;
+}
+
+.login-hero__brand::before {
+  position: absolute;
+  z-index: -1;
+  inset: 4% -13%;
+  content: '';
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.46) 0%,
+    rgba(255, 255, 255, 0.25) 38%,
+    rgba(255, 255, 255, 0.08) 62%,
+    rgba(255, 255, 255, 0) 82%
+  );
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.login-hero__brand img {
+  position: relative;
+  z-index: 1;
+  width: clamp(180px, 15vw, 250px);
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.login-hero__message {
+  margin: auto 0;
+  padding: 42px 0;
+}
+
+.login-hero__message > span {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--color-yellow);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.login-hero__message h1 {
+  max-width: 650px;
+  margin: 0 0 22px;
+  font-size: clamp(2.7rem, 4.2vw, 4.65rem);
+  line-height: 1.03;
+  letter-spacing: -0.045em;
+}
+
+.login-hero__message p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: clamp(0.9rem, 1.1vw, 1.06rem);
+  line-height: 1.65;
+}
+
+.login-benefits {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.login-benefit {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 clamp(8px, 1.2vw, 19px);
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.login-benefit:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.login-benefit__icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(175, 221, 255, 0.68);
+  border-radius: 50%;
+}
+
+.login-benefit div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.login-benefit strong {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.login-benefit div > span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.65rem;
+  line-height: 1.3;
+}
+
+.login-panel {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 48px clamp(30px, 6vw, 92px);
+  overflow: hidden;
+  background: #fbfdff;
+}
+
+.login-form-wrap {
+  z-index: 2;
+  width: min(100%, 520px);
+}
+
+.login-panel .auth-card__heading { margin-bottom: 34px; }
+.login-panel .auth-card__heading > span { letter-spacing: 0.18em; }
+.login-panel .auth-card__heading h2 { font-size: clamp(2.25rem, 3.2vw, 3.1rem); }
+.login-panel .auth-form { gap: 21px; }
+
+.login-panel .form-field label {
+  color: var(--color-navy);
+  font-size: 0.9rem;
+}
+
+.login-input {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 17px;
+  border: 1px solid #cad7e4;
+  border-radius: 12px;
+  color: #708397;
+  background: white;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.login-input:hover { border-color: #9db2c6; }
+
+.login-input:focus-within {
+  border-color: var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(8, 117, 209, 0.14);
+}
+
+.login-input:has(input[aria-invalid='true']) { border-color: var(--color-danger); }
+
+.login-input input {
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  border: 0;
+  outline: 0;
+  color: var(--color-text);
+  background: transparent;
+}
+
+.login-input input::placeholder { color: #8797a8; }
+
+.login-input__toggle {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  margin-right: -8px;
+  border: 0;
+  border-radius: 8px;
+  color: #708397;
+  background: transparent;
+  cursor: pointer;
+}
+
+.login-input__toggle:hover {
+  color: var(--color-blue);
+  background: var(--color-blue-soft);
+}
+
+.login-panel .auth-form__submit {
+  min-height: 52px;
+  margin-top: 5px;
+  border-radius: 10px;
+  box-shadow: 0 9px 22px rgba(8, 117, 209, 0.2);
+}
+
+.login-panel__curves,
+.login-panel__skyline {
+  position: absolute;
+  pointer-events: none;
+  fill: none;
+  stroke: #7ac4f3;
+  stroke-linecap: round;
+  stroke-width: 1.4;
+}
+
+.login-panel__curves {
+  top: 0;
+  right: 0;
+  width: min(42%, 360px);
+  opacity: 0.28;
+}
+
+.login-panel__skyline {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0.16;
+}
+
+@media (max-width: 1180px) {
+  .login-page { grid-template-columns: minmax(330px, 0.88fr) minmax(430px, 1.12fr); }
+  .login-hero { padding: 38px; }
+  .login-hero__message h1 { font-size: clamp(2.35rem, 4vw, 3.5rem); }
+  .login-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 0; }
+  .login-benefit:nth-child(3) { padding-left: 0; border-left: 0; }
+}
+
+@media (max-width: 760px) {
+  .login-page { min-height: 100svh; display: block; overflow: visible; }
+  .login-hero {
+    min-height: 190px;
+    height: 28svh;
+    padding: 24px;
+    background-position: center 48%;
+  }
+  .login-hero__brand img { width: clamp(112px, 31vw, 145px); }
+  .login-hero__message, .login-benefits { display: none; }
+  .login-panel {
+    min-height: 72svh;
+    display: block;
+    padding: 38px 22px 46px;
+    overflow: visible;
+  }
+  .login-form-wrap { margin: 0 auto; }
+  .login-panel .auth-card__heading { margin-bottom: 27px; }
+  .login-panel .auth-card__heading h2 { font-size: clamp(2rem, 9vw, 2.55rem); }
+  .login-panel__curves, .login-panel__skyline { display: none; }
+}
+
+@media (max-height: 760px) and (min-width: 761px) {
+  .login-hero, .login-panel { padding-top: 30px; padding-bottom: 30px; }
+  .login-hero__message { padding: 24px 0; }
+  .login-hero__message h1 { font-size: clamp(2.3rem, 4.5vw, 3.65rem); }
+  .login-panel .auth-card__heading { margin-bottom: 22px; }
+  .login-panel .auth-form { gap: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-input { transition: none; }
+}

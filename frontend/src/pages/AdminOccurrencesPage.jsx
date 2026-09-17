@@ -2,6 +2,7 @@ import { Eye, FilterX, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import Button from '../components/ui/Button'
+import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
 import occurrenceStatusConfig from '../constants/occurrenceStatus'
@@ -163,7 +164,7 @@ function AdminOccurrencesPage() {
               {occurrences.map((occurrence) => (
                 <tr key={occurrence.id}>
                   <td data-label="ID">#{occurrence.id}</td>
-                  <td data-label="Ocorrência"><strong>{getOccurrenceTypeLabel(occurrence.type)}</strong><span>{getOccurrenceCategoryLabel(occurrence.category)}</span></td>
+                  <td data-label="Ocorrência"><OccurrenceTypeIcon size={18} type={occurrence.type} /><div><strong>{getOccurrenceTypeLabel(occurrence.type)}</strong><span>{getOccurrenceCategoryLabel(occurrence.category)}</span></div></td>
                   <td data-label="Local">{occurrence.address || occurrence.neighborhood || 'Somente coordenadas'}</td>
                   <td data-label="Data">{formatDateTime(occurrence.createdAt)}</td>
                   <td data-label="Status"><StatusBadge status={occurrence.status} /></td>

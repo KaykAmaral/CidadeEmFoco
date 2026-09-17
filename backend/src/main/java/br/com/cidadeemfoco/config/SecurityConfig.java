@@ -65,6 +65,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/occurrences/*/image").hasRole("CITIZEN")
+                        .requestMatchers(HttpMethod.POST, "/api/occurrences/*/images").hasRole("CITIZEN")
                         .requestMatchers(HttpMethod.POST, "/api/occurrences").hasRole("CITIZEN")
                         .requestMatchers(HttpMethod.GET, "/api/occurrences/mine").hasRole("CITIZEN")
                         .requestMatchers("/api/occurrences/**").authenticated()

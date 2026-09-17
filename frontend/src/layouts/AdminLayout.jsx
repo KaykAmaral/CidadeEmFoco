@@ -1,6 +1,6 @@
-import { Bell, LayoutDashboard, ListChecks, LogOut } from 'lucide-react'
+import { Bell, LayoutDashboard, ListChecks, LogOut, Menu, X } from 'lucide-react'
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
-import Brand from '../components/ui/Brand'
 import useAuth from '../hooks/useAuth'
 
 const navigationItems = [
@@ -11,11 +11,30 @@ const navigationItems = [
 
 function AdminLayout() {
   const { logout, user } = useAuth()
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false)
 
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
-        <Brand inverse />
+      <header className="admin-mobile-header">
+        <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco" />
+        <button
+          aria-controls="admin-sidebar"
+          aria-expanded={isNavigationOpen}
+          aria-label={isNavigationOpen ? 'Fechar menu administrativo' : 'Abrir menu administrativo'}
+          onClick={() => setIsNavigationOpen((open) => !open)}
+          type="button"
+        >
+          {isNavigationOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </header>
+
+      <aside
+        className={`admin-sidebar${isNavigationOpen ? ' admin-sidebar--open' : ''}`}
+        id="admin-sidebar"
+      >
+        <div className="admin-sidebar__brand">
+          <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco — Nossa cidade, nosso olhar" />
+        </div>
 
         <nav className="admin-navigation" aria-label="Navegação administrativa">
           {navigationItems.map(({ to, label, icon: Icon, end }) => (
@@ -27,6 +46,7 @@ function AdminLayout() {
               }
               end={end}
               key={to}
+              onClick={() => setIsNavigationOpen(false)}
               to={to}
             >
               <Icon size={20} aria-hidden="true" />
@@ -36,7 +56,10 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-sidebar__account">
-          <div>
+          <div className="admin-sidebar__avatar" aria-hidden="true">
+            {user.name?.charAt(0).toUpperCase()}
+          </div>
+          <div className="admin-sidebar__account-details">
             <strong>{user.name}</strong>
             <span>{user.email}</span>
           </div>
@@ -45,6 +68,15 @@ function AdminLayout() {
           </button>
         </div>
       </aside>
+
+      {isNavigationOpen && (
+        <button
+          className="admin-sidebar-backdrop"
+          aria-label="Fechar menu administrativo"
+          onClick={() => setIsNavigationOpen(false)}
+          type="button"
+        />
+      )}
 
       <main className="admin-main">
         <Outlet />

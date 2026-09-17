@@ -39,6 +39,7 @@ class OccurrenceImageServiceTest {
     @Mock
     private LocalImageStorageService imageStorageService;
 
+
     private OccurrenceImageService occurrenceImageService;
 
     @BeforeEach
@@ -49,7 +50,6 @@ class OccurrenceImageServiceTest {
     @Test
     void shouldUploadImageOnlyForOccurrenceOwner() {
         Occurrence occurrence = occurrence();
-        occurrence.replaceImage("imagem-anterior.jpg");
         MockMultipartFile file = new MockMultipartFile("file", "foto.jpg", "image/jpeg", new byte[]{1});
         StoredImage storedImage = new StoredImage(
                 "nova-imagem.jpg",
@@ -63,8 +63,8 @@ class OccurrenceImageServiceTest {
         OccurrenceResponse response = occurrenceImageService.upload("ANA@example.com", 10L, file);
 
         assertThat(response.status()).isNotNull();
-        assertThat(occurrence.getImagePath()).isEqualTo("nova-imagem.jpg");
-        verify(imageStorageService).deleteQuietly("imagem-anterior.jpg");
+        assertThat(occurrence.getImages()).hasSize(1);
+        assertThat(occurrence.getImages().getFirst().getImagePath()).isEqualTo("nova-imagem.jpg");
     }
 
     @Test

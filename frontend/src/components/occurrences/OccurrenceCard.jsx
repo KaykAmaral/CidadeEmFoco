@@ -1,8 +1,8 @@
-import { MapPin } from 'lucide-react'
 import { Link } from 'react-router'
 import { getOccurrenceTypeLabel } from '../../constants/occurrencePresentation'
 import { formatDateTime } from '../../utils/date'
 import StatusBadge from '../ui/StatusBadge'
+import OccurrenceTypeIcon from './OccurrenceTypeIcon'
 import './OccurrenceCard.css'
 
 function OccurrenceCard({ occurrence, to }) {
@@ -11,12 +11,7 @@ function OccurrenceCard({ occurrence, to }) {
 
   const content = (
     <>
-      <div
-        className={`occurrence-card__symbol occurrence-card__symbol--${occurrence.category.toLowerCase()}`}
-        aria-hidden="true"
-      >
-        <MapPin size={20} />
-      </div>
+      <OccurrenceTypeIcon className="occurrence-card__symbol" type={occurrence.type} />
 
       <div className="occurrence-card__content">
         <strong>{getOccurrenceTypeLabel(occurrence.type)}</strong>

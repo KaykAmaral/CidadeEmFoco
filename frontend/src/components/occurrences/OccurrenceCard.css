@@ -24,20 +24,7 @@
 .occurrence-card__symbol {
   width: 38px;
   height: 38px;
-  display: grid;
-  place-items: center;
   grid-row: span 2;
-  border-radius: 50%;
-}
-
-.occurrence-card__symbol--evento_natural {
-  color: var(--color-blue);
-  background: var(--color-blue-soft);
-}
-
-.occurrence-card__symbol--infraestrutura_urbana {
-  color: var(--color-warning);
-  background: var(--color-warning-soft);
 }
 
 .occurrence-card__content {

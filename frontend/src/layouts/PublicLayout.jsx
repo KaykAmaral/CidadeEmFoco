@@ -1,7 +1,13 @@
-import { Outlet } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import Brand from '../components/ui/Brand'
 
 function PublicLayout() {
+  const location = useLocation()
+
+  if (location.pathname === '/login' || location.pathname === '/cadastro') {
+    return <Outlet />
+  }
+
   return (
     <main className="public-layout">
       <section className="public-layout__identity">

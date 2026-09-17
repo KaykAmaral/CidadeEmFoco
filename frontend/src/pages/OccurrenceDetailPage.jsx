@@ -2,6 +2,8 @@ import { ArrowLeft, CalendarDays, MapPin, ShieldAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import OccurrenceMap from '../components/map/OccurrenceMap'
+import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
+import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
 import {
@@ -10,10 +12,7 @@ import {
   perceivedRiskLabels,
 } from '../constants/occurrencePresentation'
 import useAuth from '../hooks/useAuth'
-import {
-  getOccurrenceById,
-  getOccurrenceImage,
-} from '../services/occurrenceService'
+import { getOccurrenceById } from '../services/occurrenceService'
 import { formatDateTime } from '../utils/date'
 import './OccurrenceDetailPage.css'
 
@@ -22,8 +21,6 @@ function OccurrenceDetailPage() {
   const location = useLocation()
   const { logout, token } = useAuth()
   const [occurrence, setOccurrence] = useState(null)
-  const [imageUrl, setImageUrl] = useState('')
-  const [imageError, setImageError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -50,34 +47,6 @@ function OccurrenceDetailPage() {
       isCurrent = false
     }
   }, [id, logout, token])
-
-  useEffect(() => {
-    if (!occurrence?.imageUrl) return undefined
-
-    let isCurrent = true
-    let objectUrl = ''
-
-    getOccurrenceImage(token, occurrence.id)
-      .then((imageBlob) => {
-        if (!isCurrent) return
-
-        objectUrl = URL.createObjectURL(imageBlob)
-        setImageUrl(objectUrl)
-      })
-      .catch((requestError) => {
-        if (!isCurrent) return
-        if (requestError.status === 401) {
-          logout()
-          return
-        }
-        setImageError('Não foi possível carregar a foto desta ocorrência.')
-      })
-
-    return () => {
-      isCurrent = false
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  }, [logout, occurrence?.id, occurrence?.imageUrl, token])
 
   if (isLoading) {
     return <FeedbackState type="loading" message="Buscando detalhes da ocorrência..." />
@@ -121,7 +90,8 @@ function OccurrenceDetailPage() {
       )}
 
       <header className="occurrence-detail__heading">
-        <div>
+        <OccurrenceTypeIcon className="occurrence-detail__type-icon" size={28} type={occurrence.type} />
+        <div className="occurrence-detail__heading-content">
           <span>{getOccurrenceCategoryLabel(occurrence.category)}</span>
           <h1>{getOccurrenceTypeLabel(occurrence.type)}</h1>
           <p><MapPin size={16} aria-hidden="true" />{displayedLocation}</p>
@@ -156,16 +126,10 @@ function OccurrenceDetailPage() {
           </p>
         </section>
 
-        {occurrence.imageUrl && (
+        {(occurrence.imageUrls?.length > 0 || occurrence.imageUrl) && (
           <section className="occurrence-detail__card occurrence-detail__photo">
-            <h2>Foto enviada</h2>
-            {imageUrl ? (
-              <img src={imageUrl} alt={`Foto da ocorrência: ${getOccurrenceTypeLabel(occurrence.type)}`} />
-            ) : imageError ? (
-              <p className="field-error">{imageError}</p>
-            ) : (
-              <FeedbackState type="loading" message="Carregando foto..." />
-            )}
+            <h2>Imagens enviadas</h2>
+            <OccurrenceImageGallery occurrence={occurrence} onUnauthorized={logout} token={token} />
           </section>
         )}
       </div>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner'
 import OccurrenceMap from '../components/map/OccurrenceMap'
+import OccurrenceCategoryFilter from '../components/map/OccurrenceCategoryFilter'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
@@ -18,6 +19,10 @@ function CitizenHomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [activeMapCategories, setActiveMapCategories] = useState([
+    'EVENTO_NATURAL',
+    'INFRAESTRUTURA_URBANA',
+  ])
 
   useEffect(() => {
     let isCurrent = true
@@ -62,6 +67,13 @@ function CitizenHomePage() {
     setError('')
     setIsLoading(true)
     setReloadKey((currentKey) => currentKey + 1)
+  }
+
+  function toggleMapCategory(category) {
+    setActiveMapCategories((categories) =>
+      categories.includes(category)
+        ? categories.filter((value) => value !== category)
+        : [...categories, category])
   }
 
   if (isLoading) {
@@ -112,12 +124,9 @@ function CitizenHomePage() {
               <MapPinned size={20} aria-hidden="true" />
               <h2 id="map-title">Mapa de ocorrências</h2>
             </div>
-            <div className="map-legend" aria-label="Legenda do mapa">
-              <span><i className="map-legend__natural" />Evento natural</span>
-              <span><i className="map-legend__infrastructure" />Infraestrutura</span>
-            </div>
+            <OccurrenceCategoryFilter activeCategories={activeMapCategories} occurrences={occurrences} onToggle={toggleMapCategory} />
           </div>
-          <OccurrenceMap occurrences={occurrences} />
+          <OccurrenceMap activeCategories={activeMapCategories} occurrences={occurrences} />
           {occurrences.length === 0 && (
             <p className="map-empty-message">
               Ainda não há ocorrências para posicionar no mapa.
