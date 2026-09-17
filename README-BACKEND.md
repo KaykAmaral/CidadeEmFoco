@@ -31,6 +31,7 @@ O código do backend está em `backend/`. As variáveis disponíveis estão docu
 | `SERVER_PORT` | Não | `8080` | Porta da API |
 | `OCCURRENCE_IMAGE_DIR` | Não | `uploads/occurrences` | Diretório local das fotos |
 | `CORS_ALLOWED_ORIGINS` | Não | `http://localhost:5173` | Origens do frontend, separadas por vírgula |
+| `MYSQL_DATABASE` | Não | `cidade_em_foco` | Nome do schema (usado apenas pelo Docker Compose) |
 
 Exemplo no PowerShell:
 
@@ -54,6 +55,108 @@ Depois que a aplicação iniciar:
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
+> **Alternativa com Docker Compose:** também é possível executar o backend inteiro (API + MySQL) via Docker Compose, sem instalar MySQL manualmente. Veja a seção "Executando com Docker Compose" abaixo — as duas formas são alternativas e podem ser usadas conforme a preferência.
+
+## Executando com Docker Compose
+
+Se não desejar instalar MySQL manualmente, execute tudo via Docker Compose: a aplicação e o banco de dados subirão em containers isolados, sem exigir MySQL instalado na máquina local.
+
+### Pré-requisitos
+
+- [Docker Engine](https://docs.docker.com/engine/install/) e [Docker Compose v2](https://docs.docker.com/compose/install/) instalados e em execução.
+- No Windows, o Docker Desktop (que já inclui Docker Compose v2) é o mais simples.
+
+### Passo 1: Copiar variáveis de ambiente
+
+Dentro de `backend/`, copie o arquivo de exemplo para o arquivo de configuração:
+
+```powershell
+cd backend
+Copy-Item .env.example .env
+```
+
+### Passo 2: Gerar JWT_SECRET e DB_PASSWORD
+
+Edite o arquivo `backend/.env` gerado no passo anterior:
+
+1. **JWT_SECRET**: gere uma chave Base64 aleatória com pelo menos 32 bytes:
+
+   ```powershell
+   $key = New-Object byte[] 32
+   [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($key)
+   [Convert]::ToBase64String($key)
+   ```
+   Copie o resultado e cole na linha `JWT_SECRET=` do arquivo `.env`.
+
+2. **DB_PASSWORD**: altere de `troque_pela_senha_local` para uma senha não vazia (obrigatório ao usar Docker Compose, pois a imagem oficial do MySQL exige senha de root):
+
+   ```env
+   DB_PASSWORD=sua_senha_aqui
+   ```
+
+### Passo 3: Subir os containers
+
+A partir do diretório `backend/`, execute:
+
+```powershell
+docker compose up --build
+```
+
+Isso fará:
+- Download das imagens `eclipse-temurin:21-jdk-jammy`, `eclipse-temurin:21-jre-jammy` e `mysql:8.0` (na primeira execução).
+- Build da aplicação Spring Boot dentro de um container (usando Maven via `mvnw`).
+- Inicialização do container MySQL com o schema `cidade_em_foco` já criado.
+- Inicialização do container da aplicação, aplicação automática da migration Flyway e disponibilização da API.
+
+Se desejar rodar em segundo plano, acrescente `-d`:
+
+```powershell
+docker compose up --build -d
+```
+
+### Passo 4: Acessar a aplicação
+
+Depois que os containers iniciarem (aguarde 30–60 segundos na primeira execução), a API estará disponível:
+
+- **API**: `http://localhost:8080`
+- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
+- **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
+
+(A porta `8080` é o padrão; se você alterou `SERVER_PORT` no `.env`, use o valor correspondente.)
+
+### Persistência de dados
+
+O Docker Compose cria dois volumes nomeados para persistir dados entre reinícios:
+
+- **`mysql_data`**: dados do MySQL (schema e tabelas). Persiste mesmo após `docker compose down`.
+- **`occurrence_images`**: fotos das ocorrências (`/app/uploads/occurrences`). Persiste mesmo após `docker compose down`.
+
+Para **manter os dados** quando parar os containers:
+
+```powershell
+docker compose down
+```
+
+Os volumes não são deletados, então ao executar `docker compose up` novamente, todos os dados estarão intactos.
+
+Para **limpar tudo** (deletar dados, uploads e volumes):
+
+```powershell
+docker compose down -v
+```
+
+Isso destrói os volumes, então a próxima execução partirá do zero: schema recriado pela migration Flyway, nenhum usuário ou ocorrência pre-existentes.
+
+### Compatibilidade com fluxo local
+
+Esta é uma **alternativa** ao fluxo local com `.\mvnw.cmd spring-boot:run` + MySQL manual já documentado acima. Não há conflito entre os dois:
+
+- O arquivo `backend/.env` é compartilhado.
+- Ao usar Docker Compose, o `docker-compose.yml` sobrescreve internamente `DB_URL` e `OCCURRENCE_IMAGE_DIR` para o contexto do container (redirecionando para o host `db` e para `/app/uploads/occurrences`), portanto não é necessário editar o `.env` manualmente.
+- Ao usar fluxo local (`mvnw spring-boot:run`), o `.env` é lido normalmente com `DB_URL=localhost` e `OCCURRENCE_IMAGE_DIR=uploads/occurrences` (como documentado).
+
+**Aviso**: O banco de dados do fluxo local e do fluxo Docker Compose são isolados. Se usar ambos no mesmo projeto, cada um mantém seus próprios dados (schema local vs volume Docker). Para sincronizar dados entre os dois, seria necessário exportar/importar via SQL manualmente.
 
 ## Autenticação e administrador
 
