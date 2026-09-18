@@ -292,6 +292,8 @@ A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `
 
 Ao receber o status `RESOLVIDA`, a ocorrência passa a registrar `resolvedAt`. O endpoint do mapa continua retornando esse pin durante 24 horas e depois o omite, sem excluir a ocorrência das listagens ou do histórico. O prazo pode ser alterado por `RESOLVED_MAP_VISIBILITY`.
 
+O backend encerra automaticamente ocorrências temporárias dos tipos `ALAGAMENTO`, `ENCHENTE`, `VENTOS_FORTES`, `RESSACA_MARITIMA` e `CHUVA_INTENSA`. Por padrão, registros ainda abertos recebem o status `RESOLVIDA` seis horas após a criação. A verificação ocorre a cada cinco minutos e não inclui queda de árvore, deslizamento, incêndio, infraestrutura ou o tipo genérico `OUTRO`.
+
 #### Alertas
 
 | Método | Endpoint | Acesso | Objetivo |
@@ -342,6 +344,9 @@ As migrations existentes criam as tabelas principais, acrescentam os tipos mais 
 | `SERVER_PORT` | `8080` | Porta da API |
 | `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório das imagens |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
+| `TEMPORARY_EVENT_LIFETIME` | `6h` | Tempo até o encerramento de um evento temporário |
+| `AUTO_RESOLUTION_INTERVAL` | `5m` | Intervalo entre verificações automáticas |
+| `AUTO_RESOLUTION_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira verificação |
 | `CORS_ALLOWED_ORIGINS` | localhost nas portas de desenvolvimento | Origens permitidas |
 
 O arquivo `infra/.env` é carregado pelo Docker Compose. Ao executar o backend diretamente com Maven ou pela IDE, configure as variáveis no terminal ou na configuração de execução.
@@ -365,13 +370,12 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 70 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas, filtros, visibilidade no mapa e armazenamento de imagens.
+A suíte atual possui 72 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas, filtros, visibilidade no mapa, encerramento automático e armazenamento de imagens.
 
 ## Roadmap aprovado
 
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
-- Encerramento automático de eventos naturais temporários.
 - Atualização automática dos alertas na tela do cidadão.
 - Agrupamento de relatos próximos em um caso com nível de força.
 - Publicação da API e do banco em ambiente remoto.

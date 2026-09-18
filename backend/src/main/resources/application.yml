@@ -35,6 +35,9 @@ springdoc:
 app:
   occurrences:
     resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
+    temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:6h}
+    auto-resolution-interval: ${AUTO_RESOLUTION_INTERVAL:5m}
+    auto-resolution-initial-delay: ${AUTO_RESOLUTION_INITIAL_DELAY:5m}
   storage:
     occurrence-images-directory: ${OCCURRENCE_IMAGE_DIR:uploads/occurrences}
   security:

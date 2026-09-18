@@ -8,6 +8,7 @@ import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
+import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.OccurrenceImageService;
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private OccurrenceService occurrenceService;
+
+    @MockitoBean
+    private OccurrenceAutoResolutionService occurrenceAutoResolutionService;
 
     @MockitoBean
     private ClimateAlertService climateAlertService;
