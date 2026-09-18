@@ -73,4 +73,34 @@ class OccurrenceTest {
 
         assertThat(occurrence.getStatus()).isEqualTo(OccurrenceStatus.NAO_CONFIRMADA);
     }
+
+    @Test
+    void shouldTrackWhenOccurrenceIsResolvedAndClearItWhenReopened() {
+        Occurrence occurrence = occurrence();
+
+        occurrence.changeStatus(OccurrenceStatus.RESOLVIDA);
+        var firstResolvedAt = occurrence.getResolvedAt();
+
+        assertThat(firstResolvedAt).isNotNull();
+
+        occurrence.changeStatus(OccurrenceStatus.RESOLVIDA);
+        assertThat(occurrence.getResolvedAt()).isEqualTo(firstResolvedAt);
+
+        occurrence.changeStatus(OccurrenceStatus.EM_ATENDIMENTO);
+        assertThat(occurrence.getResolvedAt()).isNull();
+    }
+
+    private Occurrence occurrence() {
+        return new Occurrence(
+                OccurrenceCategory.EVENTO_NATURAL,
+                OccurrenceType.ALAGAMENTO,
+                "Alagamento observado na via",
+                PerceivedRisk.ALTO,
+                new BigDecimal("-24.008100"),
+                new BigDecimal("-46.412000"),
+                "Boqueirao",
+                null,
+                citizen
+        );
+    }
 }

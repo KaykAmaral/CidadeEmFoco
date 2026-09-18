@@ -24,7 +24,8 @@ public record OccurrenceResponse(
         List<String> imageUrls,
         OccurrenceStatus status,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        Instant resolvedAt
 ) {
 
     public OccurrenceResponse(
@@ -35,7 +36,7 @@ public record OccurrenceResponse(
     ) {
         this(id, category, type, description, perceivedRisk, latitude, longitude,
                 neighborhood, address, imageUrl,
-                imageUrl == null ? List.of() : List.of(imageUrl), status, createdAt, updatedAt);
+                imageUrl == null ? List.of() : List.of(imageUrl), status, createdAt, updatedAt, null);
     }
 
     public static OccurrenceResponse from(Occurrence occurrence) {
@@ -53,7 +54,8 @@ public record OccurrenceResponse(
                 occurrence.getImages().stream().map(image -> "/api/occurrences/" + occurrence.getId() + "/images/" + image.getId()).toList(),
                 occurrence.getStatus(),
                 occurrence.getCreatedAt(),
-                occurrence.getUpdatedAt()
+                occurrence.getUpdatedAt(),
+                occurrence.getResolvedAt()
         );
     }
 }

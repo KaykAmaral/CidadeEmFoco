@@ -18,12 +18,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -195,6 +197,25 @@ class OccurrenceServiceTest {
                 any(Specification.class),
                 any(Sort.class)
         );
+    }
+
+    @Test
+    void shouldListOnlyOccurrencesVisibleOnMapForTheConfiguredPeriod() {
+        when(occurrenceRepository.findVisibleOnMap(eq(OccurrenceStatus.RESOLVIDA), any(Instant.class)))
+                .thenReturn(List.of());
+        Instant earliestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
+
+        List<OccurrenceResponse> responses = occurrenceService.findVisibleOnMap();
+
+        Instant latestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
+        ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(occurrenceRepository).findVisibleOnMap(
+                eq(OccurrenceStatus.RESOLVIDA),
+                cutoffCaptor.capture()
+        );
+        assertThat(responses).isEmpty();
+        assertThat(cutoffCaptor.getValue())
+                .isBetween(earliestExpectedCutoff, latestExpectedCutoff);
     }
 
     private CreateOccurrenceRequest validRequest() {

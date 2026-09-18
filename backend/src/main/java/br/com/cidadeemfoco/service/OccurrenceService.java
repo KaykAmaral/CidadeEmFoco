@@ -14,11 +14,13 @@ import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,9 @@ public class OccurrenceService {
 
     private final OccurrenceRepository occurrenceRepository;
     private final UserRepository userRepository;
+
+    @Value("${app.occurrences.resolved-map-visibility:24h}")
+    private Duration resolvedMapVisibility = Duration.ofHours(24);
 
     public OccurrenceService(OccurrenceRepository occurrenceRepository, UserRepository userRepository) {
         this.occurrenceRepository = occurrenceRepository;
@@ -76,6 +81,14 @@ public class OccurrenceService {
         return occurrenceRepository.findById(id)
                 .map(OccurrenceResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
+    }
+
+    public List<OccurrenceResponse> findVisibleOnMap() {
+        Instant resolvedSince = Instant.now().minus(resolvedMapVisibility);
+        return occurrenceRepository.findVisibleOnMap(OccurrenceStatus.RESOLVIDA, resolvedSince)
+                .stream()
+                .map(OccurrenceResponse::from)
+                .toList();
     }
 
     @Transactional

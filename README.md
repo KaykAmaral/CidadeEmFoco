@@ -277,6 +277,7 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | --- | --- | --- | --- |
 | POST | `/api/occurrences` | CITIZEN | Criar ocorrência |
 | GET | `/api/occurrences` | Autenticado | Listar e filtrar ocorrências |
+| GET | `/api/occurrences/map` | Autenticado | Listar ocorrências ainda visíveis no mapa |
 | GET | `/api/occurrences/mine` | CITIZEN | Listar ocorrências do usuário |
 | GET | `/api/occurrences/{id}` | Autenticado | Consultar detalhes |
 | POST | `/api/occurrences/{id}/image` | Autor CITIZEN | Enviar uma imagem |
@@ -288,6 +289,8 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | PATCH | `/api/admin/occurrences/{id}/status` | ADMIN | Alterar status |
 
 A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `createdFrom` e `createdTo` como filtros opcionais. As datas usam o formato ISO 8601.
+
+Ao receber o status `RESOLVIDA`, a ocorrência passa a registrar `resolvedAt`. O endpoint do mapa continua retornando esse pin durante 24 horas e depois o omite, sem excluir a ocorrência das listagens ou do histórico. O prazo pode ser alterado por `RESOLVED_MAP_VISIBILITY`.
 
 #### Alertas
 
@@ -338,6 +341,7 @@ As migrations existentes criam as tabelas principais, acrescentam os tipos mais 
 | `JWT_EXPIRATION_MINUTES` | `1440` | Validade do token |
 | `SERVER_PORT` | `8080` | Porta da API |
 | `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório das imagens |
+| `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `CORS_ALLOWED_ORIGINS` | localhost nas portas de desenvolvimento | Origens permitidas |
 
 O arquivo `infra/.env` é carregado pelo Docker Compose. Ao executar o backend diretamente com Maven ou pela IDE, configure as variáveis no terminal ou na configuração de execução.
@@ -361,13 +365,12 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 67 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas, filtros e armazenamento de imagens.
+A suíte atual possui 70 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas, filtros, visibilidade no mapa e armazenamento de imagens.
 
 ## Roadmap aprovado
 
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
-- Ocultação de pins algum tempo após a resolução.
 - Encerramento automático de eventos naturais temporários.
 - Atualização automática dos alertas na tela do cidadão.
 - Agrupamento de relatos próximos em um caso com nível de força.

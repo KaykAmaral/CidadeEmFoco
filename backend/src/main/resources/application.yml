@@ -33,6 +33,8 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  occurrences:
+    resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
   storage:
     occurrence-images-directory: ${OCCURRENCE_IMAGE_DIR:uploads/occurrences}
   security:

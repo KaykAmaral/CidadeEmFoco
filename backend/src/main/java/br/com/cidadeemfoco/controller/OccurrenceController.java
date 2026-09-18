@@ -61,6 +61,11 @@ public class OccurrenceController {
         return occurrenceService.findByUser(authentication.getName());
     }
 
+    @GetMapping("/map")
+    public List<OccurrenceResponse> findVisibleOnMap() {
+        return occurrenceService.findVisibleOnMap();
+    }
+
     @GetMapping("/{id}")
     public OccurrenceResponse findById(@PathVariable @Positive Long id) {
         return occurrenceService.findById(id);
