@@ -1,0 +1,15 @@
+.occurrence-type-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: var(--occurrence-icon-color);
+  background: var(--occurrence-icon-bg);
+}
+
+.occurrence-type-icon--solid {
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(6, 43, 82, 0.25);
+}

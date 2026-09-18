@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 @Validated
 @RestController
@@ -39,6 +40,15 @@ public class OccurrenceImageController {
         return occurrenceImageService.upload(authentication.getName(), id, file);
     }
 
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public OccurrenceResponse uploadMany(
+            Authentication authentication,
+            @PathVariable @Positive Long id,
+            @RequestPart("files") List<MultipartFile> files
+    ) {
+        return occurrenceImageService.uploadMany(authentication.getName(), id, files);
+    }
+
     @GetMapping("/{id}/image")
     public ResponseEntity<Resource> download(@PathVariable @Positive Long id) {
         StoredImage image = occurrenceImageService.load(id);
@@ -50,6 +60,18 @@ public class OccurrenceImageController {
         return ResponseEntity.ok()
                 .contentType(image.mediaType())
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .body(image.resource());
+    }
+
+    @GetMapping("/{id}/images/{imageId}")
+    public ResponseEntity<Resource> download(
+            @PathVariable @Positive Long id,
+            @PathVariable @Positive Long imageId
+    ) {
+        StoredImage image = occurrenceImageService.load(id, imageId);
+        return ResponseEntity.ok()
+                .contentType(image.mediaType())
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename(image.filename()).build().toString())
                 .body(image.resource());
     }
 }

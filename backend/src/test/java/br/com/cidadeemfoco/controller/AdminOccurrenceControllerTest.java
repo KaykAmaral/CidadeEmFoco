@@ -76,14 +76,18 @@ class AdminOccurrenceControllerTest {
                         .param("category", "EVENTO_NATURAL")
                         .param("type", "ALAGAMENTO")
                         .param("status", "REGISTRADA")
-                        .param("neighborhood", "Boqueirao"))
+                        .param("neighborhood", "Boqueirao")
+                        .param("createdFrom", "2026-09-01T00:00:00Z")
+                        .param("createdTo", "2026-09-18T23:59:59Z"))
                 .andExpect(status().isOk());
 
         verify(occurrenceService).findAll(new OccurrenceFilter(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.ALAGAMENTO,
                 OccurrenceStatus.REGISTRADA,
-                "Boqueirao"
+                "Boqueirao",
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-18T23:59:59Z")
         ));
     }
 

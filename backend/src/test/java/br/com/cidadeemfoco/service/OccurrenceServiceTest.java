@@ -18,11 +18,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -149,7 +152,9 @@ class OccurrenceServiceTest {
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
                 OccurrenceStatus.REGISTRADA,
-                "boqueirao"
+                "boqueirao",
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-18T23:59:59Z")
         );
 
         List<OccurrenceResponse> responses = occurrenceService.findAll(filter);
@@ -172,6 +177,45 @@ class OccurrenceServiceTest {
 
         assertThat(responses).isEmpty();
         verify(occurrenceRepository).findAll(any(Specification.class), any(Sort.class));
+    }
+
+    @Test
+    void shouldRejectInvertedFilterPeriod() {
+        OccurrenceFilter filter = new OccurrenceFilter(
+                null,
+                null,
+                null,
+                null,
+                Instant.parse("2026-09-18T23:59:59Z"),
+                Instant.parse("2026-09-01T00:00:00Z")
+        );
+
+        assertThatThrownBy(() -> occurrenceService.findAll(filter))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("O inicio do periodo deve ser anterior ao fim");
+        verify(occurrenceRepository, never()).findAll(
+                any(Specification.class),
+                any(Sort.class)
+        );
+    }
+
+    @Test
+    void shouldListOnlyOccurrencesVisibleOnMapForTheConfiguredPeriod() {
+        when(occurrenceRepository.findVisibleOnMap(eq(OccurrenceStatus.RESOLVIDA), any(Instant.class)))
+                .thenReturn(List.of());
+        Instant earliestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
+
+        List<OccurrenceResponse> responses = occurrenceService.findVisibleOnMap();
+
+        Instant latestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
+        ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(occurrenceRepository).findVisibleOnMap(
+                eq(OccurrenceStatus.RESOLVIDA),
+                cutoffCaptor.capture()
+        );
+        assertThat(responses).isEmpty();
+        assertThat(cutoffCaptor.getValue())
+                .isBetween(earliestExpectedCutoff, latestExpectedCutoff);
     }
 
     private CreateOccurrenceRequest validRequest() {

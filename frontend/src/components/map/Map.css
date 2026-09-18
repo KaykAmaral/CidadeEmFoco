@@ -1,0 +1,48 @@
+.leaflet-container {
+  font-family: inherit;
+}
+
+.occurrence-marker-container {
+  background: transparent;
+  border: 0;
+}
+
+.occurrence-marker {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 3px solid white;
+  border-radius: 50%;
+  color: white;
+  background: var(--marker-color);
+  box-shadow: 0 4px 12px rgba(6, 43, 82, 0.3);
+}
+
+.selected-location-dot { width: 9px; height: 9px; border-radius: 50%; background: white; }
+
+.map-popup { min-width: 190px; display: grid; gap: 8px; }
+.map-popup strong { color: var(--color-navy); font-size: 0.9rem; }
+.map-popup p { margin: 0; color: var(--color-muted); font-size: 0.75rem; line-height: 1.4; }
+.map-popup dl { display: grid; gap: 6px; margin: 0; }
+.map-popup dl > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.map-popup dt { color: var(--color-muted); font-size: 0.68rem; }
+.map-popup dd { margin: 0; color: var(--color-navy); font-size: 0.72rem; font-weight: 700; }
+.map-popup a { color: var(--color-blue); font-size: 0.75rem; font-weight: 750; text-decoration: none; }
+
+.occurrence-map__filter-empty {
+  position: absolute;
+  z-index: 500;
+  inset: 50% auto auto 50%;
+  width: min(85%, 330px);
+  padding: 14px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-navy);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--shadow-card);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}

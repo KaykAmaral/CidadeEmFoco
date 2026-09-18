@@ -1,0 +1,167 @@
+.admin-occurrence-detail {
+  width: min(100%, 1320px);
+}
+
+.admin-occurrence-detail > .back-link {
+  width: fit-content;
+  margin-bottom: 20px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.admin-occurrence-detail > .back-link:hover {
+  color: var(--color-blue);
+}
+
+.admin-occurrence-detail .occurrence-detail__heading {
+  min-height: 100px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding: 20px 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: white;
+  box-shadow: var(--shadow-card);
+}
+
+.admin-occurrence-detail .occurrence-detail__heading h1 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+}
+
+.admin-occurrence-detail .occurrence-detail__heading p {
+  font-size: 0.85rem;
+}
+
+.admin-status-panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.75fr) minmax(360px, 1.25fr);
+  align-items: end;
+  gap: 18px 28px;
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  border: 1px solid #b9d9f2;
+  border-radius: 16px;
+  background: #edf7ff;
+}
+
+.admin-status-panel > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  color: var(--color-blue);
+}
+
+.admin-status-panel h2 {
+  margin: 0 0 4px;
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.admin-status-panel p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.admin-status-panel form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-status-panel .form-message {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.admin-occurrence-detail .occurrence-detail__grid {
+  align-items: stretch;
+  gap: 20px;
+}
+
+.admin-occurrence-detail .occurrence-detail__card {
+  height: 100%;
+  padding: 22px;
+  border-radius: 18px;
+}
+
+.admin-occurrence-detail .occurrence-detail__card h2 {
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e8eef4;
+}
+
+.admin-occurrence-detail .occurrence-detail__metadata {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.admin-occurrence-detail .occurrence-detail__metadata > div {
+  min-height: 110px;
+  align-content: start;
+  gap: 6px;
+  padding: 15px;
+  border: 1px solid #e5edf4;
+  border-radius: 12px;
+}
+
+.admin-occurrence-detail .occurrence-detail__metadata svg {
+  margin-bottom: 3px;
+}
+
+.admin-occurrence-detail .occurrence-detail__metadata strong {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.admin-occurrence-detail .occurrence-map {
+  height: 350px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+}
+
+.admin-occurrence-detail .occurrence-detail__photo {
+  height: auto;
+}
+
+.admin-occurrence-detail .occurrence-image-gallery {
+  align-items: start;
+}
+
+.admin-occurrence-detail .occurrence-image-gallery img {
+  height: auto;
+  max-height: 420px;
+  object-fit: contain;
+}
+
+@media (max-width: 1060px) {
+  .admin-status-panel {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-occurrence-detail .occurrence-detail__heading {
+    align-items: start;
+    padding: 17px;
+  }
+
+  .admin-status-panel form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-status-panel form .button {
+    width: 100%;
+  }
+
+  .admin-occurrence-detail .occurrence-detail__metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-occurrence-detail .occurrence-detail__metadata > div {
+    min-height: 0;
+  }
+}

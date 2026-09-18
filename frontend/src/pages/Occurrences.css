@@ -1,0 +1,123 @@
+.occurrences-page {
+  display: grid;
+  gap: 22px;
+}
+
+.occurrences-page__heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.occurrences-page__heading > div > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--color-blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.occurrences-page__heading h1 {
+  margin: 0 0 8px;
+  color: var(--color-navy);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.occurrences-page__heading p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.occurrence-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: white;
+}
+
+.occurrence-tabs button {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--color-muted);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.occurrence-tabs button.active {
+  color: white;
+  background: var(--color-blue);
+}
+
+.occurrence-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 15px;
+  background: white;
+}
+
+.occurrence-filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 10px;
+}
+
+.occurrences-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.occurrences-error {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+@media (max-width: 820px) {
+  .occurrence-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .occurrences-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .occurrences-page__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .occurrences-page__heading > .button {
+    width: 100%;
+  }
+
+  .occurrence-filters {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .occurrence-filters__actions {
+    grid-column: auto;
+  }
+
+  .occurrence-filters__actions .button {
+    flex: 1;
+  }
+}
