@@ -25,7 +25,7 @@ O código usa **JavaScript com JSX**, módulos ES e CSS próprio. A sessão é c
 - Backend do projeto configurado e executando, normalmente em `http://localhost:8080`.
 - Navegador com JavaScript e acesso à internet para os mapas e a busca de endereços.
 
-Consulte o [README do backend](../README-BACKEND.md) para configurar Java 21, MySQL, JWT, executar a API e preparar uma conta administrativa. O frontend não se conecta diretamente ao banco de dados.
+Consulte o [README principal](../README.md) para configurar Java 21, MySQL, JWT, executar a API e preparar uma conta administrativa. O frontend não se conecta diretamente ao banco de dados.
 
 ## Instalação e configuração
 
@@ -150,7 +150,7 @@ O cadastro usa `POST /api/auth/register`, solicita nome, e-mail e senha e cria s
 
 O login usa `POST /api/auth/login`. O `AuthProvider` guarda JWT, dados públicos do usuário e vencimento no `localStorage`, sob a chave `cidade-em-foco:auth`, para restaurar a sessão após atualizar a página. A senha não é persistida. O logout e o vencimento removem a sessão; as telas que recebem erro 401 também encerram o acesso. Não há fluxo de renovação automática do token.
 
-Sem sessão, as rotas protegidas redirecionam para `/login`. Usuários com outro perfil são enviados à própria área; quem já está autenticado também é redirecionado ao acessar login ou cadastro. As permissões da API são verificadas pelo backend. Para acessar como administrador, prepare a conta conforme o [guia do backend](../README-BACKEND.md#autenticação-e-administrador) e faça novo login após a alteração do perfil.
+Sem sessão, as rotas protegidas redirecionam para `/login`. Usuários com outro perfil são enviados à própria área; quem já está autenticado também é redirecionado ao acessar login ou cadastro. As permissões da API são verificadas pelo backend. Para acessar como administrador, prepare a conta conforme o [guia principal](../README.md#administrador-inicial) e faça novo login após a alteração do perfil.
 
 ## Funcionalidades do cidadão
 
@@ -234,7 +234,7 @@ A localização atual é solicitada ao navegador apenas ao acionar **Usar minha 
 
 ## Verificação e problemas comuns
 
-O frontend não possui suíte automatizada própria nem script `test`. As verificações disponíveis são `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Os testes de regras e permissões do backend são descritos no [README do backend](../README-BACKEND.md#testes).
+O frontend não possui suíte automatizada própria nem script `test`. As verificações disponíveis são `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Os testes de regras e permissões do backend são descritos no [README principal](../README.md#testes-do-backend).
 
 Com frontend e backend em execução, valide no navegador:
 
