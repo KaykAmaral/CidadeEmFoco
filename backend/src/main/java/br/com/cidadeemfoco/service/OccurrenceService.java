@@ -19,6 +19,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -64,6 +65,7 @@ public class OccurrenceService {
 
     public List<OccurrenceResponse> findAll(OccurrenceFilter filter) {
         validateCategoryAndType(filter.category(), filter.type());
+        validatePeriod(filter.createdFrom(), filter.createdTo());
         return occurrenceRepository.findAll(toSpecification(filter, null), NEWEST_FIRST)
                 .stream()
                 .map(OccurrenceResponse::from)
@@ -85,7 +87,7 @@ public class OccurrenceService {
     }
 
     public List<OccurrenceResponse> findByUser(String userEmail) {
-        OccurrenceFilter emptyFilter = new OccurrenceFilter(null, null, null, null);
+        OccurrenceFilter emptyFilter = new OccurrenceFilter(null, null, null, null, null, null);
         return occurrenceRepository.findAll(toSpecification(emptyFilter, normalizeEmail(userEmail)), NEWEST_FIRST)
                 .stream()
                 .map(OccurrenceResponse::from)
@@ -108,6 +110,18 @@ public class OccurrenceService {
                 String neighborhood = "%" + filter.neighborhood().trim().toLowerCase(Locale.ROOT) + "%";
                 predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("neighborhood")), neighborhood));
             }
+            if (filter.createdFrom() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
+                        root.get("createdAt"),
+                        filter.createdFrom()
+                ));
+            }
+            if (filter.createdTo() != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(
+                        root.get("createdAt"),
+                        filter.createdTo()
+                ));
+            }
             if (userEmail != null) {
                 predicates.add(criteriaBuilder.equal(
                         criteriaBuilder.lower(root.get("user").get("email")),
@@ -124,6 +138,12 @@ public class OccurrenceService {
     ) {
         if (category != null && type != null && !category.allows(type)) {
             throw new BusinessRuleException("O tipo informado nao pertence a categoria selecionada");
+        }
+    }
+
+    private void validatePeriod(Instant createdFrom, Instant createdTo) {
+        if (createdFrom != null && createdTo != null && createdFrom.isAfter(createdTo)) {
+            throw new BusinessRuleException("O inicio do periodo deve ser anterior ao fim");
         }
     }
 

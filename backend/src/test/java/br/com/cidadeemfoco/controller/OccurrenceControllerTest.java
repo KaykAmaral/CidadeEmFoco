@@ -111,7 +111,9 @@ class OccurrenceControllerTest {
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
                 OccurrenceStatus.REGISTRADA,
-                "Boqueirao"
+                "Boqueirao",
+                null,
+                null
         ));
     }
 

@@ -23,6 +23,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -149,7 +150,9 @@ class OccurrenceServiceTest {
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
                 OccurrenceStatus.REGISTRADA,
-                "boqueirao"
+                "boqueirao",
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-18T23:59:59Z")
         );
 
         List<OccurrenceResponse> responses = occurrenceService.findAll(filter);
@@ -172,6 +175,26 @@ class OccurrenceServiceTest {
 
         assertThat(responses).isEmpty();
         verify(occurrenceRepository).findAll(any(Specification.class), any(Sort.class));
+    }
+
+    @Test
+    void shouldRejectInvertedFilterPeriod() {
+        OccurrenceFilter filter = new OccurrenceFilter(
+                null,
+                null,
+                null,
+                null,
+                Instant.parse("2026-09-18T23:59:59Z"),
+                Instant.parse("2026-09-01T00:00:00Z")
+        );
+
+        assertThatThrownBy(() -> occurrenceService.findAll(filter))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("O inicio do periodo deve ser anterior ao fim");
+        verify(occurrenceRepository, never()).findAll(
+                any(Specification.class),
+                any(Sort.class)
+        );
     }
 
     private CreateOccurrenceRequest validRequest() {

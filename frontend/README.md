@@ -193,7 +193,7 @@ Se apenas o upload falhar, a ocorrência permanece criada e a tela de detalhes r
 
 ### Dashboard
 
-`/admin` consulta em paralelo `GET /api/admin/occurrences` e `GET /api/admin/alerts`. As respostas alimentam o total de ocorrências, contagens e distribuição visual dos cinco status, mapa, até cinco ocorrências recentes e até três alertas recentes. A contagem de alertas considera os marcados como ativos, independentemente de estarem dentro do período de validade.
+`/admin` consulta em paralelo `GET /api/admin/occurrences` e `GET /api/admin/alerts`. O administrador pode filtrar as ocorrências por período, categoria, tipo, status e bairro. Os filtros alteram conjuntamente os indicadores, a distribuição visual dos cinco status, o mapa e os registros recentes. A contagem de alertas considera os marcados como ativos, independentemente de estarem dentro do período de validade.
 
 O dashboard é de consulta; alterações ficam nas telas de gestão.
 

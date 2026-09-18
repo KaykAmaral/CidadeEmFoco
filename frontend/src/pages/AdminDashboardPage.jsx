@@ -3,8 +3,11 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock3,
+  FilterX,
   RotateCw,
+  Search,
   SearchCheck,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
@@ -13,6 +16,11 @@ import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import occurrenceStatusConfig from '../constants/occurrenceStatus'
+import {
+  occurrenceCategoryLabels,
+  occurrenceTypeLabels,
+  occurrenceTypesByCategory,
+} from '../constants/occurrencePresentation'
 import {
   getAlertSeverityLabel,
   getAlertTypeLabel,
@@ -29,13 +37,51 @@ const metricConfig = [
   { key: 'RESOLVIDA', label: 'Resolvidas', icon: CheckCircle2, tone: 'green' },
 ]
 
+const emptyFilters = {
+  period: '30',
+  startDate: '',
+  endDate: '',
+  category: '',
+  type: '',
+  status: '',
+  neighborhood: '',
+}
+
+function buildApiFilters(filters) {
+  const apiFilters = {
+    category: filters.category,
+    type: filters.type,
+    status: filters.status,
+    neighborhood: filters.neighborhood.trim(),
+  }
+
+  if (filters.period === 'CUSTOM') {
+    apiFilters.createdFrom = new Date(`${filters.startDate}T00:00:00`).toISOString()
+    apiFilters.createdTo = new Date(`${filters.endDate}T23:59:59.999`).toISOString()
+  } else if (filters.period !== 'ALL') {
+    const createdFrom = new Date()
+    createdFrom.setHours(0, 0, 0, 0)
+    createdFrom.setDate(createdFrom.getDate() - (Number(filters.period) - 1))
+    apiFilters.createdFrom = createdFrom.toISOString()
+    apiFilters.createdTo = new Date().toISOString()
+  }
+
+  return apiFilters
+}
+
 function AdminDashboardPage() {
   const { logout, token, user } = useAuth()
+  const [filters, setFilters] = useState(emptyFilters)
+  const [appliedFilters, setAppliedFilters] = useState(() => buildApiFilters(emptyFilters))
   const [occurrences, setOccurrences] = useState([])
   const [alerts, setAlerts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [filterError, setFilterError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const availableTypes = filters.category
+    ? occurrenceTypesByCategory[filters.category]
+    : Object.keys(occurrenceTypeLabels)
 
   useEffect(() => {
     let isCurrent = true
@@ -43,7 +89,7 @@ function AdminDashboardPage() {
     async function loadDashboard() {
       try {
         const [occurrenceList, alertList] = await Promise.all([
-          getAdminOccurrences(token),
+          getAdminOccurrences(token, appliedFilters),
           getAdminAlerts(token),
         ])
 
@@ -67,7 +113,52 @@ function AdminDashboardPage() {
     return () => {
       isCurrent = false
     }
-  }, [logout, reloadKey, token])
+  }, [appliedFilters, logout, reloadKey, token])
+
+  function handleFilterChange(event) {
+    const { name, value } = event.target
+    setFilterError('')
+    setFilters((currentFilters) => {
+      const shouldResetType =
+        name === 'category' &&
+        value &&
+        currentFilters.type &&
+        !occurrenceTypesByCategory[value].includes(currentFilters.type)
+
+      return {
+        ...currentFilters,
+        [name]: value,
+        ...(shouldResetType ? { type: '' } : {}),
+      }
+    })
+  }
+
+  function applyFilters(event) {
+    event.preventDefault()
+
+    if (filters.period === 'CUSTOM' && (!filters.startDate || !filters.endDate)) {
+      setFilterError('Informe as datas inicial e final do período.')
+      return
+    }
+    if (filters.period === 'CUSTOM' && filters.startDate > filters.endDate) {
+      setFilterError('A data inicial deve ser anterior à data final.')
+      return
+    }
+
+    setError('')
+    setFilterError('')
+    setIsLoading(true)
+    setAppliedFilters(buildApiFilters(filters))
+  }
+
+  function clearFilters() {
+    const clearedFilters = { ...emptyFilters, period: 'ALL' }
+    setFilters(clearedFilters)
+    setAppliedFilters(buildApiFilters(clearedFilters))
+    setFilterError('')
+    setError('')
+    setIsLoading(true)
+  }
 
   function retry() {
     setError('')
@@ -123,6 +214,76 @@ function AdminDashboardPage() {
           Atualizar dados
         </Button>
       </header>
+
+      <form className="admin-dashboard-filters" onSubmit={applyFilters}>
+        <div className="admin-dashboard-filters__title">
+          <SlidersHorizontal size={20} aria-hidden="true" />
+          <div>
+            <strong>Personalizar visão</strong>
+            <span>Os indicadores, gráfico, mapa e registros usam os mesmos filtros.</span>
+          </div>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="dashboard-filter-period">Período</label>
+          <select className="form-control" id="dashboard-filter-period" name="period" onChange={handleFilterChange} value={filters.period}>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="ALL">Todo o período</option>
+            <option value="CUSTOM">Personalizado</option>
+          </select>
+        </div>
+
+        {filters.period === 'CUSTOM' && (
+          <>
+            <div className="form-field">
+              <label htmlFor="dashboard-filter-start">Data inicial</label>
+              <input className="form-control" id="dashboard-filter-start" name="startDate" onChange={handleFilterChange} type="date" value={filters.startDate} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="dashboard-filter-end">Data final</label>
+              <input className="form-control" id="dashboard-filter-end" name="endDate" onChange={handleFilterChange} type="date" value={filters.endDate} />
+            </div>
+          </>
+        )}
+
+        <div className="form-field">
+          <label htmlFor="dashboard-filter-category">Categoria</label>
+          <select className="form-control" id="dashboard-filter-category" name="category" onChange={handleFilterChange} value={filters.category}>
+            <option value="">Todas</option>
+            {Object.entries(occurrenceCategoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="dashboard-filter-type">Tipo</label>
+          <select className="form-control" id="dashboard-filter-type" name="type" onChange={handleFilterChange} value={filters.type}>
+            <option value="">Todos</option>
+            {availableTypes.map((value) => <option key={value} value={value}>{occurrenceTypeLabels[value]}</option>)}
+          </select>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="dashboard-filter-status">Status</label>
+          <select className="form-control" id="dashboard-filter-status" name="status" onChange={handleFilterChange} value={filters.status}>
+            <option value="">Todos</option>
+            {Object.entries(occurrenceStatusConfig).map(([value, config]) => <option key={value} value={value}>{config.label}</option>)}
+          </select>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="dashboard-filter-neighborhood">Bairro</label>
+          <input className="form-control" id="dashboard-filter-neighborhood" maxLength={100} name="neighborhood" onChange={handleFilterChange} placeholder="Ex.: Boqueirão" value={filters.neighborhood} />
+        </div>
+
+        <div className="admin-dashboard-filters__actions">
+          <Button type="submit"><Search size={17} aria-hidden="true" />Aplicar</Button>
+          <Button onClick={clearFilters} type="button" variant="outline"><FilterX size={17} aria-hidden="true" />Limpar</Button>
+        </div>
+
+        {filterError && <p className="admin-dashboard-filters__error" role="alert">{filterError}</p>}
+      </form>
 
       <div className="admin-metrics">
         {metricConfig.map(({ key, label, icon: Icon, tone }) => (

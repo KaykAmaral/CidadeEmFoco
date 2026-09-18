@@ -287,7 +287,7 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | GET | `/api/admin/occurrences/{id}` | ADMIN | Detalhes administrativos |
 | PATCH | `/api/admin/occurrences/{id}/status` | ADMIN | Alterar status |
 
-A listagem aceita `category`, `type`, `status` e `neighborhood` como filtros opcionais.
+A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `createdFrom` e `createdTo` como filtros opcionais. As datas usam o formato ISO 8601.
 
 #### Alertas
 
@@ -361,14 +361,12 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 66 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas e armazenamento de imagens.
+A suíte atual possui 67 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas, filtros e armazenamento de imagens.
 
 ## Roadmap aprovado
 
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
-- Filtros de período, localização e classificação no dashboard administrativo.
-- Gráficos e indicadores reativos aos filtros.
 - Ocultação de pins algum tempo após a resolução.
 - Encerramento automático de eventos naturais temporários.
 - Atualização automática dos alertas na tela do cidadão.

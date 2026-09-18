@@ -4,10 +4,14 @@ import br.com.cidadeemfoco.enums.OccurrenceCategory;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
 
+import java.time.Instant;
+
 public record OccurrenceFilter(
         OccurrenceCategory category,
         OccurrenceType type,
         OccurrenceStatus status,
-        String neighborhood
+        String neighborhood,
+        Instant createdFrom,
+        Instant createdTo
 ) {
 }

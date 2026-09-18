@@ -51,7 +51,9 @@ public class OccurrenceController {
             @RequestParam(required = false) OccurrenceStatus status,
             @RequestParam(required = false) @Size(max = 100) String neighborhood
     ) {
-        return occurrenceService.findAll(new OccurrenceFilter(category, type, status, neighborhood));
+        return occurrenceService.findAll(new OccurrenceFilter(
+                category, type, status, neighborhood, null, null
+        ));
     }
 
     @GetMapping("/mine")
