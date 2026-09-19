@@ -19,4 +19,6 @@ public interface ClimateAlertRepository extends JpaRepository<ClimateAlert, Long
             ORDER BY alert.startAt DESC
             """)
     List<ClimateAlert> findCurrentlyActive(@Param("now") Instant now);
+
+    List<ClimateAlert> findByEndAtLessThanEqual(Instant now);
 }

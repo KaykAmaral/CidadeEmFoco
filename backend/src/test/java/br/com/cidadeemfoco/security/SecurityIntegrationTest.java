@@ -10,6 +10,7 @@ import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
+import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
 import br.com.cidadeemfoco.service.OccurrenceImageService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -69,6 +71,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private ClimateAlertService climateAlertService;
+
+    @MockitoBean
+    private ClimateAlertCleanupService climateAlertCleanupService;
 
     @MockitoBean
     private OccurrenceImageService occurrenceImageService;
@@ -235,6 +240,13 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldRequireAuthenticationToOpenAlertStream() throws Exception {
+        mockMvc.perform(get("/api/alerts/stream"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Autenticacao necessaria"));
+    }
+
+    @Test
     void shouldAllowCitizenToReadActiveAlertsButNotManageThem() throws Exception {
         User citizen = citizen();
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
@@ -266,6 +278,26 @@ class SecurityIntegrationTest {
                 .andExpect(status().isCreated());
 
         verify(climateAlertService).create(any(CreateClimateAlertRequest.class));
+    }
+
+    @Test
+    void shouldAllowOnlyAdminToDeleteAlert() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(delete("/api/admin/alerts/10")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/admin/alerts/10")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        verify(climateAlertService).delete(10L);
     }
 
     @Test

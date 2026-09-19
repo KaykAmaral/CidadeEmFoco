@@ -90,6 +90,18 @@ class OccurrenceTest {
         assertThat(occurrence.getResolvedAt()).isNull();
     }
 
+    @Test
+    void shouldJoinAReportToTheMainCaseAndIncreaseItsStrength() {
+        Occurrence caseRoot = occurrence();
+        Occurrence supportingReport = occurrence();
+
+        supportingReport.joinCase(caseRoot);
+
+        assertThat(supportingReport.getCaseRoot()).isSameAs(caseRoot);
+        assertThat(caseRoot.getStrength()).isEqualTo(2);
+        assertThat(supportingReport.getStrength()).isEqualTo(1);
+    }
+
     private Occurrence occurrence() {
         return new Occurrence(
                 OccurrenceCategory.EVENTO_NATURAL,

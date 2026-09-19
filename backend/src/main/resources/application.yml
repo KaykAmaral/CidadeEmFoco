@@ -33,11 +33,18 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  alerts:
+    realtime-connection-timeout: ${ALERT_REALTIME_CONNECTION_TIMEOUT:30m}
+    realtime-refresh-interval: ${ALERT_REALTIME_REFRESH_INTERVAL:30s}
+    cleanup-interval: ${ALERT_CLEANUP_INTERVAL:5m}
+    cleanup-initial-delay: ${ALERT_CLEANUP_INITIAL_DELAY:5m}
   occurrences:
     resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
     temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:6h}
     auto-resolution-interval: ${AUTO_RESOLUTION_INTERVAL:5m}
     auto-resolution-initial-delay: ${AUTO_RESOLUTION_INITIAL_DELAY:5m}
+    grouping-window: ${OCCURRENCE_GROUPING_WINDOW:2h}
+    grouping-radius-meters: ${OCCURRENCE_GROUPING_RADIUS_METERS:500}
   storage:
     occurrence-images-directory: ${OCCURRENCE_IMAGE_DIR:uploads/occurrences}
   security:

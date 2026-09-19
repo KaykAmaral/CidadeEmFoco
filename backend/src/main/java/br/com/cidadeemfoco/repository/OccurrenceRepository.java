@@ -18,8 +18,9 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
     @Query("""
             SELECT occurrence
             FROM Occurrence occurrence
-            WHERE occurrence.status <> :resolvedStatus
-               OR occurrence.resolvedAt >= :resolvedSince
+            WHERE occurrence.groupRoot IS NULL
+              AND (occurrence.status <> :resolvedStatus
+               OR occurrence.resolvedAt >= :resolvedSince)
             ORDER BY occurrence.createdAt DESC
             """)
     List<Occurrence> findVisibleOnMap(
@@ -27,10 +28,19 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
             @Param("resolvedSince") Instant resolvedSince
     );
 
-    List<Occurrence> findByCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+    List<Occurrence> findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
             OccurrenceCategory category,
             Collection<OccurrenceType> types,
             Collection<OccurrenceStatus> statuses,
             Instant createdBefore
     );
+
+    List<Occurrence> findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+            OccurrenceCategory category,
+            OccurrenceType type,
+            Collection<OccurrenceStatus> statuses,
+            Instant createdAfter
+    );
+
+    List<Occurrence> findByGroupRootIdOrderByCreatedAtAsc(Long groupRootId);
 }

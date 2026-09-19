@@ -53,7 +53,7 @@ public class OccurrenceAutoResolutionService {
     public int resolveExpiredTemporaryOccurrences() {
         Instant createdBefore = Instant.now().minus(temporaryEventLifetime);
         var expiredOccurrences = occurrenceRepository
-                .findByCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+                .findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
                         OccurrenceCategory.EVENTO_NATURAL,
                         TEMPORARY_TYPES,
                         OPEN_STATUSES,

@@ -286,6 +286,7 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | GET | `/api/occurrences/{id}/images/{imageId}` | Autenticado | Obter uma imagem específica |
 | GET | `/api/admin/occurrences` | ADMIN | Listagem administrativa |
 | GET | `/api/admin/occurrences/{id}` | ADMIN | Detalhes administrativos |
+| GET | `/api/admin/occurrences/{id}/reports` | ADMIN | Relatos agrupados no caso |
 | PATCH | `/api/admin/occurrences/{id}/status` | ADMIN | Alterar status |
 
 A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `createdFrom` e `createdTo` como filtros opcionais. As datas usam o formato ISO 8601.
@@ -294,16 +295,40 @@ Ao receber o status `RESOLVIDA`, a ocorrência passa a registrar `resolvedAt`. O
 
 O backend encerra automaticamente ocorrências temporárias dos tipos `ALAGAMENTO`, `ENCHENTE`, `VENTOS_FORTES`, `RESSACA_MARITIMA` e `CHUVA_INTENSA`. Por padrão, registros ainda abertos recebem o status `RESOLVIDA` seis horas após a criação. A verificação ocorre a cada cinco minutos e não inclui queda de árvore, deslizamento, incêndio, infraestrutura ou o tipo genérico `OUTRO`.
 
+### Agrupamento e força
+
+Ao cadastrar uma ocorrência, o backend procura um caso principal aberto com a mesma categoria e tipo, criado nas últimas duas horas e localizado em um raio de 500 metros. Quando encontra um caso compatível, preserva o novo relato e o associa ao caso existente, aumentando sua `strength`.
+
+As listagens gerais, administrativas e do mapa retornam apenas os casos principais. `GET /api/occurrences/mine` continua retornando os relatos feitos pelo cidadão. Toda resposta de ocorrência informa `caseId`, que identifica o caso principal, e `strength`, que representa a quantidade total de relatos agrupados. Os critérios podem ser alterados pelas variáveis de ambiente sem mudança no código.
+
+`strength` indica somente a quantidade de relatos associados. Ela não representa gravidade técnica, risco oficial ou confirmação da Prefeitura.
+
 #### Alertas
 
 | Método | Endpoint | Acesso | Objetivo |
 | --- | --- | --- | --- |
 | GET | `/api/alerts/active` | Autenticado | Listar alertas ativos e vigentes |
+| GET | `/api/alerts/stream` | Autenticado | Receber avisos SSE de atualização |
 | POST | `/api/admin/alerts` | ADMIN | Criar alerta inicialmente inativo |
 | GET | `/api/admin/alerts` | ADMIN | Listar todos os alertas |
 | GET | `/api/admin/alerts/{id}` | ADMIN | Consultar alerta |
 | PATCH | `/api/admin/alerts/{id}/activate` | ADMIN | Ativar alerta |
 | PATCH | `/api/admin/alerts/{id}/deactivate` | ADMIN | Desativar alerta |
+| DELETE | `/api/admin/alerts/{id}` | ADMIN | Excluir qualquer alerta |
+
+O endpoint `/api/alerts/stream` mantém uma conexão SSE e envia o evento
+`alerts-updated` quando um alerta é criado, ativado ou desativado. O evento também
+é enviado periodicamente para cobrir o início e o término da vigência. Ao
+recebê-lo, o frontend deve consultar novamente `/api/alerts/active`.
+
+O ADMIN pode excluir manualmente qualquer alerta. Além disso, alertas cuja
+`endAt` for igual ou anterior ao momento da verificação são excluídos
+automaticamente. Por padrão, a limpeza ocorre a cada cinco minutos e também
+notifica os clientes conectados ao stream.
+
+A conexão é protegida por JWT. Como o `EventSource` nativo do navegador não
+permite adicionar o cabeçalho `Authorization`, o frontend deve consumir o stream
+com uma requisição SSE baseada em `fetch` que envie `Authorization: Bearer <token>`.
 
 ### Valores do domínio
 
@@ -347,6 +372,12 @@ As migrations existentes criam as tabelas principais, acrescentam os tipos mais 
 | `TEMPORARY_EVENT_LIFETIME` | `6h` | Tempo até o encerramento de um evento temporário |
 | `AUTO_RESOLUTION_INTERVAL` | `5m` | Intervalo entre verificações automáticas |
 | `AUTO_RESOLUTION_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira verificação |
+| `OCCURRENCE_GROUPING_WINDOW` | `2h` | Janela de tempo para agrupar relatos |
+| `OCCURRENCE_GROUPING_RADIUS_METERS` | `500` | Distância máxima entre relatos agrupados |
+| `ALERT_REALTIME_CONNECTION_TIMEOUT` | `30m` | Duração máxima de cada conexão SSE |
+| `ALERT_REALTIME_REFRESH_INTERVAL` | `30s` | Intervalo da sinalização periódica de alertas |
+| `ALERT_CLEANUP_INTERVAL` | `5m` | Intervalo da exclusão automática de alertas expirados |
+| `ALERT_CLEANUP_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira limpeza |
 | `CORS_ALLOWED_ORIGINS` | localhost nas portas de desenvolvimento | Origens permitidas |
 
 O arquivo `infra/.env` é carregado pelo Docker Compose. Ao executar o backend diretamente com Maven ou pela IDE, configure as variáveis no terminal ou na configuração de execução.
@@ -370,14 +401,12 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 72 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas, filtros, visibilidade no mapa, encerramento automático e armazenamento de imagens.
+A suíte atual possui 85 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento de imagens.
 
 ## Roadmap aprovado
 
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
-- Atualização automática dos alertas na tela do cidadão.
-- Agrupamento de relatos próximos em um caso com nível de força.
 - Publicação da API e do banco em ambiente remoto.
 - Avaliação de notificações por WhatsApp, condicionada a provedor externo, consentimento e custos.
 
@@ -386,6 +415,7 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - As imagens ficam no disco local ou em volume Docker; não há armazenamento em nuvem.
 - Não existe integração oficial com Prefeitura ou Defesa Civil.
 - Os alertas são cadastrados manualmente e não substituem fontes oficiais.
+- O agrupamento do MVP não possui moderação antifraude ou bloqueio de relatos repetidos pelo mesmo usuário.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.
 

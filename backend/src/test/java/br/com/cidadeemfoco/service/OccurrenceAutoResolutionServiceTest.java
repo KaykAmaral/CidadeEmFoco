@@ -38,7 +38,7 @@ class OccurrenceAutoResolutionServiceTest {
     void shouldResolveExpiredTemporaryNaturalOccurrences() {
         Occurrence occurrence = occurrence();
         List<Occurrence> expiredOccurrences = List.of(occurrence);
-        when(occurrenceRepository.findByCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+        when(occurrenceRepository.findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
                 eq(OccurrenceCategory.EVENTO_NATURAL),
                 anyCollection(),
                 anyCollection(),
@@ -56,7 +56,7 @@ class OccurrenceAutoResolutionServiceTest {
         ArgumentCaptor<Collection<OccurrenceType>> typesCaptor = collectionCaptor();
         ArgumentCaptor<Collection<OccurrenceStatus>> statusesCaptor = collectionCaptor();
         ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
-        verify(occurrenceRepository).findByCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+        verify(occurrenceRepository).findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
                 eq(OccurrenceCategory.EVENTO_NATURAL),
                 typesCaptor.capture(),
                 statusesCaptor.capture(),
@@ -84,7 +84,7 @@ class OccurrenceAutoResolutionServiceTest {
 
     @Test
     void shouldNotSaveWhenThereAreNoExpiredOccurrences() {
-        when(occurrenceRepository.findByCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+        when(occurrenceRepository.findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
                 eq(OccurrenceCategory.EVENTO_NATURAL),
                 anyCollection(),
                 anyCollection(),
