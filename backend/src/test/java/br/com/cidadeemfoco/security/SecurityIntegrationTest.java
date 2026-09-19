@@ -12,6 +12,8 @@ import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
 import br.com.cidadeemfoco.service.OccurrenceImageService;
+import br.com.cidadeemfoco.service.UserService;
+import br.com.cidadeemfoco.dto.WhatsappPreferencesResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +79,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private OccurrenceImageService occurrenceImageService;
+
+    @MockitoBean
+    private UserService userService;
 
     @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
@@ -298,6 +303,28 @@ class SecurityIntegrationTest {
                 .andExpect(status().isNoContent());
 
         verify(climateAlertService).delete(10L);
+    }
+
+    @Test
+    void shouldAllowOnlyCitizenToManageOwnWhatsappPreferences() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        when(userService.findWhatsappPreferences("ana@example.com"))
+                .thenReturn(new WhatsappPreferencesResponse(null, false, null));
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(get("/api/users/me/whatsapp")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/me/whatsapp")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        verify(userService).findWhatsappPreferences("ana@example.com");
     }
 
     @Test

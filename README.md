@@ -236,7 +236,7 @@ backend/src/main/java/br/com/cidadeemfoco/
 
 ### Entidades principais
 
-- `User`: usuário, e-mail, senha criptografada e perfil.
+- `User`: usuário, e-mail, senha criptografada, perfil e preferências de WhatsApp.
 - `Occurrence`: classificação, descrição, risco percebido, localização, status, datas e autor.
 - `OccurrenceImage`: imagens relacionadas a uma ocorrência.
 - `ClimateAlert`: alerta demonstrativo, tipo, severidade, validade e estado de ativação.
@@ -270,6 +270,19 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | --- | --- | --- | --- |
 | POST | `/api/auth/register` | Público | Cadastrar cidadão |
 | POST | `/api/auth/login` | Público | Autenticar e gerar JWT |
+
+#### Preferências de WhatsApp
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/users/me/whatsapp` | CITIZEN | Consultar número e consentimento |
+| PUT | `/api/users/me/whatsapp` | CITIZEN | Cadastrar número e autorizar notificações |
+| DELETE | `/api/users/me/whatsapp` | CITIZEN | Cancelar notificações e remover o número |
+
+O cadastro exige `phoneNumber` e `consentGiven: true`. Números brasileiros com
+DDD são normalizados para o padrão internacional E.164, como
+`+5513999999999`, e um mesmo número não pode pertencer a dois usuários. Ao
+cancelar, o número e a data do consentimento são removidos.
 
 #### Ocorrências
 
@@ -355,7 +368,7 @@ O backend usa MySQL e valida o schema com Hibernate. Mudanças estruturais são 
 backend/src/main/resources/db/migration/
 ```
 
-As migrations existentes criam as tabelas principais, acrescentam os tipos mais recentes e suportam múltiplas imagens por ocorrência.
+As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos e preferências de WhatsApp.
 
 ### Variáveis do backend
 
@@ -401,24 +414,25 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 85 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento de imagens.
+A suíte atual possui 96 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, preferências de WhatsApp, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento de imagens.
 
-## Roadmap aprovado
+## Roadmap de evolução
 
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
 - Publicação da API e do banco em ambiente remoto.
-- Avaliação de notificações por WhatsApp, condicionada a provedor externo, consentimento e custos.
+- Fila de notificações e integração com a WhatsApp Cloud API. O cadastro e o consentimento do usuário já estão implementados.
 
 ## Limitações atuais
 
 - As imagens ficam no disco local ou em volume Docker; não há armazenamento em nuvem.
 - Não existe integração oficial com Prefeitura ou Defesa Civil.
 - Os alertas são cadastrados manualmente e não substituem fontes oficiais.
-- O agrupamento do MVP não possui moderação antifraude ou bloqueio de relatos repetidos pelo mesmo usuário.
+- O agrupamento atual não possui moderação antifraude ou bloqueio de relatos repetidos pelo mesmo usuário.
+- O número e o consentimento do WhatsApp já podem ser cadastrados, mas o envio externo ainda não está conectado à Meta.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.
 
 ## Aviso
 
-O **Cidade em Foco** é um MVP acadêmico. Em situações reais de risco, consulte os canais oficiais da Prefeitura de Praia Grande, Defesa Civil e serviços de emergência.
+O **Cidade em Foco** é um projeto acadêmico em evolução. Em situações reais de risco, consulte os canais oficiais da Prefeitura de Praia Grande, Defesa Civil e serviços de emergência.
