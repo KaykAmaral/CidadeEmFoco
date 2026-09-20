@@ -191,6 +191,11 @@ O usuário pode anexar até quatro imagens JPEG, PNG ou WebP, com limite de 5 MB
 
 As imagens protegidas são carregadas com JWT como `Blob`; por isso, o frontend não utiliza diretamente a URL da imagem em uma tag sem autenticação.
 
+No desenvolvimento, `IMAGE_STORAGE_TYPE=local` grava os arquivos em disco. Na
+hospedagem gratuita, `IMAGE_STORAGE_TYPE=cloudinary` envia os arquivos ao
+Cloudinary, mas mantém os mesmos endpoints protegidos; nenhuma credencial do
+Cloudinary é exposta ao frontend.
+
 ### Configuração do frontend
 
 O arquivo `frontend/.env.local` deve conter:
@@ -421,7 +426,12 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `JWT_SECRET` | sem padrão | Segredo JWT em Base64 |
 | `JWT_EXPIRATION_MINUTES` | `1440` | Validade do token |
 | `SERVER_PORT` | `8080` | Porta da API |
-| `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório das imagens |
+| `IMAGE_STORAGE_TYPE` | `local` | Armazenamento de imagens: `local` ou `cloudinary` |
+| `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório usado quando o armazenamento é local |
+| `CLOUDINARY_CLOUD_NAME` | vazio | Identificador da conta Cloudinary |
+| `CLOUDINARY_API_KEY` | vazio | Chave da API Cloudinary |
+| `CLOUDINARY_API_SECRET` | vazio | Segredo da API Cloudinary |
+| `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `TEMPORARY_EVENT_LIFETIME` | `6h` | Tempo até o encerramento de um evento temporário |
 | `AUTO_RESOLUTION_INTERVAL` | `5m` | Intervalo entre verificações automáticas |
@@ -469,19 +479,32 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 110 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento de imagens.
+A suíte atual possui 114 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento local/Cloudinary de imagens.
+
+### Publicação do backend
+
+O backend está preparado para receber a porta dinâmica do provedor e expõe
+`GET /actuator/health` para verificação de saúde. A hospedagem gratuita planejada
+usa Render para a API, Aiven para o MySQL, Cloudinary para as fotos e Cloudflare
+Pages para o frontend. O passo a passo e a lista de variáveis estão em:
+
+- `infra/DEPLOY_GRATUITO.md`;
+- `infra/render-backend.env.example`.
+
+O desenvolvimento local continua usando disco. No Render, use obrigatoriamente
+`IMAGE_STORAGE_TYPE=cloudinary`, pois o sistema de arquivos gratuito é temporário.
 
 ## Roadmap de evolução
 
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
 - Cadastrar o número do projeto na Meta, criar e aprovar o template `cidade_em_foco_alerta_climatico` e preencher as credenciais no ambiente de produção.
-- Publicação da API e do banco em ambiente remoto.
+- Criar as contas gratuitas, configurar Aiven e Cloudinary e executar o primeiro deploy no Render.
 - Webhook da Meta para distinguir mensagens entregues, lidas e rejeitadas depois do aceite inicial.
 
 ## Limitações atuais
 
-- As imagens ficam no disco local ou em volume Docker; não há armazenamento em nuvem.
+- O ambiente local usa disco; a produção gratuita planejada usa Cloudinary e depende da franquia do serviço.
 - Não existe integração oficial com Prefeitura ou Defesa Civil.
 - Os alertas são cadastrados manualmente e não substituem fontes oficiais.
 - O agrupamento atual não possui moderação antifraude ou bloqueio de relatos repetidos pelo mesmo usuário.

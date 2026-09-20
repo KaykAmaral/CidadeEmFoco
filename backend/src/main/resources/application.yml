@@ -24,7 +24,17 @@ spring:
       max-request-size: 5MB
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:${PORT:8080}}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 springdoc:
   api-docs:
@@ -62,7 +72,13 @@ app:
     grouping-window: ${OCCURRENCE_GROUPING_WINDOW:2h}
     grouping-radius-meters: ${OCCURRENCE_GROUPING_RADIUS_METERS:500}
   storage:
+    type: ${IMAGE_STORAGE_TYPE:local}
     occurrence-images-directory: ${OCCURRENCE_IMAGE_DIR:uploads/occurrences}
+    cloudinary:
+      cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+      api-key: ${CLOUDINARY_API_KEY:}
+      api-secret: ${CLOUDINARY_API_SECRET:}
+      folder: ${CLOUDINARY_FOLDER:cidade-em-foco/occurrences}
   security:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}

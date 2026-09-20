@@ -88,6 +88,13 @@ class SecurityIntegrationTest {
     private WhatsappNotificationService whatsappNotificationService;
 
     @Test
+    void shouldExposePublicHealthCheck() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
         when(userRepository.existsByEmailIgnoreCase("ana@example.com")).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
