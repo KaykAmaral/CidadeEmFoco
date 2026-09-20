@@ -41,6 +41,15 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "whatsapp_phone", unique = true, length = 16)
+    private String whatsappPhone;
+
+    @Column(name = "whatsapp_notifications_enabled", nullable = false)
+    private boolean whatsappNotificationsEnabled;
+
+    @Column(name = "whatsapp_consent_at")
+    private Instant whatsappConsentAt;
+
     protected User() {
     }
 
@@ -80,5 +89,29 @@ public class User {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public String getWhatsappPhone() {
+        return whatsappPhone;
+    }
+
+    public boolean isWhatsappNotificationsEnabled() {
+        return whatsappNotificationsEnabled;
+    }
+
+    public Instant getWhatsappConsentAt() {
+        return whatsappConsentAt;
+    }
+
+    public void enableWhatsappNotifications(String phone, Instant consentAt) {
+        this.whatsappPhone = Objects.requireNonNull(phone);
+        this.whatsappConsentAt = Objects.requireNonNull(consentAt);
+        this.whatsappNotificationsEnabled = true;
+    }
+
+    public void disableWhatsappNotifications() {
+        this.whatsappPhone = null;
+        this.whatsappConsentAt = null;
+        this.whatsappNotificationsEnabled = false;
     }
 }

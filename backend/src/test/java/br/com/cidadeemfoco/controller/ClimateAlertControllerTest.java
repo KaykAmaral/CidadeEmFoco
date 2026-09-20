@@ -5,6 +5,7 @@ import br.com.cidadeemfoco.dto.CreateClimateAlertRequest;
 import br.com.cidadeemfoco.enums.AlertSeverity;
 import br.com.cidadeemfoco.enums.ClimateAlertType;
 import br.com.cidadeemfoco.exception.GlobalExceptionHandler;
+import br.com.cidadeemfoco.service.ClimateAlertRealtimeService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -33,13 +36,16 @@ class ClimateAlertControllerTest {
     @Mock
     private ClimateAlertService climateAlertService;
 
+    @Mock
+    private ClimateAlertRealtimeService climateAlertRealtimeService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(
-                        new ClimateAlertController(climateAlertService),
+                        new ClimateAlertController(climateAlertService, climateAlertRealtimeService),
                         new AdminClimateAlertController(climateAlertService)
                 )
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -83,6 +89,18 @@ class ClimateAlertControllerTest {
     }
 
     @Test
+    void shouldOpenRealtimeAlertStream() throws Exception {
+        SseEmitter emitter = new SseEmitter();
+        when(climateAlertRealtimeService.subscribe()).thenReturn(emitter);
+
+        mockMvc.perform(get("/api/alerts/stream"))
+                .andExpect(status().isOk());
+
+        verify(climateAlertRealtimeService).subscribe();
+        emitter.complete();
+    }
+
+    @Test
     void shouldActivateAndDeactivateAlert() throws Exception {
         when(climateAlertService.activate(10L)).thenReturn(response(true));
         when(climateAlertService.deactivate(10L)).thenReturn(response(false));
@@ -109,6 +127,14 @@ class ClimateAlertControllerTest {
         mockMvc.perform(get("/api/admin/alerts/10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10));
+    }
+
+    @Test
+    void shouldDeleteAlert() throws Exception {
+        mockMvc.perform(delete("/api/admin/alerts/10"))
+                .andExpect(status().isNoContent());
+
+        verify(climateAlertService).delete(10L);
     }
 
     private String validAlertJson() {

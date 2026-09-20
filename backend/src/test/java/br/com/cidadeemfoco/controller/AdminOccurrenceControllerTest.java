@@ -101,6 +101,17 @@ class AdminOccurrenceControllerTest {
                 .andExpect(jsonPath("$.status").value("REGISTRADA"));
     }
 
+    @Test
+    void shouldListReportsThatFormACase() throws Exception {
+        when(occurrenceService.findCaseReports(10L)).thenReturn(List.of(response(OccurrenceStatus.REGISTRADA)));
+
+        mockMvc.perform(get("/api/admin/occurrences/10/reports"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(10));
+
+        verify(occurrenceService).findCaseReports(10L);
+    }
+
     private OccurrenceResponse response(OccurrenceStatus status) {
         return new OccurrenceResponse(
                 10L,

@@ -4,11 +4,15 @@ import br.com.cidadeemfoco.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmailIgnoreCase(String email);
 
-    boolean existsByEmailIgnoreCase(String email);
-}
+    Optional<User> findByWhatsappPhone(String whatsappPhone);
 
+    boolean existsByEmailIgnoreCase(String email);
+
+    List<User> findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull();
+}

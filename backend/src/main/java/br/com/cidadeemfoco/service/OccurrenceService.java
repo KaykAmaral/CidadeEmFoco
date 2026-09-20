@@ -23,20 +23,35 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
 public class OccurrenceService {
 
     private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "createdAt");
+    private static final double EARTH_RADIUS_METERS = 6_371_000;
+    private static final Set<OccurrenceStatus> GROUPABLE_STATUSES = Set.of(
+            OccurrenceStatus.REGISTRADA,
+            OccurrenceStatus.EM_ANALISE,
+            OccurrenceStatus.EM_ATENDIMENTO
+    );
 
     private final OccurrenceRepository occurrenceRepository;
     private final UserRepository userRepository;
 
     @Value("${app.occurrences.resolved-map-visibility:24h}")
     private Duration resolvedMapVisibility = Duration.ofHours(24);
+
+    @Value("${app.occurrences.grouping-window:2h}")
+    private Duration groupingWindow = Duration.ofHours(2);
+
+    @Value("${app.occurrences.grouping-radius-meters:500}")
+    private double groupingRadiusMeters = 500;
 
     public OccurrenceService(OccurrenceRepository occurrenceRepository, UserRepository userRepository) {
         this.occurrenceRepository = occurrenceRepository;
@@ -65,6 +80,11 @@ public class OccurrenceService {
                 user
         );
 
+        findSimilarCase(request).ifPresent(caseRoot -> {
+            occurrence.joinCase(caseRoot);
+            occurrenceRepository.save(caseRoot);
+        });
+
         return OccurrenceResponse.from(occurrenceRepository.save(occurrence));
     }
 
@@ -83,6 +103,16 @@ public class OccurrenceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
     }
 
+    public List<OccurrenceResponse> findCaseReports(Long id) {
+        Occurrence occurrence = occurrenceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
+        Occurrence caseRoot = occurrence.getCaseRoot();
+        List<Occurrence> reports = new ArrayList<>();
+        reports.add(caseRoot);
+        reports.addAll(occurrenceRepository.findByGroupRootIdOrderByCreatedAtAsc(caseRoot.getId()));
+        return reports.stream().map(OccurrenceResponse::from).toList();
+    }
+
     public List<OccurrenceResponse> findVisibleOnMap() {
         Instant resolvedSince = Instant.now().minus(resolvedMapVisibility);
         return occurrenceRepository.findVisibleOnMap(OccurrenceStatus.RESOLVIDA, resolvedSince)
@@ -95,8 +125,9 @@ public class OccurrenceService {
     public OccurrenceResponse updateStatus(Long id, OccurrenceStatus status) {
         Occurrence occurrence = occurrenceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
-        occurrence.changeStatus(status);
-        return OccurrenceResponse.from(occurrenceRepository.saveAndFlush(occurrence));
+        Occurrence caseRoot = occurrence.getCaseRoot();
+        caseRoot.changeStatus(status);
+        return OccurrenceResponse.from(occurrenceRepository.saveAndFlush(caseRoot));
     }
 
     public List<OccurrenceResponse> findByUser(String userEmail) {
@@ -110,6 +141,9 @@ public class OccurrenceService {
     private Specification<Occurrence> toSpecification(OccurrenceFilter filter, String userEmail) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (userEmail == null) {
+                predicates.add(criteriaBuilder.isNull(root.get("groupRoot")));
+            }
             if (filter.category() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("category"), filter.category()));
             }
@@ -160,11 +194,57 @@ public class OccurrenceService {
         }
     }
 
+    private Optional<Occurrence> findSimilarCase(CreateOccurrenceRequest request) {
+        Instant createdAfter = Instant.now().minus(groupingWindow);
+        List<Occurrence> candidates = occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        request.category(),
+                        request.type(),
+                        GROUPABLE_STATUSES,
+                        createdAfter
+                );
+
+        if (candidates == null) {
+            return Optional.empty();
+        }
+
+        return candidates.stream()
+                .map(candidate -> new CaseDistance(
+                        candidate,
+                        distanceInMeters(
+                                request.latitude().doubleValue(),
+                                request.longitude().doubleValue(),
+                                candidate.getLatitude().doubleValue(),
+                                candidate.getLongitude().doubleValue()
+                        )
+                ))
+                .filter(candidate -> candidate.distance() <= groupingRadiusMeters)
+                .min(Comparator.comparingDouble(CaseDistance::distance))
+                .map(CaseDistance::occurrence);
+    }
+
+    private double distanceInMeters(
+            double latitudeA,
+            double longitudeA,
+            double latitudeB,
+            double longitudeB
+    ) {
+        double latitudeDistance = Math.toRadians(latitudeB - latitudeA);
+        double longitudeDistance = Math.toRadians(longitudeB - longitudeA);
+        double haversine = Math.sin(latitudeDistance / 2) * Math.sin(latitudeDistance / 2)
+                + Math.cos(Math.toRadians(latitudeA)) * Math.cos(Math.toRadians(latitudeB))
+                * Math.sin(longitudeDistance / 2) * Math.sin(longitudeDistance / 2);
+        return EARTH_RADIUS_METERS * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    }
+
     private String normalizeOptional(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private record CaseDistance(Occurrence occurrence, double distance) {
     }
 }

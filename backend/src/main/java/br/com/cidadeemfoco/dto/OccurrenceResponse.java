@@ -25,7 +25,9 @@ public record OccurrenceResponse(
         OccurrenceStatus status,
         Instant createdAt,
         Instant updatedAt,
-        Instant resolvedAt
+        Instant resolvedAt,
+        Long caseId,
+        int strength
 ) {
 
     public OccurrenceResponse(
@@ -36,10 +38,12 @@ public record OccurrenceResponse(
     ) {
         this(id, category, type, description, perceivedRisk, latitude, longitude,
                 neighborhood, address, imageUrl,
-                imageUrl == null ? List.of() : List.of(imageUrl), status, createdAt, updatedAt, null);
+                imageUrl == null ? List.of() : List.of(imageUrl), status, createdAt, updatedAt,
+                null, id, 1);
     }
 
     public static OccurrenceResponse from(Occurrence occurrence) {
+        Occurrence caseRoot = occurrence.getCaseRoot();
         return new OccurrenceResponse(
                 occurrence.getId(),
                 occurrence.getCategory(),
@@ -52,10 +56,12 @@ public record OccurrenceResponse(
                 occurrence.getAddress(),
                 occurrence.getImages().isEmpty() ? null : "/api/occurrences/" + occurrence.getId() + "/images/" + occurrence.getImages().getFirst().getId(),
                 occurrence.getImages().stream().map(image -> "/api/occurrences/" + occurrence.getId() + "/images/" + image.getId()).toList(),
-                occurrence.getStatus(),
+                caseRoot.getStatus(),
                 occurrence.getCreatedAt(),
                 occurrence.getUpdatedAt(),
-                occurrence.getResolvedAt()
+                caseRoot.getResolvedAt(),
+                caseRoot.getId(),
+                caseRoot.getStrength()
         );
     }
 }

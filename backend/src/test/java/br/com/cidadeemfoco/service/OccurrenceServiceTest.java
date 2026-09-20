@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -66,6 +68,63 @@ class OccurrenceServiceTest {
         assertThat(response.type()).isEqualTo(OccurrenceType.ALAGAMENTO);
         assertThat(response.status()).isEqualTo(OccurrenceStatus.REGISTRADA);
         verify(occurrenceRepository).save(any(Occurrence.class));
+    }
+
+    @Test
+    void shouldGroupANearbySimilarReportAndIncreaseCaseStrength() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence caseRoot = occurrence();
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(caseRoot));
+        when(occurrenceRepository.save(any(Occurrence.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        OccurrenceResponse response = occurrenceService.create("ana@example.com", validRequest());
+
+        assertThat(response.caseId()).isEqualTo(10L);
+        assertThat(response.strength()).isEqualTo(2);
+        assertThat(caseRoot.getStrength()).isEqualTo(2);
+        verify(occurrenceRepository).save(caseRoot);
+        verify(occurrenceRepository, times(2)).save(any(Occurrence.class));
+    }
+
+    @Test
+    void shouldKeepADistantReportAsANewCase() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence distantCase = new Occurrence(
+                OccurrenceCategory.EVENTO_NATURAL,
+                OccurrenceType.ALAGAMENTO,
+                "Outro alagamento",
+                PerceivedRisk.ALTO,
+                new BigDecimal("-23.550520"),
+                new BigDecimal("-46.633308"),
+                "Centro",
+                null,
+                citizen
+        );
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(distantCase));
+        when(occurrenceRepository.save(any(Occurrence.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        OccurrenceResponse response = occurrenceService.create("ana@example.com", validRequest());
+
+        assertThat(response.strength()).isEqualTo(1);
+        assertThat(distantCase.getStrength()).isEqualTo(1);
+        verify(occurrenceRepository, times(1)).save(any(Occurrence.class));
     }
 
     @Test

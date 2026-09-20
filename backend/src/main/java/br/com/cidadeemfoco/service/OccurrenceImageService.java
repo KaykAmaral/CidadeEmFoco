@@ -20,10 +20,10 @@ import java.util.List;
 public class OccurrenceImageService {
     private static final int MAX_IMAGES = 4;
     private final OccurrenceRepository occurrenceRepository;
-    private final LocalImageStorageService imageStorageService;
+    private final ImageStorageService imageStorageService;
 
     public OccurrenceImageService(OccurrenceRepository occurrenceRepository,
-            LocalImageStorageService imageStorageService) {
+            ImageStorageService imageStorageService) {
         this.occurrenceRepository = occurrenceRepository;
         this.imageStorageService = imageStorageService;
     }
@@ -47,8 +47,8 @@ public class OccurrenceImageService {
         try {
             for (MultipartFile file : files) {
                 StoredImage stored = imageStorageService.store(file);
-                storedPaths.add(stored.filename());
-                occurrence.addImage(stored.filename());
+                storedPaths.add(stored.storageKey());
+                occurrence.addImage(stored.storageKey());
             }
             return OccurrenceResponse.from(occurrenceRepository.saveAndFlush(occurrence));
         } catch (RuntimeException exception) {

@@ -93,6 +93,13 @@ public class Occurrence {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_root_id")
+    private Occurrence groupRoot;
+
+    @Column(nullable = false)
+    private int strength = 1;
+
     protected Occurrence() {
     }
 
@@ -142,6 +149,15 @@ public class Occurrence {
             resolvedAt = null;
         }
         this.status = newStatus;
+    }
+
+    public void joinCase(Occurrence caseRoot) {
+        Occurrence root = Objects.requireNonNull(caseRoot);
+        if (root.groupRoot != null) {
+            throw new IllegalArgumentException("O agrupamento deve apontar para o caso principal");
+        }
+        groupRoot = root;
+        root.strength++;
     }
 
     public String replaceImage(String imagePath) {
@@ -218,5 +234,17 @@ public class Occurrence {
 
     public User getUser() {
         return user;
+    }
+
+    public Occurrence getGroupRoot() {
+        return groupRoot;
+    }
+
+    public Occurrence getCaseRoot() {
+        return groupRoot == null ? this : groupRoot;
+    }
+
+    public int getStrength() {
+        return strength;
     }
 }

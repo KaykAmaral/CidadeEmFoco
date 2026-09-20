@@ -53,6 +53,11 @@ public class AdminOccurrenceController {
         return occurrenceService.findById(id);
     }
 
+    @GetMapping("/{id}/reports")
+    public List<OccurrenceResponse> findCaseReports(@PathVariable @Positive Long id) {
+        return occurrenceService.findCaseReports(id);
+    }
+
     @PatchMapping("/{id}/status")
     public OccurrenceResponse updateStatus(
             @PathVariable @Positive Long id,
