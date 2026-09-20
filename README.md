@@ -240,6 +240,7 @@ backend/src/main/java/br/com/cidadeemfoco/
 - `Occurrence`: classificação, descrição, risco percebido, localização, status, datas e autor.
 - `OccurrenceImage`: imagens relacionadas a uma ocorrência.
 - `ClimateAlert`: alerta demonstrativo, tipo, severidade, validade e estado de ativação.
+- `WhatsappNotification`: item persistente da fila, destinatário, cópia dos dados do alerta, estado e tentativas de envio.
 
 ### Segurança
 
@@ -343,6 +344,46 @@ A conexão é protegida por JWT. Como o `EventSource` nativo do navegador não
 permite adicionar o cabeçalho `Authorization`, o frontend deve consumir o stream
 com uma requisição SSE baseada em `fetch` que envie `Authorization: Bearer <token>`.
 
+#### Fila de WhatsApp
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/admin/whatsapp-notifications` | ADMIN | Consultar histórico e filtrar por status |
+| GET | `/api/admin/whatsapp-notifications/{id}` | ADMIN | Consultar uma notificação |
+
+Quando um alerta vigente é ativado, o backend cria um item `PENDING` para cada
+cidadão que autorizou o WhatsApp. A combinação entre alerta e usuário é única,
+evitando mensagens duplicadas. Alertas ativados antes de `startAt` entram na fila
+quando sua vigência começar, por meio de uma sincronização periódica.
+
+Se o alerta for desativado ou excluído antes do envio, notificações `PENDING` ou
+`FAILED` passam para `CANCELLED`. O histórico mantém uma cópia dos dados do
+alerta e do telefone usado no momento da criação. A API administrativa mascara
+o número do destinatário. Os estados possíveis são `PENDING`, `SENT`, `FAILED`
+e `CANCELLED`.
+
+Com a integração externa habilitada, um processador busca os itens `PENDING` e
+`FAILED` em pequenos lotes e os envia pela WhatsApp Cloud API. Cada item possui
+um limite configurável de tentativas. Quando a Meta aceita a mensagem, o estado
+passa para `SENT` e o identificador `wamid` devolvido pelo provedor fica salvo no
+histórico. Em caso de falha, a mensagem permanece como `FAILED`, com o motivo e
+a quantidade de tentativas registrados.
+
+O envio externo fica desabilitado por padrão. Para ativá-lo, é necessário criar
+na Meta um template aprovado chamado `cidade_em_foco_alerta_climatico`, em
+`pt_BR`, com seis variáveis no corpo, nesta ordem:
+
+1. título do alerta;
+2. tipo;
+3. severidade;
+4. descrição;
+5. início da vigência;
+6. fim da vigência.
+
+Depois, preencha `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_ACCESS_TOKEN` no
+`infra/.env` e altere `WHATSAPP_CLOUD_API_ENABLED` para `true`. Nunca envie o
+token ao Git.
+
 ### Valores do domínio
 
 - Categorias: `EVENTO_NATURAL` e `INFRAESTRUTURA_URBANA`.
@@ -368,7 +409,7 @@ O backend usa MySQL e valida o schema com Hibernate. Mudanças estruturais são 
 backend/src/main/resources/db/migration/
 ```
 
-As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos e preferências de WhatsApp.
+As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp e fila de notificações.
 
 ### Variáveis do backend
 
@@ -391,6 +432,20 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `ALERT_REALTIME_REFRESH_INTERVAL` | `30s` | Intervalo da sinalização periódica de alertas |
 | `ALERT_CLEANUP_INTERVAL` | `5m` | Intervalo da exclusão automática de alertas expirados |
 | `ALERT_CLEANUP_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira limpeza |
+| `WHATSAPP_QUEUE_SYNC_INTERVAL` | `1m` | Intervalo de sincronização dos alertas vigentes com a fila |
+| `WHATSAPP_QUEUE_SYNC_INITIAL_DELAY` | `1m` | Espera inicial antes da primeira sincronização |
+| `WHATSAPP_CLOUD_API_ENABLED` | `false` | Habilita o envio externo pela Meta |
+| `WHATSAPP_CLOUD_API_BASE_URL` | `https://graph.facebook.com` | Endereço base da Graph API |
+| `WHATSAPP_CLOUD_API_VERSION` | `v23.0` | Versão da Graph API utilizada |
+| `WHATSAPP_PHONE_NUMBER_ID` | vazio | ID do telefone fornecido pela Meta |
+| `WHATSAPP_ACCESS_TOKEN` | vazio | Token secreto de acesso à Meta |
+| `WHATSAPP_TEMPLATE_NAME` | `cidade_em_foco_alerta_climatico` | Nome do template aprovado |
+| `WHATSAPP_TEMPLATE_LANGUAGE` | `pt_BR` | Idioma aprovado do template |
+| `WHATSAPP_TIMEZONE` | `America/Sao_Paulo` | Fuso usado nas datas da mensagem |
+| `WHATSAPP_PROCESS_INTERVAL` | `30s` | Intervalo do processamento da fila |
+| `WHATSAPP_PROCESS_INITIAL_DELAY` | `30s` | Espera inicial do processador |
+| `WHATSAPP_MAX_ATTEMPTS` | `3` | Limite de tentativas por notificação |
+| `WHATSAPP_BATCH_SIZE` | `20` | Quantidade processada por ciclo |
 | `CORS_ALLOWED_ORIGINS` | localhost nas portas de desenvolvimento | Origens permitidas |
 
 O arquivo `infra/.env` é carregado pelo Docker Compose. Ao executar o backend diretamente com Maven ou pela IDE, configure as variáveis no terminal ou na configuração de execução.
@@ -414,14 +469,15 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 96 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, preferências de WhatsApp, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento de imagens.
+A suíte atual possui 110 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento de imagens.
 
 ## Roadmap de evolução
 
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
+- Cadastrar o número do projeto na Meta, criar e aprovar o template `cidade_em_foco_alerta_climatico` e preencher as credenciais no ambiente de produção.
 - Publicação da API e do banco em ambiente remoto.
-- Fila de notificações e integração com a WhatsApp Cloud API. O cadastro e o consentimento do usuário já estão implementados.
+- Webhook da Meta para distinguir mensagens entregues, lidas e rejeitadas depois do aceite inicial.
 
 ## Limitações atuais
 
@@ -429,7 +485,7 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - Não existe integração oficial com Prefeitura ou Defesa Civil.
 - Os alertas são cadastrados manualmente e não substituem fontes oficiais.
 - O agrupamento atual não possui moderação antifraude ou bloqueio de relatos repetidos pelo mesmo usuário.
-- O número e o consentimento do WhatsApp já podem ser cadastrados, mas o envio externo ainda não está conectado à Meta.
+- O estado `SENT` confirma que a Meta aceitou a mensagem; sem o webhook, ele ainda não confirma entrega ou leitura pelo cidadão.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.
 

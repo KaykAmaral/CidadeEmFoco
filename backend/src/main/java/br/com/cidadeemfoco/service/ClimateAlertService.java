@@ -4,6 +4,8 @@ import br.com.cidadeemfoco.dto.ClimateAlertResponse;
 import br.com.cidadeemfoco.dto.CreateClimateAlertRequest;
 import br.com.cidadeemfoco.entity.ClimateAlert;
 import br.com.cidadeemfoco.event.ClimateAlertsChangedEvent;
+import br.com.cidadeemfoco.event.ClimateAlertActivatedEvent;
+import br.com.cidadeemfoco.event.ClimateAlertUnavailableEvent;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.ClimateAlertRepository;
@@ -74,6 +76,7 @@ public class ClimateAlertService {
         ClimateAlert alert = findEntity(id);
         alert.activate();
         ClimateAlertResponse response = ClimateAlertResponse.from(climateAlertRepository.saveAndFlush(alert));
+        eventPublisher.publishEvent(new ClimateAlertActivatedEvent(alert.getId()));
         eventPublisher.publishEvent(new ClimateAlertsChangedEvent());
         return response;
     }
@@ -83,6 +86,7 @@ public class ClimateAlertService {
         ClimateAlert alert = findEntity(id);
         alert.deactivate();
         ClimateAlertResponse response = ClimateAlertResponse.from(climateAlertRepository.saveAndFlush(alert));
+        eventPublisher.publishEvent(new ClimateAlertUnavailableEvent(alert.getId()));
         eventPublisher.publishEvent(new ClimateAlertsChangedEvent());
         return response;
     }
@@ -90,6 +94,7 @@ public class ClimateAlertService {
     @Transactional
     public void delete(Long id) {
         ClimateAlert alert = findEntity(id);
+        eventPublisher.publishEvent(new ClimateAlertUnavailableEvent(id));
         climateAlertRepository.delete(alert);
         eventPublisher.publishEvent(new ClimateAlertsChangedEvent());
     }

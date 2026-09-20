@@ -38,6 +38,22 @@ app:
     realtime-refresh-interval: ${ALERT_REALTIME_REFRESH_INTERVAL:30s}
     cleanup-interval: ${ALERT_CLEANUP_INTERVAL:5m}
     cleanup-initial-delay: ${ALERT_CLEANUP_INITIAL_DELAY:5m}
+  whatsapp:
+    queue-sync-interval: ${WHATSAPP_QUEUE_SYNC_INTERVAL:1m}
+    queue-sync-initial-delay: ${WHATSAPP_QUEUE_SYNC_INITIAL_DELAY:1m}
+    cloud-api:
+      enabled: ${WHATSAPP_CLOUD_API_ENABLED:false}
+      base-url: ${WHATSAPP_CLOUD_API_BASE_URL:https://graph.facebook.com}
+      api-version: ${WHATSAPP_CLOUD_API_VERSION:v23.0}
+      phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+      access-token: ${WHATSAPP_ACCESS_TOKEN:}
+      template-name: ${WHATSAPP_TEMPLATE_NAME:cidade_em_foco_alerta_climatico}
+      template-language: ${WHATSAPP_TEMPLATE_LANGUAGE:pt_BR}
+      timezone: ${WHATSAPP_TIMEZONE:America/Sao_Paulo}
+      process-interval: ${WHATSAPP_PROCESS_INTERVAL:30s}
+      process-initial-delay: ${WHATSAPP_PROCESS_INITIAL_DELAY:30s}
+      max-attempts: ${WHATSAPP_MAX_ATTEMPTS:3}
+      batch-size: ${WHATSAPP_BATCH_SIZE:20}
   occurrences:
     resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
     temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:6h}

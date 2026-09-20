@@ -2,6 +2,7 @@ package br.com.cidadeemfoco.service;
 
 import br.com.cidadeemfoco.entity.ClimateAlert;
 import br.com.cidadeemfoco.event.ClimateAlertsChangedEvent;
+import br.com.cidadeemfoco.event.ClimateAlertUnavailableEvent;
 import br.com.cidadeemfoco.repository.ClimateAlertRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,6 +37,9 @@ public class ClimateAlertCleanupService {
             return 0;
         }
 
+        eventPublisher.publishEvent(new ClimateAlertUnavailableEvent(
+                expiredAlerts.stream().map(ClimateAlert::getId).toList()
+        ));
         climateAlertRepository.deleteAll(expiredAlerts);
         eventPublisher.publishEvent(new ClimateAlertsChangedEvent());
         return expiredAlerts.size();

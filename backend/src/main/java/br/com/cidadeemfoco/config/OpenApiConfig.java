@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
         info = @Info(
                 title = "Cidade em Foco API",
                 version = "1.0.0",
-                description = "API REST do MVP Cidade em Foco para Praia Grande-SP"
+                description = "API REST do Cidade em Foco para Praia Grande-SP"
         ),
         security = @SecurityRequirement(name = "bearerAuth")
 )

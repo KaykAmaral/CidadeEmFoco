@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -148,7 +149,7 @@ class ClimateAlertServiceTest {
 
     private ClimateAlert alert() {
         CreateClimateAlertRequest request = validRequest();
-        return new ClimateAlert(
+        ClimateAlert alert = new ClimateAlert(
                 request.title(),
                 request.type(),
                 request.severity(),
@@ -156,5 +157,7 @@ class ClimateAlertServiceTest {
                 request.startAt(),
                 request.endAt()
         );
+        ReflectionTestUtils.setField(alert, "id", 10L);
+        return alert;
     }
 }

@@ -125,4 +125,8 @@ public class ClimateAlert {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public boolean isCurrentlyActive(Instant now) {
+        return active && !startAt.isAfter(now) && !endAt.isBefore(now);
+    }
 }

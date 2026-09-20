@@ -13,6 +13,7 @@ import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
 import br.com.cidadeemfoco.service.OccurrenceImageService;
 import br.com.cidadeemfoco.service.UserService;
+import br.com.cidadeemfoco.service.WhatsappNotificationService;
 import br.com.cidadeemfoco.dto.WhatsappPreferencesResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -82,6 +83,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private WhatsappNotificationService whatsappNotificationService;
 
     @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
@@ -325,6 +329,27 @@ class SecurityIntegrationTest {
                 .andExpect(status().isForbidden());
 
         verify(userService).findWhatsappPreferences("ana@example.com");
+    }
+
+    @Test
+    void shouldAllowOnlyAdminToReadWhatsappNotificationHistory() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        when(whatsappNotificationService.findAll(null)).thenReturn(List.of());
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(get("/api/admin/whatsapp-notifications")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/admin/whatsapp-notifications")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        verify(whatsappNotificationService).findAll(null);
     }
 
     @Test
