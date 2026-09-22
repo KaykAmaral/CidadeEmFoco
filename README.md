@@ -316,7 +316,7 @@ O backend encerra automaticamente ocorrências temporárias dos tipos `ALAGAMENT
 
 ### Agrupamento e força
 
-Ao cadastrar uma ocorrência, o backend procura um caso principal aberto com a mesma categoria e tipo, criado nas últimas duas horas e localizado em um raio de 500 metros. Quando encontra um caso compatível, preserva o novo relato e o associa ao caso existente, aumentando sua `strength`.
+Ao cadastrar uma ocorrência, o backend procura um caso principal aberto com a mesma categoria e tipo e localizado em um raio de 500 metros. A janela padrão é de dois dias para eventos naturais e 30 dias para infraestrutura urbana. Quando encontra um caso compatível, preserva o novo relato e o associa ao caso existente, aumentando sua `strength`. Cada cidadão pode contribuir somente uma vez para o mesmo caso.
 
 As listagens gerais, administrativas e do mapa retornam apenas os casos principais. `GET /api/occurrences/mine` continua retornando os relatos feitos pelo cidadão. Toda resposta de ocorrência informa `caseId`, que identifica o caso principal, e `strength`, que representa a quantidade total de relatos agrupados. Os critérios podem ser alterados pelas variáveis de ambiente sem mudança no código.
 
@@ -433,10 +433,11 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `CLOUDINARY_API_SECRET` | vazio | Segredo da API Cloudinary |
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
-| `TEMPORARY_EVENT_LIFETIME` | `6h` | Tempo até o encerramento de um evento temporário |
+| `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
 | `AUTO_RESOLUTION_INTERVAL` | `5m` | Intervalo entre verificações automáticas |
 | `AUTO_RESOLUTION_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira verificação |
-| `OCCURRENCE_GROUPING_WINDOW` | `2h` | Janela de tempo para agrupar relatos |
+| `OCCURRENCE_GROUPING_WINDOW_NATURAL` | `2d` | Janela para agrupar relatos de eventos naturais |
+| `OCCURRENCE_GROUPING_WINDOW_INFRASTRUCTURE` | `30d` | Janela para agrupar relatos de infraestrutura |
 | `OCCURRENCE_GROUPING_RADIUS_METERS` | `500` | Distância máxima entre relatos agrupados |
 | `ALERT_REALTIME_CONNECTION_TIMEOUT` | `30m` | Duração máxima de cada conexão SSE |
 | `ALERT_REALTIME_REFRESH_INTERVAL` | `30s` | Intervalo da sinalização periódica de alertas |

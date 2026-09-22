@@ -43,4 +43,6 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
     );
 
     List<Occurrence> findByGroupRootIdOrderByCreatedAtAsc(Long groupRootId);
+
+    boolean existsByGroupRootIdAndUserEmailIgnoreCase(Long groupRootId, String userEmail);
 }

@@ -66,10 +66,11 @@ app:
       batch-size: ${WHATSAPP_BATCH_SIZE:20}
   occurrences:
     resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
-    temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:6h}
+    temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:2d}
     auto-resolution-interval: ${AUTO_RESOLUTION_INTERVAL:5m}
     auto-resolution-initial-delay: ${AUTO_RESOLUTION_INITIAL_DELAY:5m}
-    grouping-window: ${OCCURRENCE_GROUPING_WINDOW:2h}
+    grouping-window-natural: ${OCCURRENCE_GROUPING_WINDOW_NATURAL:${OCCURRENCE_GROUPING_WINDOW:2d}}
+    grouping-window-infrastructure: ${OCCURRENCE_GROUPING_WINDOW_INFRASTRUCTURE:30d}
     grouping-radius-meters: ${OCCURRENCE_GROUPING_RADIUS_METERS:500}
   storage:
     type: ${IMAGE_STORAGE_TYPE:local}
