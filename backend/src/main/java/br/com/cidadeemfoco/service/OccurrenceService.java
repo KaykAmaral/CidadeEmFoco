@@ -15,6 +15,7 @@ import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -47,8 +48,11 @@ public class OccurrenceService {
     @Value("${app.occurrences.resolved-map-visibility:24h}")
     private Duration resolvedMapVisibility = Duration.ofHours(24);
 
-    @Value("${app.occurrences.grouping-window:2h}")
-    private Duration groupingWindow = Duration.ofHours(2);
+    @Value("${app.occurrences.grouping-window-natural:2d}")
+    private Duration naturalEventGroupingWindow = Duration.ofDays(2);
+
+    @Value("${app.occurrences.grouping-window-infrastructure:30d}")
+    private Duration infrastructureGroupingWindow = Duration.ofDays(30);
 
     @Value("${app.occurrences.grouping-radius-meters:500}")
     private double groupingRadiusMeters = 500;
@@ -80,12 +84,25 @@ public class OccurrenceService {
                 user
         );
 
-        findSimilarCase(request).ifPresent(caseRoot -> {
+        Optional<Occurrence> similarCase = findSimilarCase(request);
+        similarCase.ifPresent(caseRoot -> {
+            validateCitizenHasNotContributed(caseRoot, user);
             occurrence.joinCase(caseRoot);
             occurrenceRepository.save(caseRoot);
         });
 
-        return OccurrenceResponse.from(occurrenceRepository.save(occurrence));
+        try {
+            Occurrence savedOccurrence = occurrenceRepository.save(occurrence);
+            if (similarCase.isPresent()) {
+                occurrenceRepository.flush();
+            }
+            return OccurrenceResponse.from(savedOccurrence);
+        } catch (DataIntegrityViolationException exception) {
+            if (similarCase.isPresent()) {
+                throw new BusinessRuleException("Voce ja contribuiu para esta ocorrencia");
+            }
+            throw exception;
+        }
     }
 
     public List<OccurrenceResponse> findAll(OccurrenceFilter filter) {
@@ -195,7 +212,7 @@ public class OccurrenceService {
     }
 
     private Optional<Occurrence> findSimilarCase(CreateOccurrenceRequest request) {
-        Instant createdAfter = Instant.now().minus(groupingWindow);
+        Instant createdAfter = Instant.now().minus(groupingWindowFor(request.category()));
         List<Occurrence> candidates = occurrenceRepository
                 .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
                         request.category(),
@@ -221,6 +238,24 @@ public class OccurrenceService {
                 .filter(candidate -> candidate.distance() <= groupingRadiusMeters)
                 .min(Comparator.comparingDouble(CaseDistance::distance))
                 .map(CaseDistance::occurrence);
+    }
+
+    private Duration groupingWindowFor(OccurrenceCategory category) {
+        return category == OccurrenceCategory.EVENTO_NATURAL
+                ? naturalEventGroupingWindow
+                : infrastructureGroupingWindow;
+    }
+
+    private void validateCitizenHasNotContributed(Occurrence caseRoot, User user) {
+        boolean createdCase = caseRoot.getUser().getEmail().equalsIgnoreCase(user.getEmail());
+        boolean alreadyReported = caseRoot.getId() != null
+                && occurrenceRepository.existsByGroupRootIdAndUserEmailIgnoreCase(
+                        caseRoot.getId(),
+                        user.getEmail()
+                );
+        if (createdCase || alreadyReported) {
+            throw new BusinessRuleException("Voce ja contribuiu para esta ocorrencia");
+        }
     }
 
     private double distanceInMeters(

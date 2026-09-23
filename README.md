@@ -316,7 +316,7 @@ O backend encerra automaticamente ocorrências temporárias dos tipos `ALAGAMENT
 
 ### Agrupamento e força
 
-Ao cadastrar uma ocorrência, o backend procura um caso principal aberto com a mesma categoria e tipo, criado nas últimas duas horas e localizado em um raio de 500 metros. Quando encontra um caso compatível, preserva o novo relato e o associa ao caso existente, aumentando sua `strength`.
+Ao cadastrar uma ocorrência, o backend procura um caso principal aberto com a mesma categoria e tipo e localizado em um raio de 500 metros. A janela padrão é de dois dias para eventos naturais e 30 dias para infraestrutura urbana. Quando encontra um caso compatível, preserva o novo relato e o associa ao caso existente, aumentando sua `strength`. Cada cidadão pode contribuir somente uma vez para o mesmo caso. A regra também é protegida no banco e o caso principal é bloqueado durante o agrupamento, evitando força incorreta em envios simultâneos.
 
 As listagens gerais, administrativas e do mapa retornam apenas os casos principais. `GET /api/occurrences/mine` continua retornando os relatos feitos pelo cidadão. Toda resposta de ocorrência informa `caseId`, que identifica o caso principal, e `strength`, que representa a quantidade total de relatos agrupados. Os critérios podem ser alterados pelas variáveis de ambiente sem mudança no código.
 
@@ -433,10 +433,11 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `CLOUDINARY_API_SECRET` | vazio | Segredo da API Cloudinary |
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
-| `TEMPORARY_EVENT_LIFETIME` | `6h` | Tempo até o encerramento de um evento temporário |
+| `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
 | `AUTO_RESOLUTION_INTERVAL` | `5m` | Intervalo entre verificações automáticas |
 | `AUTO_RESOLUTION_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira verificação |
-| `OCCURRENCE_GROUPING_WINDOW` | `2h` | Janela de tempo para agrupar relatos |
+| `OCCURRENCE_GROUPING_WINDOW_NATURAL` | `2d` | Janela para agrupar relatos de eventos naturais |
+| `OCCURRENCE_GROUPING_WINDOW_INFRASTRUCTURE` | `30d` | Janela para agrupar relatos de infraestrutura |
 | `OCCURRENCE_GROUPING_RADIUS_METERS` | `500` | Distância máxima entre relatos agrupados |
 | `ALERT_REALTIME_CONNECTION_TIMEOUT` | `30m` | Duração máxima de cada conexão SSE |
 | `ALERT_REALTIME_REFRESH_INTERVAL` | `30s` | Intervalo da sinalização periódica de alertas |
@@ -479,14 +480,19 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 114 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 118 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 
 O backend está preparado para receber a porta dinâmica do provedor e expõe
-`GET /actuator/health` para verificação de saúde. A hospedagem gratuita planejada
-usa Render para a API, Aiven para o MySQL, Cloudinary para as fotos e Cloudflare
-Pages para o frontend. O passo a passo e a lista de variáveis estão em:
+`GET /actuator/health` para verificação de saúde. O ambiente publicado usa Render
+para a API, Aiven para o MySQL, Cloudinary para as fotos e Cloudflare para o
+frontend:
+
+- API: <https://cidadeemfoco.onrender.com/>;
+- frontend: <https://cidadeemfoco.kayaquiurbano.workers.dev/>.
+
+O passo a passo e a lista de variáveis estão em:
 
 - `infra/DEPLOY_GRATUITO.md`;
 - `infra/render-backend.env.example`.
@@ -499,7 +505,6 @@ O desenvolvimento local continua usando disco. No Render, use obrigatoriamente
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
 - Cadastrar o número do projeto na Meta, criar e aprovar o template `cidade_em_foco_alerta_climatico` e preencher as credenciais no ambiente de produção.
-- Criar as contas gratuitas, configurar Aiven e Cloudinary e executar o primeiro deploy no Render.
 - Webhook da Meta para distinguir mensagens entregues, lidas e rejeitadas depois do aceite inicial.
 
 ## Limitações atuais
@@ -507,7 +512,7 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - O ambiente local usa disco; a produção gratuita planejada usa Cloudinary e depende da franquia do serviço.
 - Não existe integração oficial com Prefeitura ou Defesa Civil.
 - Os alertas são cadastrados manualmente e não substituem fontes oficiais.
-- O agrupamento atual não possui moderação antifraude ou bloqueio de relatos repetidos pelo mesmo usuário.
+- O agrupamento impede mais de uma contribuição do mesmo cidadão no mesmo caso, mas ainda não possui moderação antifraude avançada (por exemplo, análise de conteúdo ou reputação do usuário).
 - O estado `SENT` confirma que a Meta aceitou a mensagem; sem o webhook, ele ainda não confirma entrega ou leitura pelo cidadão.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.

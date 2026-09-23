@@ -4,8 +4,10 @@ import br.com.cidadeemfoco.entity.Occurrence;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -35,6 +37,7 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
             Instant createdBefore
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<Occurrence> findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
             OccurrenceCategory category,
             OccurrenceType type,
@@ -43,4 +46,6 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
     );
 
     List<Occurrence> findByGroupRootIdOrderByCreatedAtAsc(Long groupRootId);
+
+    boolean existsByGroupRootIdAndUserEmailIgnoreCase(Long groupRootId, String userEmail);
 }
