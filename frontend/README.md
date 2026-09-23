@@ -1,6 +1,6 @@
 ﻿# Cidade em Foco — Frontend
 
-Interface web do **Cidade em Foco**, um MVP acadêmico para moradores de Praia Grande-SP registrarem ocorrências urbanas e consultarem alertas climáticos demonstrativos. A aplicação possui áreas de cidadão e administrador, mapas interativos e interface responsiva em português.
+Interface web do **Cidade em Foco**, um projeto acadêmico para moradores de Praia Grande-SP registrarem ocorrências urbanas e consultarem alertas climáticos demonstrativos. A aplicação possui áreas de cidadão e administrador, mapas interativos e interface responsiva em português.
 
 ## Tecnologias
 
@@ -15,6 +15,7 @@ As faixas abaixo são as declaradas em [package.json](package.json); as versões
 | Leaflet / React Leaflet | `^1.9.4` / `^5.0.0` | Mapas, marcadores e seleção de localização |
 | Lucide React | `^1.33.0` | Ícones |
 | Oxlint | `^1.75.0` | Análise estática, incluindo regras de hooks |
+| Wrangler | `^4.136.3` | Publicação dos arquivos estáticos no Cloudflare Workers |
 
 O código usa **JavaScript com JSX**, módulos ES e CSS próprio. A sessão é compartilhada por Context API e pelo hook `useAuth`. A comunicação HTTP usa `fetch`, `FormData` e `Blob` nativos do navegador. Os pacotes `@types/react` e `@types/react-dom` auxiliam as ferramentas de desenvolvimento; não há código TypeScript nesta versão.
 
@@ -75,6 +76,7 @@ Todos os comandos abaixo também partem de `frontend/`:
 | `npm.cmd run lint` | Executar o Oxlint com `.oxlintrc.json` |
 | `npm.cmd run build` | Gerar os arquivos estáticos em `dist/` |
 | `npm.cmd run preview` | Servir localmente o build de `dist/`, normalmente na porta 4173 |
+| `npm.cmd run deploy` | Publicar o conteúdo já gerado em `dist/` no Cloudflare Workers |
 
 Para conferir o build:
 
@@ -86,7 +88,7 @@ npm.cmd run preview
 
 Se preferir permanecer na raiz do repositório, use `npm.cmd --prefix frontend run dev` e o mesmo prefixo para `lint`, `build` e `preview`.
 
-Na hospedagem, publique o conteúdo de `dist/` e configure o servidor para entregar `index.html` nas rotas da aplicação, como `/app/ocorrencias/1`, permitindo acesso direto e atualização da página com `BrowserRouter`. A configuração atual pressupõe hospedagem na raiz do domínio, inclusive para imagens em `/brand` e `/images`. `preview` serve para conferência local do build.
+Na hospedagem, publique o conteúdo de `dist/` e configure o servidor para entregar `index.html` nas rotas da aplicação, como `/app/ocorrencias/1`, permitindo acesso direto e atualização da página com `BrowserRouter`. No Cloudflare Workers, essa regra está em `wrangler.jsonc`, por meio de `not_found_handling: "single-page-application"`. A configuração atual pressupõe hospedagem na raiz do domínio, inclusive para imagens em `/brand` e `/images`. `preview` serve para conferência local do build.
 
 ## Estrutura de pastas
 
@@ -122,6 +124,7 @@ frontend/
 ├── package.json
 ├── package-lock.json
 ├── vite.config.js
+├── wrangler.jsonc            # Assets estáticos e fallback das rotas SPA
 └── README.md
 ```
 

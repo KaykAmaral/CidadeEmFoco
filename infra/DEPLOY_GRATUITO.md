@@ -61,10 +61,19 @@ usá-la. O sistema de arquivos do Render não será usado para as fotos.
 
 ## 5. Conectar o frontend
 
-1. Publique o frontend no Cloudflare Pages.
-2. Configure `VITE_API_URL=https://SEU-BACKEND.onrender.com`.
-3. No Render, configure `CORS_ALLOWED_ORIGINS` com a URL exata do Pages.
-4. Faça um novo deploy do backend após alterar o CORS.
+O endereço atual em `workers.dev` usa **Cloudflare Workers Builds com Static
+Assets**, e não um projeto Pages. Em **Settings > Builds**, configure:
+
+1. **Root directory:** `frontend`;
+2. **Build command:** `npm run build`;
+3. **Deploy command:** `npm run deploy`;
+4. **Production branch:** `main`;
+5. variável de build `VITE_API_URL=https://SEU-BACKEND.onrender.com`.
+
+O arquivo `frontend/wrangler.jsonc` publica o diretório `dist` e devolve
+`index.html` nas rotas do React Router. No Render, configure
+`CORS_ALLOWED_ORIGINS` com a origem exata em `workers.dev` e faça um novo deploy
+do backend após alterar o CORS.
 
 ## Limitações gratuitas
 
