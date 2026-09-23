@@ -15,8 +15,15 @@ JOIN occurrences first_report
 WHERE duplicate_report.group_root_id IS NOT NULL;
 
 -- Usa uma tabela temporaria porque o MySQL nao permite atualizar uma tabela
--- enquanto uma subconsulta correlacionada le a mesma tabela.
-CREATE TEMPORARY TABLE occurrence_strength_totals AS
+-- enquanto uma subconsulta correlacionada le a mesma tabela. A chave primaria
+-- explicita tambem atende provedores que habilitam sql_require_primary_key.
+CREATE TEMPORARY TABLE occurrence_strength_totals (
+    group_root_id BIGINT NOT NULL,
+    report_count BIGINT NOT NULL,
+    PRIMARY KEY (group_root_id)
+);
+
+INSERT INTO occurrence_strength_totals (group_root_id, report_count)
 SELECT group_root_id, COUNT(*) AS report_count
 FROM occurrences
 WHERE group_root_id IS NOT NULL
