@@ -15,6 +15,7 @@ import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -83,13 +84,25 @@ public class OccurrenceService {
                 user
         );
 
-        findSimilarCase(request).ifPresent(caseRoot -> {
+        Optional<Occurrence> similarCase = findSimilarCase(request);
+        similarCase.ifPresent(caseRoot -> {
             validateCitizenHasNotContributed(caseRoot, user);
             occurrence.joinCase(caseRoot);
             occurrenceRepository.save(caseRoot);
         });
 
-        return OccurrenceResponse.from(occurrenceRepository.save(occurrence));
+        try {
+            Occurrence savedOccurrence = occurrenceRepository.save(occurrence);
+            if (similarCase.isPresent()) {
+                occurrenceRepository.flush();
+            }
+            return OccurrenceResponse.from(savedOccurrence);
+        } catch (DataIntegrityViolationException exception) {
+            if (similarCase.isPresent()) {
+                throw new BusinessRuleException("Voce ja contribuiu para esta ocorrencia");
+            }
+            throw exception;
+        }
     }
 
     public List<OccurrenceResponse> findAll(OccurrenceFilter filter) {

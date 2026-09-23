@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -93,6 +95,7 @@ class OccurrenceServiceTest {
         assertThat(caseRoot.getStrength()).isEqualTo(2);
         verify(occurrenceRepository).save(caseRoot);
         verify(occurrenceRepository, times(2)).save(any(Occurrence.class));
+        verify(occurrenceRepository).flush();
     }
 
     @Test
@@ -135,6 +138,29 @@ class OccurrenceServiceTest {
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("Voce ja contribuiu para esta ocorrencia");
         verify(occurrenceRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldTranslateConcurrentDuplicateContributionToBusinessRule() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(caseRoot));
+        when(occurrenceRepository.save(any(Occurrence.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new DataIntegrityViolationException("duplicate contribution"))
+                .when(occurrenceRepository).flush();
+
+        assertThatThrownBy(() -> occurrenceService.create("ana@example.com", validRequest()))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("Voce ja contribuiu para esta ocorrencia");
     }
 
     @Test

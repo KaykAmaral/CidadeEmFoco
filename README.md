@@ -316,7 +316,7 @@ O backend encerra automaticamente ocorrências temporárias dos tipos `ALAGAMENT
 
 ### Agrupamento e força
 
-Ao cadastrar uma ocorrência, o backend procura um caso principal aberto com a mesma categoria e tipo e localizado em um raio de 500 metros. A janela padrão é de dois dias para eventos naturais e 30 dias para infraestrutura urbana. Quando encontra um caso compatível, preserva o novo relato e o associa ao caso existente, aumentando sua `strength`. Cada cidadão pode contribuir somente uma vez para o mesmo caso.
+Ao cadastrar uma ocorrência, o backend procura um caso principal aberto com a mesma categoria e tipo e localizado em um raio de 500 metros. A janela padrão é de dois dias para eventos naturais e 30 dias para infraestrutura urbana. Quando encontra um caso compatível, preserva o novo relato e o associa ao caso existente, aumentando sua `strength`. Cada cidadão pode contribuir somente uma vez para o mesmo caso. A regra também é protegida no banco e o caso principal é bloqueado durante o agrupamento, evitando força incorreta em envios simultâneos.
 
 As listagens gerais, administrativas e do mapa retornam apenas os casos principais. `GET /api/occurrences/mine` continua retornando os relatos feitos pelo cidadão. Toda resposta de ocorrência informa `caseId`, que identifica o caso principal, e `strength`, que representa a quantidade total de relatos agrupados. Os critérios podem ser alterados pelas variáveis de ambiente sem mudança no código.
 
