@@ -425,6 +425,7 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `DB_PASSWORD` | vazio | Senha do banco |
 | `JWT_SECRET` | sem padrão | Segredo JWT em Base64 |
 | `JWT_EXPIRATION_MINUTES` | `1440` | Validade do token |
+| `FLYWAY_REPAIR_ON_START` | `false` | Reparo emergencial e temporário de migration marcada como falha |
 | `SERVER_PORT` | `8080` | Porta da API |
 | `IMAGE_STORAGE_TYPE` | `local` | Armazenamento de imagens: `local` ou `cloudinary` |
 | `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório usado quando o armazenamento é local |
@@ -480,7 +481,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 118 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 119 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 

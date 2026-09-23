@@ -43,6 +43,8 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  database:
+    flyway-repair-on-start: ${FLYWAY_REPAIR_ON_START:false}
   alerts:
     realtime-connection-timeout: ${ALERT_REALTIME_CONNECTION_TIMEOUT:30m}
     realtime-refresh-interval: ${ALERT_REALTIME_REFRESH_INTERVAL:30s}

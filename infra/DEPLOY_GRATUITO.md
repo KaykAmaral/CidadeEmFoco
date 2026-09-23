@@ -75,6 +75,20 @@ O arquivo `frontend/wrangler.jsonc` publica o diretório `dist` e devolve
 `CORS_ALLOWED_ORIGINS` com a origem exata em `workers.dev` e faça um novo deploy
 do backend após alterar o CORS.
 
+## Recuperar uma migration Flyway marcada como falha
+
+Use este procedimento somente quando o log do backend informar explicitamente
+`Detected failed migration`:
+
+1. no Render, defina `FLYWAY_REPAIR_ON_START=true`;
+2. faça o deploy da versão que contém a migration corrigida;
+3. confirme no log as mensagens de `repair` e a aplicação da migration;
+4. altere imediatamente `FLYWAY_REPAIR_ON_START=false`;
+5. faça um novo deploy e confirme `GET /actuator/health`.
+
+Com `false` (valor padrão), o backend mantém o comportamento normal do Flyway e
+não executa reparos automáticos.
+
 ## Limitações gratuitas
 
 - O Render pode adormecer o backend após 15 minutos sem acessos; a primeira
