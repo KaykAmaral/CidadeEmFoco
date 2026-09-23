@@ -11,6 +11,7 @@ import br.com.cidadeemfoco.service.OccurrenceService;
 import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
+import br.com.cidadeemfoco.service.ClimateAlertRealtimeService;
 import br.com.cidadeemfoco.service.OccurrenceImageService;
 import br.com.cidadeemfoco.service.UserService;
 import br.com.cidadeemfoco.service.WhatsappNotificationService;
@@ -25,6 +26,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +38,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -42,6 +46,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -77,6 +82,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private ClimateAlertCleanupService climateAlertCleanupService;
+
+    @MockitoBean
+    private ClimateAlertRealtimeService climateAlertRealtimeService;
 
     @MockitoBean
     private OccurrenceImageService occurrenceImageService;
@@ -260,6 +268,26 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/alerts/stream"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Autenticacao necessaria"));
+    }
+
+    @Test
+    void shouldAllowAuthenticatedAlertStreamAsyncDispatch() throws Exception {
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        SseEmitter emitter = new SseEmitter();
+        when(climateAlertRealtimeService.subscribe()).thenReturn(emitter);
+        String token = jwtService.generateToken(citizen);
+
+        MvcResult stream = mockMvc.perform(get("/api/alerts/stream")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        emitter.complete();
+
+        mockMvc.perform(asyncDispatch(stream))
+                .andExpect(status().isOk());
     }
 
     @Test

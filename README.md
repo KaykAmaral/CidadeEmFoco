@@ -480,14 +480,19 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 114 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 118 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 
 O backend está preparado para receber a porta dinâmica do provedor e expõe
-`GET /actuator/health` para verificação de saúde. A hospedagem gratuita planejada
-usa Render para a API, Aiven para o MySQL, Cloudinary para as fotos e Cloudflare
-Pages para o frontend. O passo a passo e a lista de variáveis estão em:
+`GET /actuator/health` para verificação de saúde. O ambiente publicado usa Render
+para a API, Aiven para o MySQL, Cloudinary para as fotos e Cloudflare para o
+frontend:
+
+- API: <https://cidadeemfoco.onrender.com/>;
+- frontend: <https://cidadeemfoco.kayaquiurbano.workers.dev/>.
+
+O passo a passo e a lista de variáveis estão em:
 
 - `infra/DEPLOY_GRATUITO.md`;
 - `infra/render-backend.env.example`.
@@ -500,7 +505,6 @@ O desenvolvimento local continua usando disco. No Render, use obrigatoriamente
 Os itens abaixo estão planejados, mas ainda não devem ser considerados implementados:
 
 - Cadastrar o número do projeto na Meta, criar e aprovar o template `cidade_em_foco_alerta_climatico` e preencher as credenciais no ambiente de produção.
-- Criar as contas gratuitas, configurar Aiven e Cloudinary e executar o primeiro deploy no Render.
 - Webhook da Meta para distinguir mensagens entregues, lidas e rejeitadas depois do aceite inicial.
 
 ## Limitações atuais
@@ -508,7 +512,7 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - O ambiente local usa disco; a produção gratuita planejada usa Cloudinary e depende da franquia do serviço.
 - Não existe integração oficial com Prefeitura ou Defesa Civil.
 - Os alertas são cadastrados manualmente e não substituem fontes oficiais.
-- O agrupamento atual não possui moderação antifraude ou bloqueio de relatos repetidos pelo mesmo usuário.
+- O agrupamento impede mais de uma contribuição do mesmo cidadão no mesmo caso, mas ainda não possui moderação antifraude avançada (por exemplo, análise de conteúdo ou reputação do usuário).
 - O estado `SENT` confirma que a Meta aceitou a mensagem; sem o webhook, ele ainda não confirma entrega ou leitura pelo cidadão.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.

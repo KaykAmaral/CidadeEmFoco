@@ -3,6 +3,7 @@ package br.com.cidadeemfoco.config;
 import br.com.cidadeemfoco.exception.ApiErrorResponse;
 import br.com.cidadeemfoco.security.DatabaseUserDetailsService;
 import br.com.cidadeemfoco.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -61,6 +62,7 @@ public class SecurityConfig {
                                 writeSecurityError(request, response, HttpStatus.FORBIDDEN, "Acesso proibido"))
                 )
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
