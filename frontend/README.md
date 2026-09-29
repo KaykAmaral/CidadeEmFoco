@@ -197,6 +197,14 @@ Se apenas o upload falhar, a ocorrência permanece criada e a tela de detalhes r
 
 O dashboard é de consulta; alterações ficam nas telas de gestão.
 
+Os filtros de data inicial/final, bairro, categoria, tipo e status são aplicados pelo botão **Aplicar filtros**. Indicadores, distribuição por status, mapa e lista recente usam a mesma resposta da API. **Limpar filtros** restaura a consulta completa. Ao alterar a categoria, um tipo incompatível é removido. Carregamento e erro ocultam resultados anteriores; os campos continuam disponíveis.
+
+O período usa a **data de cadastro** da ocorrência no horário local do navegador, incluindo todo o dia final. A consulta administrativa recebe `createdFrom` (instante ISO inclusivo) e `createdBefore` (instante ISO exclusivo, início do dia seguinte), além dos parâmetros existentes `neighborhood`, `category`, `type` e `status`. Ambas as datas são opcionais. Intervalos invertidos são rejeitados. O backend aplica os critérios no banco; não há filtragem de datas apenas no navegador.
+
+Alertas climáticos permanecem gerais e são reutilizados durante a filtragem de ocorrências. **Atualizar dados** renova ocorrências e alertas. Reaplicar filtros iguais não dispara outra consulta; requisições substituídas são canceladas.
+
+Para conferir manualmente, entre como administrador em `/admin`, combine os filtros e compare total, contagens, mapa e os cinco registros mais recentes. Teste um único dia, somente uma das datas, um bairro sem resultados, mudança de categoria e **Limpar filtros**. No painel Network do navegador, cada aplicação de critérios diferentes deve fazer uma consulta a `/api/admin/occurrences`, com os parâmetros escolhidos. Para validar o erro e a recuperação, desative a conexão no navegador, altere um filtro, aplique, reative a conexão e use **Tentar novamente**. Confira também a disposição dos campos em celular.
+
 ### Gestão de ocorrências
 
 `/admin/ocorrencias` oferece filtros de categoria, tipo, status e bairro, com listagem em tabela e acesso ao detalhe por ID. O detalhe consulta `GET /api/admin/occurrences/{id}` e apresenta descrição, risco percebido, datas de criação e atualização, localização e imagens.
@@ -234,7 +242,7 @@ A localização atual é solicitada ao navegador apenas ao acionar **Usar minha 
 
 ## Verificação e problemas comuns
 
-O frontend não possui suíte automatizada própria nem script `test`. As verificações disponíveis são `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Os testes de regras e permissões do backend são descritos no [README do backend](../README-BACKEND.md#testes).
+`npm.cmd test` executa os testes dos parâmetros do dashboard usando o test runner nativo do Node.js, incluindo conversão de fuso, limites de datas, período de um único dia e combinações de filtros. Execute também `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Não há suíte automatizada de navegador. Os testes de regras e permissões do backend são descritos no [README do backend](../README-BACKEND.md#testes).
 
 Com frontend e backend em execução, valide no navegador:
 

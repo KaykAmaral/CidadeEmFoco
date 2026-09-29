@@ -88,6 +88,42 @@ class AdminOccurrenceControllerTest {
     }
 
     @Test
+    void shouldForwardDateRangeAlongsideExistingFilters() throws Exception {
+        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/admin/occurrences")
+                        .param("category", "EVENTO_NATURAL")
+                        .param("type", "ALAGAMENTO")
+                        .param("status", "REGISTRADA")
+                        .param("neighborhood", "Boqueirao")
+                        .param("createdFrom", "2026-09-01T03:00:00Z")
+                        .param("createdBefore", "2026-10-01T03:00:00Z"))
+                .andExpect(status().isOk());
+
+        verify(occurrenceService).findAll(new OccurrenceFilter(
+                OccurrenceCategory.EVENTO_NATURAL, OccurrenceType.ALAGAMENTO,
+                OccurrenceStatus.REGISTRADA, "Boqueirao",
+                Instant.parse("2026-09-01T03:00:00Z"), Instant.parse("2026-10-01T03:00:00Z")));
+    }
+
+    @Test
+    void shouldRejectMalformedDate() throws Exception {
+        mockMvc.perform(get("/api/admin/occurrences").param("createdFrom", "invalid"))
+                .andExpect(status().isBadRequest());
+        org.mockito.Mockito.verifyNoInteractions(occurrenceService);
+    }
+
+    @Test
+    void shouldAcceptEndDateWithoutStartDate() throws Exception {
+        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        mockMvc.perform(get("/api/admin/occurrences")
+                        .param("createdBefore", "2026-10-01T03:00:00Z"))
+                .andExpect(status().isOk());
+        verify(occurrenceService).findAll(new OccurrenceFilter(
+                null, null, null, null, null, Instant.parse("2026-10-01T03:00:00Z")));
+    }
+
+    @Test
     void shouldReturnAdministrativeOccurrenceDetails() throws Exception {
         when(occurrenceService.findById(10L)).thenReturn(response(OccurrenceStatus.REGISTRADA));
 

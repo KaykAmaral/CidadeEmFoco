@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.time.Instant;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Validated
 @RestController
@@ -37,9 +39,12 @@ public class AdminOccurrenceController {
             @RequestParam(required = false) OccurrenceCategory category,
             @RequestParam(required = false) OccurrenceType type,
             @RequestParam(required = false) OccurrenceStatus status,
-            @RequestParam(required = false) @Size(max = 100) String neighborhood
+            @RequestParam(required = false) @Size(max = 100) String neighborhood,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdBefore
     ) {
-        return occurrenceService.findAll(new OccurrenceFilter(category, type, status, neighborhood));
+        return occurrenceService.findAll(new OccurrenceFilter(
+                category, type, status, neighborhood, createdFrom, createdBefore));
     }
 
     @GetMapping("/{id}")

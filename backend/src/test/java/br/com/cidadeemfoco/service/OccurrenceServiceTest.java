@@ -14,15 +14,21 @@ import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -172,6 +180,44 @@ class OccurrenceServiceTest {
 
         assertThat(responses).isEmpty();
         verify(occurrenceRepository).findAll(any(Specification.class), any(Sort.class));
+    }
+
+    @Test
+    void shouldRejectReversedOrEmptyDateRangeBeforeQuerying() {
+        Instant start = Instant.parse("2026-09-28T03:00:00Z");
+        for (Instant end : List.of(start, start.minusSeconds(1))) {
+            assertThatThrownBy(() -> occurrenceService.findAll(
+                    new OccurrenceFilter(null, null, null, null, start, end)))
+                    .isInstanceOf(BusinessRuleException.class)
+                    .hasMessage("O fim do periodo deve ser posterior ao inicio");
+        }
+        verifyNoInteractions(occurrenceRepository);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldApplyInclusiveStartAndExclusiveEndToCreationDate() {
+        Instant start = Instant.parse("2026-09-28T03:00:00Z");
+        Instant end = Instant.parse("2026-09-29T03:00:00Z");
+        Root<Occurrence> root = mock(Root.class);
+        CriteriaBuilder builder = mock(CriteriaBuilder.class);
+        Path<Instant> datePath = mock(Path.class);
+        Predicate lowerBound = mock(Predicate.class);
+        Predicate upperBound = mock(Predicate.class);
+        when(root.<Instant>get("createdAt")).thenReturn(datePath);
+        when(builder.greaterThanOrEqualTo(datePath, start)).thenReturn(lowerBound);
+        when(builder.lessThan(datePath, end)).thenReturn(upperBound);
+        when(occurrenceRepository.findAll(any(Specification.class), any(Sort.class)))
+                .thenReturn(List.of());
+
+        occurrenceService.findAll(new OccurrenceFilter(null, null, null, null, start, end));
+        ArgumentCaptor<Specification<Occurrence>> specification = ArgumentCaptor.forClass(Specification.class);
+        verify(occurrenceRepository).findAll(specification.capture(), any(Sort.class));
+        specification.getValue().toPredicate(root, null, builder);
+
+        verify(builder).greaterThanOrEqualTo(datePath, start);
+        verify(builder).lessThan(datePath, end);
+        verify(builder).and(new Predicate[]{lowerBound, upperBound});
     }
 
     private CreateOccurrenceRequest validRequest() {

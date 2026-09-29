@@ -11,8 +11,8 @@ function buildQuery(filters = {}) {
   return query ? `?${query}` : ''
 }
 
-function getAdminOccurrences(token, filters = {}) {
-  return apiRequest(`/api/admin/occurrences${buildQuery(filters)}`, { token })
+function getAdminOccurrences(token, filters = {}, signal) {
+  return apiRequest(`/api/admin/occurrences${buildQuery(filters)}`, { token, signal })
 }
 
 function getAdminOccurrenceById(token, id) {
@@ -27,8 +27,8 @@ function updateAdminOccurrenceStatus(token, id, status) {
   })
 }
 
-function getAdminAlerts(token) {
-  return apiRequest('/api/admin/alerts', { token })
+function getAdminAlerts(token, signal) {
+  return apiRequest('/api/admin/alerts', { token, signal })
 }
 
 function createAdminAlert(token, alert) {

@@ -64,6 +64,10 @@ public class OccurrenceService {
 
     public List<OccurrenceResponse> findAll(OccurrenceFilter filter) {
         validateCategoryAndType(filter.category(), filter.type());
+        if (filter.createdFrom() != null && filter.createdBefore() != null
+                && !filter.createdFrom().isBefore(filter.createdBefore())) {
+            throw new BusinessRuleException("O fim do periodo deve ser posterior ao inicio");
+        }
         return occurrenceRepository.findAll(toSpecification(filter, null), NEWEST_FIRST)
                 .stream()
                 .map(OccurrenceResponse::from)
@@ -113,6 +117,12 @@ public class OccurrenceService {
                         criteriaBuilder.lower(root.get("user").get("email")),
                         userEmail
                 ));
+            }
+            if (filter.createdFrom() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdAt"), filter.createdFrom()));
+            }
+            if (filter.createdBefore() != null) {
+                predicates.add(criteriaBuilder.lessThan(root.get("createdAt"), filter.createdBefore()));
             }
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         };
