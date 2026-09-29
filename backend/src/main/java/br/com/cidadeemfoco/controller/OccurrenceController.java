@@ -3,6 +3,11 @@ package br.com.cidadeemfoco.controller;
 import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.dto.OccurrenceResponse;
+import br.com.cidadeemfoco.dto.OccurrenceMapResponse;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.Instant;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
@@ -57,6 +62,20 @@ public class OccurrenceController {
     @GetMapping("/mine")
     public List<OccurrenceResponse> findMine(Authentication authentication) {
         return occurrenceService.findByUser(authentication.getName());
+    }
+
+    @GetMapping("/map")
+    public ResponseEntity<OccurrenceMapResponse> findForMap(
+            @RequestParam(required = false) OccurrenceCategory category,
+            @RequestParam(required = false) OccurrenceType type,
+            @RequestParam(required = false) OccurrenceStatus status,
+            @RequestParam(required = false) @Size(max = 100) String neighborhood,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdBefore,
+            @RequestParam(required = false) @Positive Long occurrenceId
+    ) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(occurrenceService.findForMap(
+                new OccurrenceFilter(category, type, status, neighborhood, createdFrom, createdBefore), occurrenceId));
     }
 
     @GetMapping("/{id}")

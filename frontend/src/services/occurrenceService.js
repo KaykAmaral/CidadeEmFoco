@@ -17,6 +17,10 @@ function getOccurrences(token, filters = {}) {
   return apiRequest(`/api/occurrences${buildQuery(filters)}`, { token })
 }
 
+function getMapOccurrences(token, filters = {}, signal) {
+  return apiRequest(`/api/occurrences/map${buildQuery(filters)}`, { token, signal, cache: 'no-store' })
+}
+
 function getMyOccurrences(token) {
   return apiRequest('/api/occurrences/mine', { token })
 }
@@ -58,6 +62,7 @@ function getOccurrenceImage(token, id, imageUrl) {
 }
 
 export {
+  getMapOccurrences,
   createOccurrence,
   getMyOccurrences,
   getOccurrenceById,

@@ -55,7 +55,8 @@ class OccurrenceServiceTest {
 
     @BeforeEach
     void setUp() {
-        occurrenceService = new OccurrenceService(occurrenceRepository, userRepository);
+        occurrenceService = new OccurrenceService(occurrenceRepository, userRepository,
+                new MapVisibilityPolicy(java.time.Duration.ofHours(24), java.time.Duration.ofSeconds(30), java.time.Clock.systemUTC()));
     }
 
     @Test

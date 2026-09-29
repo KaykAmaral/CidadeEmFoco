@@ -1,7 +1,7 @@
 import { ArrowLeft, CalendarDays, MapPin, ShieldAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
-import OccurrenceMap from '../components/map/OccurrenceMap'
+import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
 import FeedbackState from '../components/ui/FeedbackState'
@@ -120,7 +120,7 @@ function OccurrenceDetailPage() {
 
         <section className="occurrence-detail__card">
           <h2>Localização</h2>
-          <OccurrenceMap occurrences={[occurrence]} />
+          <LiveOccurrenceMap filters={{ occurrenceId: occurrence.id }} />
           <p className="occurrence-detail__coordinates">
             {occurrence.latitude}, {occurrence.longitude}
           </p>

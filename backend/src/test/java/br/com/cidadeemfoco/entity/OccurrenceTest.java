@@ -8,6 +8,7 @@ import br.com.cidadeemfoco.enums.UserRole;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +54,22 @@ class OccurrenceTest {
         ))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("categoria");
+    }
+
+    @Test
+    void shouldTimestampResolutionWithoutExtendingItOnRepeatedStatusAndClearOnReopen() {
+        Occurrence occurrence = new Occurrence(OccurrenceCategory.EVENTO_NATURAL, OccurrenceType.ALAGAMENTO,
+                "Teste", PerceivedRisk.BAIXO, BigDecimal.ZERO, BigDecimal.ZERO, null, null, citizen);
+        Instant before = Instant.now();
+        occurrence.changeStatus(OccurrenceStatus.RESOLVIDA);
+        Instant resolvedAt = occurrence.getResolvedAt();
+        assertThat(resolvedAt).isBetween(before, Instant.now());
+        occurrence.changeStatus(OccurrenceStatus.RESOLVIDA);
+        assertThat(occurrence.getResolvedAt()).isEqualTo(resolvedAt);
+        occurrence.changeStatus(OccurrenceStatus.EM_ATENDIMENTO);
+        assertThat(occurrence.getResolvedAt()).isNull();
+        occurrence.changeStatus(OccurrenceStatus.RESOLVIDA);
+        assertThat(occurrence.getResolvedAt()).isAfterOrEqualTo(resolvedAt);
     }
 
     @Test

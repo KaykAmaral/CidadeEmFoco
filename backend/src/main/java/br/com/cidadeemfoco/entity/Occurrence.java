@@ -86,6 +86,9 @@ public class Occurrence {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "resolved_at")
+    private Instant resolvedAt;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -132,7 +135,14 @@ public class Occurrence {
     }
 
     public void changeStatus(OccurrenceStatus status) {
-        this.status = Objects.requireNonNull(status);
+        Objects.requireNonNull(status);
+        if (this.status == status) return;
+        this.resolvedAt = status == OccurrenceStatus.RESOLVIDA ? Instant.now() : null;
+        this.status = status;
+    }
+
+    public Instant getResolvedAt() {
+        return resolvedAt;
     }
 
     public String replaceImage(String imagePath) {

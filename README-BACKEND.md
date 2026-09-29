@@ -262,6 +262,25 @@ As migrations ficam em `backend/src/main/resources/db/migration/`.
 
 ## Testes
 
+### Visibilidade das ocorrências no mapa
+
+`GET /api/occurrences/map` exige autenticação e retorna `{ "occurrences": [...], "refreshAfterMillis": ... }`, com `Cache-Control: no-store`. Aceita `category`, `type`, `status`, `neighborhood`, `createdFrom`, `createdBefore` e `occurrenceId`. Os filtros existentes continuam sendo aplicados no banco.
+
+A consulta específica do mapa inclui ocorrências cujo status não é `RESOLVIDA` e resolvidas cujo `resolvedAt` ainda está dentro do prazo. No instante exato do vencimento, deixam de ser retornadas. As listagens comuns, detalhes e consultas administrativas continuam retornando o histórico completo; nenhum registro é excluído.
+
+Configure o processo do backend por variáveis de ambiente (o Spring Boot não lê `.env` automaticamente):
+
+- `MAP_RESOLVED_RETENTION`: duração ISO-8601, padrão `PT24H`. Por exemplo, `PT2H` mantém resolvidas por duas horas; `PT0S` as oculta imediatamente.
+- `MAP_REFRESH_INTERVAL`: duração ISO-8601, padrão `PT30S`, entre `PT1S` e `PT1H`. O backend informa esse intervalo ao frontend; a remoção aparece na próxima consulta automática, sujeita à conexão e à suspensão de abas pelo navegador.
+
+Os valores padrão ficam apenas em `application.yml`. Reinicie a API após mudar as variáveis. A data `resolvedAt` é gravada quando o status muda para `RESOLVIDA`, preservada ao repetir esse mesmo status e limpa ao reabrir. Uma nova resolução inicia outro prazo.
+
+A migration V4 cria `resolved_at` e, para registros antigos já resolvidos, usa `updated_at` como estimativa da resolução, preservando a própria data de atualização. Não existe histórico anterior que permita reconstruir uma data mais precisa. Uma resolvida sem data não é exibida no mapa.
+
+Os testes de integração do mapa usam MySQL real em um **banco exclusivo para testes**, indicado por `MAP_TEST_DB_URL`, com usuário e senha opcionais em `MAP_TEST_DB_USERNAME` e `MAP_TEST_DB_PASSWORD`. Sem essa variável, esses testes são ignorados. Com ela, `mvnw.cmd test` executa cenários de ocorrências ativas, recém-resolvidas, expiradas, limite exato, reabertura, filtros, autorização e preservação do histórico. As fixtures são revertidas ao final de cada teste. Nunca aponte essa variável para um banco de uso real.
+
+### Suíte geral
+
 Execute toda a suíte com:
 
 ```powershell

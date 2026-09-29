@@ -33,6 +33,9 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  map:
+    resolved-retention: ${MAP_RESOLVED_RETENTION:PT24H}
+    refresh-interval: ${MAP_REFRESH_INTERVAL:PT30S}
   storage:
     occurrence-images-directory: ${OCCURRENCE_IMAGE_DIR:uploads/occurrences}
   security:

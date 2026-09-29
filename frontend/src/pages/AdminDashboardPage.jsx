@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import OccurrenceMap from '../components/map/OccurrenceMap'
+import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
@@ -164,7 +164,7 @@ function AdminDashboardPage() {
       <form className="admin-dashboard-filters" onSubmit={applyFilters} aria-label="Filtros de ocorrências">
         <p className="admin-dashboard-filters__description" id="dashboard-filter-help">
           Filtre as ocorrências pela data de cadastro. O período inclui o dia final, no seu horário local.
-          Os indicadores, o mapa e as ocorrências recentes seguem os filtros aplicados. Os alertas climáticos são gerais.
+          Os indicadores, o mapa e as ocorrências recentes seguem os filtros aplicados. O mapa oculta resolvidas após o prazo configurado; o histórico permanece nos indicadores e na lista. Os alertas climáticos são gerais.
         </p>
         <div className="form-field">
           <label htmlFor="dashboard-start-date">Data inicial</label>
@@ -237,9 +237,7 @@ function AdminDashboardPage() {
                 </div>
                 <Link to="/admin/ocorrencias">Gerenciar</Link>
               </div>
-              {occurrences.length > 0 ? <OccurrenceMap occurrences={occurrences} /> : (
-                <FeedbackState type="empty" title="Nenhuma ocorrência no mapa" message="Altere ou limpe os filtros para consultar outros registros." />
-              )}
+              <LiveOccurrenceMap filters={appliedFilters} />
             </section>
 
             <section className="admin-dashboard-card admin-recent-card">

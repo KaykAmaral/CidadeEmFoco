@@ -197,7 +197,7 @@ Se apenas o upload falhar, a ocorrência permanece criada e a tela de detalhes r
 
 O dashboard é de consulta; alterações ficam nas telas de gestão.
 
-Os filtros de data inicial/final, bairro, categoria, tipo e status são aplicados pelo botão **Aplicar filtros**. Indicadores, distribuição por status, mapa e lista recente usam a mesma resposta da API. **Limpar filtros** restaura a consulta completa. Ao alterar a categoria, um tipo incompatível é removido. Carregamento e erro ocultam resultados anteriores; os campos continuam disponíveis.
+Os filtros de data inicial/final, bairro, categoria, tipo e status são aplicados pelo botão **Aplicar filtros**. Indicadores, distribuição por status e lista recente usam a consulta administrativa completa; o mapa aplica os mesmos filtros em `/api/occurrences/map`, acrescentando a regra de expiração das resolvidas. Por isso, o histórico contado pelos indicadores pode ser maior que a quantidade de marcadores. **Limpar filtros** restaura a consulta completa. Ao alterar a categoria, um tipo incompatível é removido. Carregamento e erro ocultam resultados anteriores; os campos continuam disponíveis.
 
 O período usa a **data de cadastro** da ocorrência no horário local do navegador, incluindo todo o dia final. A consulta administrativa recebe `createdFrom` (instante ISO inclusivo) e `createdBefore` (instante ISO exclusivo, início do dia seguinte), além dos parâmetros existentes `neighborhood`, `category`, `type` e `status`. Ambas as datas são opcionais. Intervalos invertidos são rejeitados. O backend aplica os critérios no banco; não há filtragem de datas apenas no navegador.
 
@@ -234,6 +234,12 @@ O formulário recebe título, tipo, severidade, descrição e período. Os tipos
 
 ## Mapas e serviços externos
 
+Todos os mapas de ocorrências usam `LiveOccurrenceMap` e o endpoint autenticado `GET /api/occurrences/map`, inclusive nas páginas de detalhe (filtradas por `occurrenceId`). As consultas históricas permanecem completas. Uma ocorrência resolvida expirada perde o marcador, mas seus detalhes, fotos e coordenadas continuam acessíveis.
+
+O backend controla o prazo por `MAP_RESOLVED_RETENTION` e a frequência das consultas por `MAP_REFRESH_INTERVAL`; veja o README do backend. O frontend mantém um único ciclo de atualização por mapa, sem temporizadores por marcador e sem calcular o prazo localmente. O ciclo só agenda a próxima consulta depois que a anterior termina, cancela consultas ao desmontar/trocar filtros e atualiza ao voltar à aba. Em caso de erro, oculta os marcadores anteriores e tenta novamente automaticamente. As contagens das categorias no mapa do cidadão usam apenas os marcadores retornados.
+
+Para testar a remoção em pouco tempo, inicie a API com `MAP_RESOLVED_RETENTION=PT1M` e `MAP_REFRESH_INTERVAL=PT5S`, resolva uma ocorrência e mantenha o mapa aberto. Ela deverá desaparecer após um minuto mais o intervalo até a próxima consulta. Confira que continua na listagem administrativa e no detalhe. Reabra a ocorrência para fazê-la reaparecer. A configuração de produção pode manter o padrão de 24 horas.
+
 Os mapas usam Leaflet e React Leaflet, com centro inicial em Praia Grande (`-24.005833, -46.405833`) e tiles de `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, mantendo a atribuição ao OpenStreetMap. Marcadores possuem ícones por tipo, risco, status e link para os detalhes. Não há download de mapas para uso offline.
 
 A busca de endereços e a geocodificação reversa são feitas diretamente pelo navegador no Nominatim (`https://nominatim.openstreetmap.org`), em [geocodingService.js](src/services/geocodingService.js). A busca começa com três caracteres, após uma pausa de 450 ms, e solicita até cinco resultados delimitados à região de Praia Grande. Endereços pesquisados e coordenadas usadas na geocodificação são enviados a esse serviço externo; o JWT é acrescentado somente às requisições da API da aplicação.
@@ -242,7 +248,7 @@ A localização atual é solicitada ao navegador apenas ao acionar **Usar minha 
 
 ## Verificação e problemas comuns
 
-`npm.cmd test` executa os testes dos parâmetros do dashboard usando o test runner nativo do Node.js, incluindo conversão de fuso, limites de datas, período de um único dia e combinações de filtros. Execute também `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Não há suíte automatizada de navegador. Os testes de regras e permissões do backend são descritos no [README do backend](../README-BACKEND.md#testes).
+`npm.cmd test` executa os testes dos parâmetros do dashboard e do ciclo de atualização dos mapas usando o test runner nativo do Node.js. Cobrem datas, filtros, remoção de marcadores após nova resposta, cancelamento, ausência de consultas sobrepostas e recuperação após erro. Execute também `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Não há suíte automatizada de navegador. Os testes de regras e permissões do backend são descritos no [README do backend](../README-BACKEND.md#testes).
 
 Com frontend e backend em execução, valide no navegador:
 

@@ -2,8 +2,7 @@ import { ArrowRight, MapPinned, RotateCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner'
-import OccurrenceMap from '../components/map/OccurrenceMap'
-import OccurrenceCategoryFilter from '../components/map/OccurrenceCategoryFilter'
+import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
@@ -124,14 +123,8 @@ function CitizenHomePage() {
               <MapPinned size={20} aria-hidden="true" />
               <h2 id="map-title">Mapa de ocorrências</h2>
             </div>
-            <OccurrenceCategoryFilter activeCategories={activeMapCategories} occurrences={occurrences} onToggle={toggleMapCategory} />
           </div>
-          <OccurrenceMap activeCategories={activeMapCategories} occurrences={occurrences} />
-          {occurrences.length === 0 && (
-            <p className="map-empty-message">
-              Ainda não há ocorrências para posicionar no mapa.
-            </p>
-          )}
+          <LiveOccurrenceMap activeCategories={activeMapCategories} onToggleCategory={toggleMapCategory} />
         </section>
 
         <section className="recent-occurrences" aria-labelledby="recent-title">

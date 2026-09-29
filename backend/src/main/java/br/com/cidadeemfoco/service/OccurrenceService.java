@@ -3,6 +3,7 @@ package br.com.cidadeemfoco.service;
 import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.dto.OccurrenceResponse;
+import br.com.cidadeemfoco.dto.OccurrenceMapResponse;
 import br.com.cidadeemfoco.entity.Occurrence;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
@@ -31,10 +32,13 @@ public class OccurrenceService {
 
     private final OccurrenceRepository occurrenceRepository;
     private final UserRepository userRepository;
+    private final MapVisibilityPolicy mapVisibilityPolicy;
 
-    public OccurrenceService(OccurrenceRepository occurrenceRepository, UserRepository userRepository) {
+    public OccurrenceService(OccurrenceRepository occurrenceRepository, UserRepository userRepository,
+                             MapVisibilityPolicy mapVisibilityPolicy) {
         this.occurrenceRepository = occurrenceRepository;
         this.userRepository = userRepository;
+        this.mapVisibilityPolicy = mapVisibilityPolicy;
     }
 
     @Transactional
@@ -63,15 +67,31 @@ public class OccurrenceService {
     }
 
     public List<OccurrenceResponse> findAll(OccurrenceFilter filter) {
+        validateFilter(filter);
+        return occurrenceRepository.findAll(toSpecification(filter, null), NEWEST_FIRST)
+                .stream()
+                .map(OccurrenceResponse::from)
+                .toList();
+    }
+
+    public OccurrenceMapResponse findForMap(OccurrenceFilter filter, Long occurrenceId) {
+        validateFilter(filter);
+        Specification<Occurrence> specification = toSpecification(filter, null)
+                .and(mapVisibilityPolicy.visibleOccurrences());
+        if (occurrenceId != null) {
+            specification = specification.and((root, query, builder) -> builder.equal(root.get("id"), occurrenceId));
+        }
+        List<OccurrenceResponse> occurrences = occurrenceRepository.findAll(specification, NEWEST_FIRST)
+                .stream().map(OccurrenceResponse::from).toList();
+        return new OccurrenceMapResponse(occurrences, mapVisibilityPolicy.refreshAfterMillis());
+    }
+
+    private void validateFilter(OccurrenceFilter filter) {
         validateCategoryAndType(filter.category(), filter.type());
         if (filter.createdFrom() != null && filter.createdBefore() != null
                 && !filter.createdFrom().isBefore(filter.createdBefore())) {
             throw new BusinessRuleException("O fim do periodo deve ser posterior ao inicio");
         }
-        return occurrenceRepository.findAll(toSpecification(filter, null), NEWEST_FIRST)
-                .stream()
-                .map(OccurrenceResponse::from)
-                .toList();
     }
 
     public OccurrenceResponse findById(Long id) {

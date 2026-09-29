@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import OccurrenceMap from '../components/map/OccurrenceMap'
+import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
 import Button from '../components/ui/Button'
@@ -163,7 +163,7 @@ function AdminOccurrenceDetailPage() {
 
         <section className="occurrence-detail__card">
           <h2>Localização</h2>
-          <OccurrenceMap occurrences={[occurrence]} />
+          <LiveOccurrenceMap filters={{ occurrenceId: occurrence.id }} refreshKey={occurrence.status} />
           <p className="occurrence-detail__coordinates">{occurrence.latitude}, {occurrence.longitude}</p>
         </section>
 
