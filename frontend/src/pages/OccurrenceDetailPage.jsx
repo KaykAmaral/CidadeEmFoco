@@ -119,6 +119,7 @@ function OccurrenceDetailPage() {
         </section>
 
         <section className="occurrence-detail__card">
+          {occurrence.automaticallyResolved && <p role="status">Encerrada automaticamente por vencimento do prazo em {formatDateTime(occurrence.resolvedAt)}.</p>}
           <h2>Localização</h2>
           <LiveOccurrenceMap filters={{ occurrenceId: occurrence.id }} />
           <p className="occurrence-detail__coordinates">

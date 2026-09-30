@@ -89,6 +89,9 @@ public class Occurrence {
     @Column(name = "resolved_at")
     private Instant resolvedAt;
 
+    @Column(name = "automatically_resolved", nullable = false)
+    private boolean automaticallyResolved;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -137,12 +140,26 @@ public class Occurrence {
     public void changeStatus(OccurrenceStatus status) {
         Objects.requireNonNull(status);
         if (this.status == status) return;
+        this.automaticallyResolved = false;
         this.resolvedAt = status == OccurrenceStatus.RESOLVIDA ? Instant.now() : null;
         this.status = status;
     }
 
     public Instant getResolvedAt() {
         return resolvedAt;
+    }
+
+    public boolean isAutomaticallyResolved() {
+        return automaticallyResolved;
+    }
+
+    public boolean resolveAutomatically(Instant now) {
+        if (category != OccurrenceCategory.EVENTO_NATURAL || !type.isTemporary()
+                || status == OccurrenceStatus.RESOLVIDA || status == OccurrenceStatus.NAO_CONFIRMADA) return false;
+        resolvedAt = Objects.requireNonNull(now);
+        status = OccurrenceStatus.RESOLVIDA;
+        automaticallyResolved = true;
+        return true;
     }
 
     public String replaceImage(String imagePath) {

@@ -102,7 +102,7 @@ public class OccurrenceService {
 
     @Transactional
     public OccurrenceResponse updateStatus(Long id, OccurrenceStatus status) {
-        Occurrence occurrence = occurrenceRepository.findById(id)
+        Occurrence occurrence = occurrenceRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
         occurrence.changeStatus(status);
         return OccurrenceResponse.from(occurrenceRepository.saveAndFlush(occurrence));

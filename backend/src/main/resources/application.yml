@@ -33,6 +33,13 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  occurrences:
+    auto-close:
+      enabled: ${AUTO_CLOSE_ENABLED:true}
+      types: ${AUTO_CLOSE_TYPES:ALAGAMENTO,ENCHENTE,VENTOS_FORTES,CHUVA_INTENSA,QUEDA_GRANIZO,RESSACA_MARITIMA}
+      validity: ${AUTO_CLOSE_VALIDITY:PT24H}
+      check-interval: ${AUTO_CLOSE_CHECK_INTERVAL:PT1M}
+      batch-size: ${AUTO_CLOSE_BATCH_SIZE:100}
   map:
     resolved-retention: ${MAP_RESOLVED_RETENTION:PT24H}
     refresh-interval: ${MAP_REFRESH_INTERVAL:PT30S}

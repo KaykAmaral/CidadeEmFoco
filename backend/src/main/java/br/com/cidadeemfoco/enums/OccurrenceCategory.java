@@ -16,6 +16,7 @@ import static br.com.cidadeemfoco.enums.OccurrenceType.INCENDIO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.OUTRO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.POSTE_DANIFICADO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.QUEDA_ARVORE;
+import static br.com.cidadeemfoco.enums.OccurrenceType.QUEDA_GRANIZO;
 import static br.com.cidadeemfoco.enums.OccurrenceType.RESSACA_MARITIMA;
 import static br.com.cidadeemfoco.enums.OccurrenceType.RUA_BLOQUEADA;
 import static br.com.cidadeemfoco.enums.OccurrenceType.SEMAFORO_COM_PROBLEMA;
@@ -31,6 +32,7 @@ public enum OccurrenceCategory {
             RESSACA_MARITIMA,
             INCENDIO,
             CHUVA_INTENSA,
+            QUEDA_GRANIZO,
             OUTRO
     ),
     INFRAESTRUTURA_URBANA(

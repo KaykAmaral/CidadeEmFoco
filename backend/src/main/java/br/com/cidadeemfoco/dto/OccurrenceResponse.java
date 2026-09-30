@@ -25,7 +25,8 @@ public record OccurrenceResponse(
         OccurrenceStatus status,
         Instant createdAt,
         Instant updatedAt,
-        Instant resolvedAt
+        Instant resolvedAt,
+        boolean automaticallyResolved
 ) {
 
     public OccurrenceResponse(
@@ -36,7 +37,7 @@ public record OccurrenceResponse(
     ) {
         this(id, category, type, description, perceivedRisk, latitude, longitude,
                 neighborhood, address, imageUrl,
-                imageUrl == null ? List.of() : List.of(imageUrl), status, createdAt, updatedAt, null);
+                imageUrl == null ? List.of() : List.of(imageUrl), status, createdAt, updatedAt, null, false);
     }
 
     public static OccurrenceResponse from(Occurrence occurrence) {
@@ -55,7 +56,8 @@ public record OccurrenceResponse(
                 occurrence.getStatus(),
                 occurrence.getCreatedAt(),
                 occurrence.getUpdatedAt(),
-                occurrence.getResolvedAt()
+                occurrence.getResolvedAt(),
+                occurrence.isAutomaticallyResolved()
         );
     }
 }

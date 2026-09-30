@@ -154,6 +154,7 @@ function AdminOccurrenceDetailPage() {
         <section className="occurrence-detail__card occurrence-detail__description">
           <h2>Descrição do cidadão</h2>
           <p>{occurrence.description}</p>
+          {occurrence.automaticallyResolved && <p role="status">Encerrada automaticamente por vencimento do prazo em {formatDateTime(occurrence.resolvedAt)}.</p>}
           <div className="occurrence-detail__metadata">
             <div><ShieldAlert size={19} aria-hidden="true" /><span>Risco percebido</span><strong>{perceivedRiskLabels[occurrence.perceivedRisk]}</strong></div>
             <div><CalendarDays size={19} aria-hidden="true" /><span>Registrada em</span><strong>{formatDateTime(occurrence.createdAt)}</strong></div>

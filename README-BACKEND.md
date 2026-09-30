@@ -260,6 +260,41 @@ backend/src/main/java/br/com/cidadeemfoco/
 
 As migrations ficam em `backend/src/main/resources/db/migration/`.
 
+## Encerramento automático de eventos temporários
+
+A tarefa `OccurrenceAutoClosureScheduler` executa no backend, sem participação do navegador. Ela encerra somente ocorrências de `EVENTO_NATURAL`, dos tipos temporários habilitados, com status `REGISTRADA`, `EM_ANALISE` ou `EM_ATENDIMENTO`, cuja data de cadastro (`createdAt`) já atingiu a validade. O instante exato do limite é elegível. A data de resolução é o instante em que a tarefa efetivamente encerra o registro.
+
+Os tipos permitidos pelo domínio são `ALAGAMENTO`, `ENCHENTE`, `VENTOS_FORTES`, `CHUVA_INTENSA`, `QUEDA_GRANIZO` e `RESSACA_MARITIMA`. Granizo foi acrescentado ao enum, às categorias, à restrição do banco e ao frontend. A regra não depende dos rótulos da interface. Tipos permanentes ou ambíguos, incluindo buracos, iluminação, árvores caídas, deslizamentos, incêndios e `OUTRO`, são rejeitados se configurados para encerramento automático.
+
+As configurações ficam em `app.occurrences.auto-close` no `application.yml` e podem ser substituídas por variáveis de ambiente:
+
+| Variável | Padrão | Efeito |
+| --- | --- | --- |
+| `AUTO_CLOSE_ENABLED` | `true` | Habilita/desabilita a tarefa |
+| `AUTO_CLOSE_TYPES` | Os seis tipos temporários acima | Códigos de enum separados por vírgula |
+| `AUTO_CLOSE_VALIDITY` | `PT24H` | Validade desde o cadastro; duração ISO-8601 positiva em segundos inteiros |
+| `AUTO_CLOSE_CHECK_INTERVAL` | `PT1M` | Intervalo entre lotes, também usado antes da primeira execução; mínimo de um segundo |
+| `AUTO_CLOSE_BATCH_SIZE` | `100` | Máximo por execução, entre 1 e 1000 |
+
+Exemplo no PowerShell, antes de iniciar a API:
+
+```powershell
+$env:AUTO_CLOSE_ENABLED = 'true'
+$env:AUTO_CLOSE_TYPES = 'ALAGAMENTO,ENCHENTE,VENTOS_FORTES,CHUVA_INTENSA,QUEDA_GRANIZO'
+$env:AUTO_CLOSE_VALIDITY = 'PT6H'
+$env:AUTO_CLOSE_CHECK_INTERVAL = 'PT1M'
+```
+
+Reinicie a API ao alterar a configuração. O Spring Boot não carrega `.env` automaticamente. Ocorrências antigas também são elegíveis quando a tarefa é habilitada; o processamento ocorre em lotes e pode levar mais de uma execução se houver acúmulo.
+
+O encerramento preenche `status=RESOLVIDA`, `resolvedAt` e `automaticallyResolved=true`. A tabela `occurrence_auto_closures` mantém uma auditoria com o status anterior, o instante e a validade utilizada. Tudo é persistido na mesma transação: uma falha desfaz tanto a alteração quanto a auditoria. Descrição, imagens, autor, localização e data de cadastro são preservados. A migration V5 cria essa estrutura e não encerra ocorrências por si só.
+
+A seleção bloqueia os registros durante a transação, e alterações manuais de status usam o mesmo bloqueio. O status e a auditoria única por ocorrência impedem encerramentos automáticos repetidos. O administrador continua podendo resolver manualmente qualquer ocorrência. Se reabrir uma encerrada automaticamente, a auditoria permanece e ela não volta a ser encerrada pela automação; passa a depender do administrador. A origem automática da resolução atual aparece no JSON e nos detalhes do cidadão e do administrador.
+
+Essa validade é independente de `MAP_RESOLVED_RETENTION`: primeiro a tarefa resolve a ocorrência; depois começa o prazo de permanência do marcador, contado de `resolvedAt`. O registro permanece disponível no histórico mesmo após sumir do mapa.
+
+Para executar os testes de integração, use um banco MySQL exclusivo em `MAP_TEST_DB_URL`, como nos testes do mapa abaixo. A suíte cobre limites de validade, todos os tipos elegíveis, exclusão de problemas permanentes, configuração, preservação de imagens e dados, auditoria, reabertura manual e repetição dos lotes. O agendamento fica desativado nos testes comuns; os testes de integração chamam a rotina explicitamente com relógio controlado.
+
 ## Testes
 
 ### Visibilidade das ocorrências no mapa

@@ -234,6 +234,8 @@ O formulário recebe título, tipo, severidade, descrição e período. Os tipos
 
 ## Mapas e serviços externos
 
+Os detalhes de uma ocorrência exibem um aviso quando `automaticallyResolved` é verdadeiro, com a data de resolução enviada pela API. O encerramento de eventos temporários acontece exclusivamente no backend, configurado por `AUTO_CLOSE_*` (veja o README do backend). A lista de tipos naturais também inclui **Queda de granizo**. Não há temporizadores de encerramento no navegador.
+
 Todos os mapas de ocorrências usam `LiveOccurrenceMap` e o endpoint autenticado `GET /api/occurrences/map`, inclusive nas páginas de detalhe (filtradas por `occurrenceId`). As consultas históricas permanecem completas. Uma ocorrência resolvida expirada perde o marcador, mas seus detalhes, fotos e coordenadas continuam acessíveis.
 
 O backend controla o prazo por `MAP_RESOLVED_RETENTION` e a frequência das consultas por `MAP_REFRESH_INTERVAL`; veja o README do backend. O frontend mantém um único ciclo de atualização por mapa, sem temporizadores por marcador e sem calcular o prazo localmente. O ciclo só agenda a próxima consulta depois que a anterior termina, cancela consultas ao desmontar/trocar filtros e atualiza ao voltar à aba. Em caso de erro, oculta os marcadores anteriores e tenta novamente automaticamente. As contagens das categorias no mapa do cidadão usam apenas os marcadores retornados.

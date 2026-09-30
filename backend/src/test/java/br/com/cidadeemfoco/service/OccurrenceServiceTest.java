@@ -118,7 +118,7 @@ class OccurrenceServiceTest {
     @Test
     void shouldUpdateOccurrenceStatus() {
         Occurrence occurrence = occurrence();
-        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(occurrence));
+        when(occurrenceRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(occurrence));
         when(occurrenceRepository.saveAndFlush(occurrence)).thenReturn(occurrence);
 
         OccurrenceResponse response = occurrenceService.updateStatus(10L, OccurrenceStatus.EM_ATENDIMENTO);
@@ -129,7 +129,7 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldReturnNotFoundWhenUpdatingMissingOccurrence() {
-        when(occurrenceRepository.findById(99L)).thenReturn(Optional.empty());
+        when(occurrenceRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> occurrenceService.updateStatus(99L, OccurrenceStatus.RESOLVIDA))
                 .isInstanceOf(ResourceNotFoundException.class)
