@@ -75,8 +75,10 @@ function AdminDashboardPage() {
   const [appliedFilters, setAppliedFilters] = useState(() => buildApiFilters(emptyFilters))
   const [occurrences, setOccurrences] = useState([])
   const [alerts, setAlerts] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [isOccurrencesLoading, setIsOccurrencesLoading] = useState(true)
+  const [isAlertsLoading, setIsAlertsLoading] = useState(true)
+  const [occurrencesError, setOccurrencesError] = useState('')
+  const [alertsError, setAlertsError] = useState('')
   const [filterError, setFilterError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
   const availableTypes = filters.category
@@ -86,34 +88,54 @@ function AdminDashboardPage() {
   useEffect(() => {
     let isCurrent = true
 
-    async function loadDashboard() {
+    async function loadOccurrences() {
       try {
-        const [occurrenceList, alertList] = await Promise.all([
-          getAdminOccurrences(token, appliedFilters),
-          getAdminAlerts(token),
-        ])
+        const occurrenceList = await getAdminOccurrences(token, appliedFilters)
 
-        if (isCurrent) {
-          setOccurrences(occurrenceList)
-          setAlerts(alertList)
-        }
+        if (isCurrent) setOccurrences(occurrenceList)
       } catch (requestError) {
         if (!isCurrent) return
         if (requestError.status === 401) {
           logout()
           return
         }
-        setError(requestError.message)
+        setOccurrencesError(requestError.message)
       } finally {
-        if (isCurrent) setIsLoading(false)
+        if (isCurrent) setIsOccurrencesLoading(false)
       }
     }
 
-    loadDashboard()
+    loadOccurrences()
     return () => {
       isCurrent = false
     }
   }, [appliedFilters, logout, reloadKey, token])
+
+  useEffect(() => {
+    let isCurrent = true
+
+    async function loadAlerts() {
+      try {
+        const alertList = await getAdminAlerts(token)
+
+        if (isCurrent) setAlerts(alertList)
+      } catch (requestError) {
+        if (!isCurrent) return
+        if (requestError.status === 401) {
+          logout()
+          return
+        }
+        setAlertsError(requestError.message)
+      } finally {
+        if (isCurrent) setIsAlertsLoading(false)
+      }
+    }
+
+    loadAlerts()
+    return () => {
+      isCurrent = false
+    }
+  }, [logout, reloadKey, token])
 
   function handleFilterChange(event) {
     const { name, value } = event.target
@@ -145,9 +167,9 @@ function AdminDashboardPage() {
       return
     }
 
-    setError('')
+    setOccurrencesError('')
     setFilterError('')
-    setIsLoading(true)
+    setIsOccurrencesLoading(true)
     setAppliedFilters(buildApiFilters(filters))
   }
 
@@ -156,17 +178,19 @@ function AdminDashboardPage() {
     setFilters(clearedFilters)
     setAppliedFilters(buildApiFilters(clearedFilters))
     setFilterError('')
-    setError('')
-    setIsLoading(true)
+    setOccurrencesError('')
+    setIsOccurrencesLoading(true)
   }
 
   function retry() {
-    setError('')
-    setIsLoading(true)
+    setOccurrencesError('')
+    setAlertsError('')
+    setIsOccurrencesLoading(true)
+    setIsAlertsLoading(true)
     setReloadKey((currentKey) => currentKey + 1)
   }
 
-  if (isLoading) {
+  if (isOccurrencesLoading || isAlertsLoading) {
     return (
       <FeedbackState
         type="loading"
@@ -175,6 +199,8 @@ function AdminDashboardPage() {
       />
     )
   }
+
+  const error = occurrencesError || alertsError
 
   if (error) {
     return (
@@ -327,7 +353,11 @@ function AdminDashboardPage() {
               ))}
             </div>
           ) : (
-            <FeedbackState type="empty" title="Nenhuma ocorrência cadastrada" />
+            <FeedbackState
+              type="empty"
+              title="Nenhuma ocorrência encontrada"
+              message="Ajuste ou limpe os filtros para consultar outros registros."
+            />
           )}
         </section>
       </div>
