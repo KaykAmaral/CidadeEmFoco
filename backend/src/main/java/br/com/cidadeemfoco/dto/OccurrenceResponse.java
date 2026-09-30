@@ -26,6 +26,7 @@ public record OccurrenceResponse(
         Instant createdAt,
         Instant updatedAt,
         Instant resolvedAt,
+        boolean automaticallyResolved,
         Long caseId,
         int strength
 ) {
@@ -39,7 +40,7 @@ public record OccurrenceResponse(
         this(id, category, type, description, perceivedRisk, latitude, longitude,
                 neighborhood, address, imageUrl,
                 imageUrl == null ? List.of() : List.of(imageUrl), status, createdAt, updatedAt,
-                null, id, 1);
+                null, false, id, 1);
     }
 
     public static OccurrenceResponse from(Occurrence occurrence) {
@@ -60,6 +61,7 @@ public record OccurrenceResponse(
                 occurrence.getCreatedAt(),
                 occurrence.getUpdatedAt(),
                 caseRoot.getResolvedAt(),
+                caseRoot.isAutomaticallyResolved(),
                 caseRoot.getId(),
                 caseRoot.getStrength()
         );

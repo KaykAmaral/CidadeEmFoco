@@ -89,6 +89,9 @@ public class Occurrence {
     @Column(name = "resolved_at")
     private Instant resolvedAt;
 
+    @Column(name = "automatically_resolved", nullable = false)
+    private boolean automaticallyResolved;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -142,11 +145,21 @@ public class Occurrence {
     }
 
     public void changeStatus(OccurrenceStatus status) {
+        changeStatus(status, false);
+    }
+
+    public void resolveAutomatically() {
+        changeStatus(OccurrenceStatus.RESOLVIDA, true);
+    }
+
+    private void changeStatus(OccurrenceStatus status, boolean automaticResolution) {
         OccurrenceStatus newStatus = Objects.requireNonNull(status);
         if (newStatus == OccurrenceStatus.RESOLVIDA && this.status != OccurrenceStatus.RESOLVIDA) {
             resolvedAt = Instant.now();
+            automaticallyResolved = automaticResolution;
         } else if (newStatus != OccurrenceStatus.RESOLVIDA) {
             resolvedAt = null;
+            automaticallyResolved = false;
         }
         this.status = newStatus;
     }
@@ -230,6 +243,10 @@ public class Occurrence {
 
     public Instant getResolvedAt() {
         return resolvedAt;
+    }
+
+    public boolean isAutomaticallyResolved() {
+        return automaticallyResolved;
     }
 
     public User getUser() {

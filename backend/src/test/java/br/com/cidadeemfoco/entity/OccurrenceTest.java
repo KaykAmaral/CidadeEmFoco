@@ -88,6 +88,18 @@ class OccurrenceTest {
 
         occurrence.changeStatus(OccurrenceStatus.EM_ATENDIMENTO);
         assertThat(occurrence.getResolvedAt()).isNull();
+        assertThat(occurrence.isAutomaticallyResolved()).isFalse();
+    }
+
+    @Test
+    void shouldRegisterAutomaticResolutionOrigin() {
+        Occurrence occurrence = occurrence();
+
+        occurrence.resolveAutomatically();
+
+        assertThat(occurrence.getStatus()).isEqualTo(OccurrenceStatus.RESOLVIDA);
+        assertThat(occurrence.getResolvedAt()).isNotNull();
+        assertThat(occurrence.isAutomaticallyResolved()).isTrue();
     }
 
     @Test

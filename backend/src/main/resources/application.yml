@@ -69,6 +69,7 @@ app:
   occurrences:
     resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
     temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:2d}
+    auto-resolution-types: ${AUTO_RESOLUTION_TYPES:ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO}
     auto-resolution-interval: ${AUTO_RESOLUTION_INTERVAL:5m}
     auto-resolution-initial-delay: ${AUTO_RESOLUTION_INITIAL_DELAY:5m}
     grouping-window-natural: ${OCCURRENCE_GROUPING_WINDOW_NATURAL:${OCCURRENCE_GROUPING_WINDOW:2d}}

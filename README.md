@@ -312,7 +312,7 @@ A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `
 
 Ao receber o status `RESOLVIDA`, a ocorrência passa a registrar `resolvedAt`. O endpoint do mapa continua retornando esse pin durante 24 horas e depois o omite, sem excluir a ocorrência das listagens ou do histórico. O prazo pode ser alterado por `RESOLVED_MAP_VISIBILITY`.
 
-O backend encerra automaticamente ocorrências temporárias dos tipos `ALAGAMENTO`, `ENCHENTE`, `VENTOS_FORTES`, `RESSACA_MARITIMA` e `CHUVA_INTENSA`. Por padrão, registros ainda abertos recebem o status `RESOLVIDA` seis horas após a criação. A verificação ocorre a cada cinco minutos e não inclui queda de árvore, deslizamento, incêndio, infraestrutura ou o tipo genérico `OUTRO`.
+O backend encerra automaticamente ocorrências temporárias configuradas em `AUTO_RESOLUTION_TYPES`. Por padrão, a lista inclui `ALAGAMENTO`, `ENCHENTE`, `VENTOS_FORTES`, `RESSACA_MARITIMA`, `CHUVA_INTENSA`, `QUEDA_GRANIZO` e `OUTRO`, sempre restritos à categoria `EVENTO_NATURAL`. Registros ainda abertos recebem o status `RESOLVIDA` após `TEMPORARY_EVENT_LIFETIME`; a resolução preenche `resolvedAt` e marca `automaticallyResolved=true`. A verificação ocorre a cada cinco minutos por padrão e não inclui problemas permanentes de infraestrutura.
 
 ### Agrupamento e força
 
@@ -435,6 +435,7 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
+| `AUTO_RESOLUTION_TYPES` | `ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO` | Tipos de evento natural elegíveis, separados por vírgula |
 | `AUTO_RESOLUTION_INTERVAL` | `5m` | Intervalo entre verificações automáticas |
 | `AUTO_RESOLUTION_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira verificação |
 | `OCCURRENCE_GROUPING_WINDOW_NATURAL` | `2d` | Janela para agrupar relatos de eventos naturais |
