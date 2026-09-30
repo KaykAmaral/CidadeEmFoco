@@ -9,13 +9,16 @@ import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import useAuth from '../hooks/useAuth'
 import { getActiveAlerts } from '../services/alertService'
-import { getOccurrences } from '../services/occurrenceService'
+import { getMapOccurrences, getOccurrences } from '../services/occurrenceService'
 import './CitizenHomePage.css'
+
+const MAP_REFRESH_INTERVAL_MS = 60_000
 
 function CitizenHomePage() {
   const { logout, token, user } = useAuth()
   const [alerts, setAlerts] = useState([])
   const [occurrences, setOccurrences] = useState([])
+  const [mapOccurrences, setMapOccurrences] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
@@ -29,14 +32,16 @@ function CitizenHomePage() {
 
     async function loadDashboard() {
       try {
-        const [activeAlerts, occurrenceList] = await Promise.all([
+        const [activeAlerts, occurrenceList, mapOccurrenceList] = await Promise.all([
           getActiveAlerts(token),
           getOccurrences(token),
+          getMapOccurrences(token),
         ])
 
         if (isCurrent) {
           setAlerts(activeAlerts)
           setOccurrences(occurrenceList)
+          setMapOccurrences(mapOccurrenceList)
         }
       } catch (requestError) {
         if (!isCurrent) {
@@ -62,6 +67,26 @@ function CitizenHomePage() {
       isCurrent = false
     }
   }, [logout, reloadKey, token])
+
+  useEffect(() => {
+    let isCurrent = true
+
+    const refreshMap = async () => {
+      try {
+        const mapOccurrenceList = await getMapOccurrences(token)
+        if (isCurrent) setMapOccurrences(mapOccurrenceList)
+      } catch (requestError) {
+        if (isCurrent && requestError.status === 401) logout()
+      }
+    }
+
+    const intervalId = window.setInterval(refreshMap, MAP_REFRESH_INTERVAL_MS)
+
+    return () => {
+      isCurrent = false
+      window.clearInterval(intervalId)
+    }
+  }, [logout, token])
 
   function handleRetry() {
     setError('')
@@ -124,10 +149,10 @@ function CitizenHomePage() {
               <MapPinned size={20} aria-hidden="true" />
               <h2 id="map-title">Mapa de ocorrências</h2>
             </div>
-            <OccurrenceCategoryFilter activeCategories={activeMapCategories} occurrences={occurrences} onToggle={toggleMapCategory} />
+            <OccurrenceCategoryFilter activeCategories={activeMapCategories} occurrences={mapOccurrences} onToggle={toggleMapCategory} />
           </div>
-          <OccurrenceMap activeCategories={activeMapCategories} occurrences={occurrences} />
-          {occurrences.length === 0 && (
+          <OccurrenceMap activeCategories={activeMapCategories} occurrences={mapOccurrences} />
+          {mapOccurrences.length === 0 && (
             <p className="map-empty-message">
               Ainda não há ocorrências para posicionar no mapa.
             </p>
