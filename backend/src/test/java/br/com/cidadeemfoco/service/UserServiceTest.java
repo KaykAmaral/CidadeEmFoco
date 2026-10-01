@@ -3,15 +3,21 @@ package br.com.cidadeemfoco.service;
 import br.com.cidadeemfoco.dto.UpdateWhatsappPreferencesRequest;
 import br.com.cidadeemfoco.dto.WhatsappPreferencesResponse;
 import br.com.cidadeemfoco.entity.User;
+import br.com.cidadeemfoco.entity.WhatsappNotification;
+import br.com.cidadeemfoco.enums.WhatsappNotificationStatus;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
+import br.com.cidadeemfoco.config.WhatsappCloudApiProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -27,12 +34,15 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private WhatsappNotificationRepository notificationRepository;
+
     private UserService userService;
     private User citizen;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository);
+        userService = new UserService(userRepository, notificationRepository, properties(false));
         citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
     }
 
@@ -45,6 +55,7 @@ class UserServiceTest {
         assertThat(response.notificationsEnabled()).isFalse();
         assertThat(response.phoneNumber()).isNull();
         assertThat(response.consentAt()).isNull();
+        assertThat(response.deliveryEnabled()).isFalse();
     }
 
     @Test
@@ -118,5 +129,29 @@ class UserServiceTest {
         assertThat(citizen.getWhatsappPhone()).isNull();
         assertThat(citizen.getWhatsappConsentAt()).isNull();
         verify(userRepository).save(citizen);
+    }
+
+    @Test
+    void shouldCancelQueuedNotificationsWhenConsentIsRevoked() {
+        WhatsappNotification pending = mock(WhatsappNotification.class);
+        ReflectionTestUtils.setField(citizen, "id", 20L);
+        citizen.enableWhatsappNotifications("+5513999999999", java.time.Instant.now());
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(notificationRepository.findByUserIdAndStatusIn(
+                org.mockito.ArgumentMatchers.eq(20L),
+                org.mockito.ArgumentMatchers.<WhatsappNotificationStatus>anyCollection()
+        )).thenReturn(List.of(pending));
+
+        userService.disableWhatsappNotifications("ana@example.com");
+
+        verify(pending).cancel();
+        verify(notificationRepository).saveAll(List.of(pending));
+    }
+
+    private WhatsappCloudApiProperties properties(boolean enabled) {
+        return new WhatsappCloudApiProperties(
+                enabled, "https://graph.facebook.com", "v23.0", "", "",
+                "cidade_em_foco_alerta_climatico", "pt_BR", "America/Sao_Paulo", 3, 20
+        );
     }
 }

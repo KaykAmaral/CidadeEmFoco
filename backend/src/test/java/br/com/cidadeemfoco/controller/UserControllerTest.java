@@ -53,7 +53,8 @@ class UserControllerTest {
         mockMvc.perform(get("/api/users/me/whatsapp").principal(authentication))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.phoneNumber").value("+5513999999999"))
-                .andExpect(jsonPath("$.notificationsEnabled").value(true));
+                .andExpect(jsonPath("$.notificationsEnabled").value(true))
+                .andExpect(jsonPath("$.deliveryEnabled").value(false));
     }
 
     @Test
@@ -103,7 +104,8 @@ class UserControllerTest {
         return new WhatsappPreferencesResponse(
                 "+5513999999999",
                 true,
-                Instant.parse("2026-09-19T12:00:00Z")
+                Instant.parse("2026-09-19T12:00:00Z"),
+                false
         );
     }
 }

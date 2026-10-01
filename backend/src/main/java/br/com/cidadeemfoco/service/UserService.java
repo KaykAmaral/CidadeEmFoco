@@ -3,30 +3,48 @@ package br.com.cidadeemfoco.service;
 import br.com.cidadeemfoco.dto.UpdateWhatsappPreferencesRequest;
 import br.com.cidadeemfoco.dto.WhatsappPreferencesResponse;
 import br.com.cidadeemfoco.entity.User;
+import br.com.cidadeemfoco.entity.WhatsappNotification;
+import br.com.cidadeemfoco.enums.WhatsappNotificationStatus;
+import br.com.cidadeemfoco.config.WhatsappCloudApiProperties;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
 public class UserService {
 
     private static final Pattern E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{7,14}$");
+    private static final Set<WhatsappNotificationStatus> CHANGEABLE_STATUSES = Set.of(
+            WhatsappNotificationStatus.PENDING,
+            WhatsappNotificationStatus.FAILED
+    );
 
     private final UserRepository userRepository;
+    private final WhatsappNotificationRepository notificationRepository;
+    private final boolean deliveryEnabled;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(
+            UserRepository userRepository,
+            WhatsappNotificationRepository notificationRepository,
+            WhatsappCloudApiProperties properties
+    ) {
         this.userRepository = userRepository;
+        this.notificationRepository = notificationRepository;
+        this.deliveryEnabled = properties.enabled();
     }
 
     public WhatsappPreferencesResponse findWhatsappPreferences(String email) {
-        return WhatsappPreferencesResponse.from(findUser(email));
+        return WhatsappPreferencesResponse.from(findUser(email), deliveryEnabled);
     }
 
     @Transactional
@@ -46,14 +64,41 @@ public class UserService {
                 });
 
         user.enableWhatsappNotifications(phone, Instant.now());
-        return WhatsappPreferencesResponse.from(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        updatePendingRecipients(savedUser, phone);
+        return WhatsappPreferencesResponse.from(savedUser, deliveryEnabled);
     }
 
     @Transactional
     public void disableWhatsappNotifications(String email) {
         User user = findUser(email);
+        cancelPendingNotifications(user);
         user.disableWhatsappNotifications();
         userRepository.save(user);
+    }
+
+    private void updatePendingRecipients(User user, String phone) {
+        if (user.getId() == null) {
+            return;
+        }
+        List<WhatsappNotification> notifications = notificationRepository
+                .findByUserIdAndStatusIn(user.getId(), CHANGEABLE_STATUSES);
+        notifications.forEach(notification -> notification.updateRecipientPhone(phone));
+        if (!notifications.isEmpty()) {
+            notificationRepository.saveAll(notifications);
+        }
+    }
+
+    private void cancelPendingNotifications(User user) {
+        if (user.getId() == null) {
+            return;
+        }
+        List<WhatsappNotification> notifications = notificationRepository
+                .findByUserIdAndStatusIn(user.getId(), CHANGEABLE_STATUSES);
+        notifications.forEach(WhatsappNotification::cancel);
+        if (!notifications.isEmpty()) {
+            notificationRepository.saveAll(notifications);
+        }
     }
 
     private User findUser(String email) {

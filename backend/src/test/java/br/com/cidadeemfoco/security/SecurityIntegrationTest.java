@@ -351,7 +351,7 @@ class SecurityIntegrationTest {
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
         when(userService.findWhatsappPreferences("ana@example.com"))
-                .thenReturn(new WhatsappPreferencesResponse(null, false, null));
+                .thenReturn(new WhatsappPreferencesResponse(null, false, null, false));
         String citizenToken = jwtService.generateToken(citizen);
         String adminToken = jwtService.generateToken(admin);
 

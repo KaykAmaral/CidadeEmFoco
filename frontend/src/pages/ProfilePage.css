@@ -34,12 +34,84 @@
 }
 
 .profile-card,
-.profile-activity {
+.profile-activity,
+.profile-whatsapp {
   border: 1px solid var(--color-border);
   border-radius: 18px;
   background: white;
   box-shadow: var(--shadow-card);
 }
+
+.profile-whatsapp {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.profile-whatsapp__heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 13px;
+}
+
+.profile-whatsapp__icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #147a43;
+  background: #e8f7ee;
+}
+
+.profile-whatsapp__heading span {
+  color: var(--color-blue);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-whatsapp__heading h2 { margin: 3px 0 5px; color: var(--color-navy); font-size: 1.25rem; }
+.profile-whatsapp__heading p { margin: 0; color: var(--color-muted); font-size: 0.78rem; }
+
+.profile-whatsapp__status {
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  font-size: 0.7rem;
+}
+
+.profile-whatsapp__form { display: grid; gap: 15px; }
+.profile-whatsapp__form .form-field { max-width: 520px; }
+.profile-whatsapp__form .form-field small,
+.profile-whatsapp__consent-date { color: var(--color-muted); font-size: 0.7rem; }
+
+.profile-whatsapp__availability {
+  padding: 13px 15px;
+  border: 1px solid #f0d39c;
+  border-radius: 11px;
+  color: #76510c;
+  background: #fff8e8;
+}
+
+.profile-whatsapp__availability strong { font-size: 0.78rem; }
+.profile-whatsapp__availability p { margin: 4px 0 0; font-size: 0.72rem; line-height: 1.5; }
+
+.profile-whatsapp__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.profile-whatsapp__consent input { margin-top: 3px; accent-color: var(--color-blue); }
+.profile-whatsapp__consent-date { margin: 0; }
+.profile-whatsapp__actions { display: flex; flex-wrap: wrap; gap: 9px; }
 
 .profile-card {
   display: grid;
@@ -245,9 +317,14 @@
 
 @media (max-width: 620px) {
   .profile-card,
-  .profile-activity {
+  .profile-activity,
+  .profile-whatsapp {
     padding: 18px;
   }
+
+  .profile-whatsapp__heading { grid-template-columns: auto minmax(0, 1fr); }
+  .profile-whatsapp__status { grid-column: 2; justify-self: start; }
+  .profile-whatsapp__actions { display: grid; }
 
   .profile-activity__heading {
     align-items: stretch;

@@ -18,6 +18,11 @@ public interface WhatsappNotificationRepository extends JpaRepository<WhatsappNo
             Collection<WhatsappNotificationStatus> statuses
     );
 
+    List<WhatsappNotification> findByUserIdAndStatusIn(
+            Long userId,
+            Collection<WhatsappNotificationStatus> statuses
+    );
+
     List<WhatsappNotification> findByStatus(WhatsappNotificationStatus status, Sort sort);
 
     List<WhatsappNotification> findByStatusInAndAttemptCountLessThanOrderByCreatedAtAsc(
