@@ -5,6 +5,7 @@ import br.com.cidadeemfoco.dto.CreateClimateAlertRequest;
 import br.com.cidadeemfoco.entity.ClimateAlert;
 import br.com.cidadeemfoco.enums.AlertSeverity;
 import br.com.cidadeemfoco.enums.ClimateAlertType;
+import br.com.cidadeemfoco.event.ClimateAlertsChangedEvent;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.ClimateAlertRepository;
@@ -13,7 +14,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,11 +35,14 @@ class ClimateAlertServiceTest {
     @Mock
     private ClimateAlertRepository climateAlertRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private ClimateAlertService climateAlertService;
 
     @BeforeEach
     void setUp() {
-        climateAlertService = new ClimateAlertService(climateAlertRepository);
+        climateAlertService = new ClimateAlertService(climateAlertRepository, eventPublisher);
     }
 
     @Test
@@ -50,6 +56,7 @@ class ClimateAlertServiceTest {
         assertThat(response.type()).isEqualTo(ClimateAlertType.CHUVA_INTENSA);
         assertThat(response.severity()).isEqualTo(AlertSeverity.ALTA);
         assertThat(response.disclaimer()).contains("nao substitui informacoes oficiais");
+        verify(eventPublisher).publishEvent(any(ClimateAlertsChangedEvent.class));
     }
 
     @Test
@@ -94,6 +101,29 @@ class ClimateAlertServiceTest {
     }
 
     @Test
+    void shouldUpdateAlertAndPublishRealtimeUpdate() {
+        ClimateAlert alert = alert();
+        CreateClimateAlertRequest update = new CreateClimateAlertRequest(
+                "Alerta atualizado",
+                ClimateAlertType.VENTOS_FORTES,
+                AlertSeverity.MODERADA,
+                "Nova orientacao para os cidadaos",
+                Instant.parse("2026-08-22T12:00:00Z"),
+                Instant.parse("2026-08-22T20:00:00Z")
+        );
+        when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
+        when(climateAlertRepository.saveAndFlush(alert)).thenReturn(alert);
+
+        ClimateAlertResponse response = climateAlertService.update(10L, update);
+
+        assertThat(response.title()).isEqualTo("Alerta atualizado");
+        assertThat(response.type()).isEqualTo(ClimateAlertType.VENTOS_FORTES);
+        assertThat(response.severity()).isEqualTo(AlertSeverity.MODERADA);
+        verify(climateAlertRepository).saveAndFlush(alert);
+        verify(eventPublisher).publishEvent(any(ClimateAlertsChangedEvent.class));
+    }
+
+    @Test
     void shouldActivateAndDeactivateAlert() {
         ClimateAlert alert = alert();
         when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
@@ -105,6 +135,8 @@ class ClimateAlertServiceTest {
         assertThat(activated.active()).isTrue();
         assertThat(deactivated.active()).isFalse();
         verify(climateAlertRepository, org.mockito.Mockito.times(2)).saveAndFlush(alert);
+        verify(eventPublisher, org.mockito.Mockito.times(2))
+                .publishEvent(any(ClimateAlertsChangedEvent.class));
     }
 
     @Test
@@ -114,6 +146,17 @@ class ClimateAlertServiceTest {
         assertThatThrownBy(() -> climateAlertService.activate(99L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Alerta climatico nao encontrado");
+    }
+
+    @Test
+    void shouldDeleteAnyAlertAndPublishUpdate() {
+        ClimateAlert alert = alert();
+        when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
+
+        climateAlertService.delete(10L);
+
+        verify(climateAlertRepository).delete(alert);
+        verify(eventPublisher).publishEvent(any(ClimateAlertsChangedEvent.class));
     }
 
     private CreateClimateAlertRequest validRequest() {
@@ -129,7 +172,7 @@ class ClimateAlertServiceTest {
 
     private ClimateAlert alert() {
         CreateClimateAlertRequest request = validRequest();
-        return new ClimateAlert(
+        ClimateAlert alert = new ClimateAlert(
                 request.title(),
                 request.type(),
                 request.severity(),
@@ -137,5 +180,7 @@ class ClimateAlertServiceTest {
                 request.startAt(),
                 request.endAt()
         );
+        ReflectionTestUtils.setField(alert, "id", 10L);
+        return alert;
     }
 }

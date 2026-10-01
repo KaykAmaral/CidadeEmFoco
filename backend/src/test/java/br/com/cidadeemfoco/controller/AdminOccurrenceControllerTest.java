@@ -76,14 +76,18 @@ class AdminOccurrenceControllerTest {
                         .param("category", "EVENTO_NATURAL")
                         .param("type", "ALAGAMENTO")
                         .param("status", "REGISTRADA")
-                        .param("neighborhood", "Boqueirao"))
+                        .param("neighborhood", "Boqueirao")
+                        .param("createdFrom", "2026-09-01T00:00:00Z")
+                        .param("createdTo", "2026-09-18T23:59:59Z"))
                 .andExpect(status().isOk());
 
         verify(occurrenceService).findAll(new OccurrenceFilter(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.ALAGAMENTO,
                 OccurrenceStatus.REGISTRADA,
-                "Boqueirao"
+                "Boqueirao",
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-18T23:59:59Z")
         ));
     }
 
@@ -97,7 +101,7 @@ class AdminOccurrenceControllerTest {
                         .param("status", "REGISTRADA")
                         .param("neighborhood", "Boqueirao")
                         .param("createdFrom", "2026-09-01T03:00:00Z")
-                        .param("createdBefore", "2026-10-01T03:00:00Z"))
+                        .param("createdTo", "2026-10-01T03:00:00Z"))
                 .andExpect(status().isOk());
 
         verify(occurrenceService).findAll(new OccurrenceFilter(
@@ -117,7 +121,7 @@ class AdminOccurrenceControllerTest {
     void shouldAcceptEndDateWithoutStartDate() throws Exception {
         when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
         mockMvc.perform(get("/api/admin/occurrences")
-                        .param("createdBefore", "2026-10-01T03:00:00Z"))
+                        .param("createdTo", "2026-10-01T03:00:00Z"))
                 .andExpect(status().isOk());
         verify(occurrenceService).findAll(new OccurrenceFilter(
                 null, null, null, null, null, Instant.parse("2026-10-01T03:00:00Z")));
@@ -131,6 +135,17 @@ class AdminOccurrenceControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.status").value("REGISTRADA"));
+    }
+
+    @Test
+    void shouldListReportsThatFormACase() throws Exception {
+        when(occurrenceService.findCaseReports(10L)).thenReturn(List.of(response(OccurrenceStatus.REGISTRADA)));
+
+        mockMvc.perform(get("/api/admin/occurrences/10/reports"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(10));
+
+        verify(occurrenceService).findCaseReports(10L);
     }
 
     private OccurrenceResponse response(OccurrenceStatus status) {

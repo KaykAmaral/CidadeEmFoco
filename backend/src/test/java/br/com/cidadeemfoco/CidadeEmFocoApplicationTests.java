@@ -3,6 +3,7 @@ package br.com.cidadeemfoco;
 import br.com.cidadeemfoco.repository.ClimateAlertRepository;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -24,6 +25,9 @@ class CidadeEmFocoApplicationTests {
 
 	@MockitoBean
 	private UserRepository userRepository;
+
+	@MockitoBean
+	private WhatsappNotificationRepository whatsappNotificationRepository;
 
 	@Test
 	void contextLoads() {

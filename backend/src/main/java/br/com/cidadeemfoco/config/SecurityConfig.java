@@ -3,6 +3,7 @@ package br.com.cidadeemfoco.config;
 import br.com.cidadeemfoco.exception.ApiErrorResponse;
 import br.com.cidadeemfoco.security.DatabaseUserDetailsService;
 import br.com.cidadeemfoco.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -61,9 +62,13 @@ public class SecurityConfig {
                                 writeSecurityError(request, response, HttpStatus.FORBIDDEN, "Acesso proibido"))
                 )
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/me/**").hasRole("CITIZEN")
                         .requestMatchers(HttpMethod.POST, "/api/occurrences/*/image").hasRole("CITIZEN")
                         .requestMatchers(HttpMethod.POST, "/api/occurrences/*/images").hasRole("CITIZEN")
                         .requestMatchers(HttpMethod.POST, "/api/occurrences").hasRole("CITIZEN")
@@ -90,7 +95,7 @@ public class SecurityConfig {
                 .map(String::trim)
                 .filter(origin -> !origin.isBlank())
                 .toList());
-        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setExposedHeaders(List.of(HttpHeaders.CONTENT_DISPOSITION));
         configuration.setMaxAge(3600L);

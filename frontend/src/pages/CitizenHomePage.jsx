@@ -1,20 +1,24 @@
-import { ArrowRight, MapPinned, RotateCw } from 'lucide-react'
+﻿import { ArrowRight, MapPinned, RotateCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner'
-import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
+import OccurrenceMap from '../components/map/OccurrenceMap'
+import OccurrenceCategoryFilter from '../components/map/OccurrenceCategoryFilter'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import useAuth from '../hooks/useAuth'
-import { getActiveAlerts } from '../services/alertService'
-import { getOccurrences } from '../services/occurrenceService'
+import useAlerts from '../hooks/useAlerts'
+import { getMapOccurrences, getOccurrences } from '../services/occurrenceService'
 import './CitizenHomePage.css'
+
+const MAP_REFRESH_INTERVAL_MS = 60_000
 
 function CitizenHomePage() {
   const { logout, token, user } = useAuth()
-  const [alerts, setAlerts] = useState([])
+  const { alerts } = useAlerts()
   const [occurrences, setOccurrences] = useState([])
+  const [mapOccurrences, setMapOccurrences] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
@@ -28,14 +32,14 @@ function CitizenHomePage() {
 
     async function loadDashboard() {
       try {
-        const [activeAlerts, occurrenceList] = await Promise.all([
-          getActiveAlerts(token),
+        const [occurrenceList, mapOccurrenceList] = await Promise.all([
           getOccurrences(token),
+          getMapOccurrences(token),
         ])
 
         if (isCurrent) {
-          setAlerts(activeAlerts)
           setOccurrences(occurrenceList)
+          setMapOccurrences(mapOccurrenceList)
         }
       } catch (requestError) {
         if (!isCurrent) {
@@ -62,6 +66,26 @@ function CitizenHomePage() {
     }
   }, [logout, reloadKey, token])
 
+  useEffect(() => {
+    let isCurrent = true
+
+    const refreshMap = async () => {
+      try {
+        const mapOccurrenceList = await getMapOccurrences(token)
+        if (isCurrent) setMapOccurrences(mapOccurrenceList)
+      } catch (requestError) {
+        if (isCurrent && requestError.status === 401) logout()
+      }
+    }
+
+    const intervalId = window.setInterval(refreshMap, MAP_REFRESH_INTERVAL_MS)
+
+    return () => {
+      isCurrent = false
+      window.clearInterval(intervalId)
+    }
+  }, [logout, token])
+
   function handleRetry() {
     setError('')
     setIsLoading(true)
@@ -79,8 +103,8 @@ function CitizenHomePage() {
     return (
       <FeedbackState
         type="loading"
-        title="Preparando sua visão da cidade"
-        message="Buscando alertas e ocorrências recentes."
+        title="Preparando sua visÃ£o da cidade"
+        message="Buscando alertas e ocorrÃªncias recentes."
       />
     )
   }
@@ -104,12 +128,12 @@ function CitizenHomePage() {
     <div className="citizen-dashboard">
       <header className="dashboard-heading">
         <div>
-          <span>Visão geral</span>
-          <h1>Olá, {firstName}</h1>
-          <p>Acompanhe o que está acontecendo em Praia Grande.</p>
+          <span>VisÃ£o geral</span>
+          <h1>OlÃ¡, {firstName}</h1>
+          <p>Acompanhe o que estÃ¡ acontecendo em Praia Grande.</p>
         </div>
         <Link className="button button--primary" to="/app/ocorrencias/nova">
-          Registrar ocorrência
+          Registrar ocorrÃªncia
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </header>
@@ -121,15 +145,21 @@ function CitizenHomePage() {
           <div className="dashboard-section-heading">
             <div>
               <MapPinned size={20} aria-hidden="true" />
-              <h2 id="map-title">Mapa de ocorrências</h2>
+              <h2 id="map-title">Mapa de ocorrÃªncias</h2>
             </div>
+            <OccurrenceCategoryFilter activeCategories={activeMapCategories} occurrences={mapOccurrences} onToggle={toggleMapCategory} />
           </div>
-          <LiveOccurrenceMap activeCategories={activeMapCategories} onToggleCategory={toggleMapCategory} />
+          <OccurrenceMap activeCategories={activeMapCategories} occurrences={mapOccurrences} />
+          {mapOccurrences.length === 0 && (
+            <p className="map-empty-message">
+              Ainda nÃ£o hÃ¡ ocorrÃªncias para posicionar no mapa.
+            </p>
+          )}
         </section>
 
         <section className="recent-occurrences" aria-labelledby="recent-title">
           <div className="dashboard-section-heading">
-            <h2 id="recent-title">Ocorrências recentes</h2>
+            <h2 id="recent-title">OcorrÃªncias recentes</h2>
             <Link to="/app/ocorrencias">Ver todas</Link>
           </div>
 
@@ -146,8 +176,8 @@ function CitizenHomePage() {
           ) : (
             <FeedbackState
               type="empty"
-              title="Nenhuma ocorrência registrada"
-              message="As novas ocorrências aparecerão aqui."
+              title="Nenhuma ocorrÃªncia registrada"
+              message="As novas ocorrÃªncias aparecerÃ£o aqui."
             />
           )}
         </section>
@@ -157,3 +187,4 @@ function CitizenHomePage() {
 }
 
 export default CitizenHomePage
+

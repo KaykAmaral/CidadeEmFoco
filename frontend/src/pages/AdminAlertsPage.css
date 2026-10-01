@@ -1,4 +1,4 @@
-.admin-alerts-page {
+﻿.admin-alerts-page {
   width: min(100%, 1320px);
   display: grid;
   gap: 20px;
@@ -180,7 +180,18 @@
   font-weight: 700;
 }
 
-.admin-alert-card > .button {
+.admin-alert-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.admin-alert-delete-button {
+  color: var(--color-danger, #b42318);
+}
+
+.admin-alert-card__actions > .button {
   flex: 0 0 auto;
   min-width: 118px;
 }
@@ -220,11 +231,15 @@
     flex-direction: column;
   }
 
-  .admin-alert-card > .button {
+  .admin-alert-card__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-alert-card__actions > .button {
     width: 100%;
   }
 }
-
 @media (max-width: 430px) {
   .admin-alerts-summary {
     grid-template-columns: 1fr;
@@ -252,3 +267,8 @@
     width: 100%;
   }
 }
+
+
+
+
+

@@ -1,0 +1,29 @@
+# IDEs e sistema operacional
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Configuracoes locais e segredos
+.env
+.env.*
+!.env.example
+infra/.env
+frontend/.env.local
+
+# Dependencias, caches e ferramentas locais
+node_modules/
+.m2-repository/
+.tools/
+
+# Builds e arquivos temporarios
+dist/
+target/
+*.log
+
+# Dados e uploads locais
+.local-mysql-data/
+.local-mysql-data2/
+.local-mysql*.log
+uploads/
+backend/uploads/

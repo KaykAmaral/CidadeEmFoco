@@ -70,9 +70,7 @@ public class ClimateAlert {
         this.description = Objects.requireNonNull(description);
         this.startAt = Objects.requireNonNull(startAt);
         this.endAt = Objects.requireNonNull(endAt);
-        if (!endAt.isAfter(startAt)) {
-            throw new IllegalArgumentException("O fim do alerta deve ser posterior ao inicio");
-        }
+        validatePeriod();
     }
 
     @PrePersist
@@ -88,6 +86,29 @@ public class ClimateAlert {
 
     public void deactivate() {
         active = false;
+    }
+
+    public void updateDetails(
+            String title,
+            ClimateAlertType type,
+            AlertSeverity severity,
+            String description,
+            Instant startAt,
+            Instant endAt
+    ) {
+        this.title = Objects.requireNonNull(title);
+        this.type = Objects.requireNonNull(type);
+        this.severity = Objects.requireNonNull(severity);
+        this.description = Objects.requireNonNull(description);
+        this.startAt = Objects.requireNonNull(startAt);
+        this.endAt = Objects.requireNonNull(endAt);
+        validatePeriod();
+    }
+
+    private void validatePeriod() {
+        if (!endAt.isAfter(startAt)) {
+            throw new IllegalArgumentException("O fim do alerta deve ser posterior ao inicio");
+        }
     }
 
     public Long getId() {
@@ -124,5 +145,9 @@ public class ClimateAlert {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isCurrentlyActive(Instant now) {
+        return active && !startAt.isAfter(now) && !endAt.isBefore(now);
     }
 }

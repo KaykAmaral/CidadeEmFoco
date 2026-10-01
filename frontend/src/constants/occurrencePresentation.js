@@ -1,5 +1,5 @@
 import {
-  CircleAlert, CloudRain, Construction, Droplets, Flame, LightbulbOff,
+  CircleAlert, CloudHail, CloudRain, Construction, Droplets, Flame, LightbulbOff,
   Mountain, TrafficCone, TreePine, Trees, UtilityPole, Waves, Wind,
 } from 'lucide-react'
 
@@ -7,7 +7,8 @@ const occurrenceTypeLabels = {
   ALAGAMENTO: 'Alagamento', ENCHENTE: 'Enchente', QUEDA_ARVORE: 'Queda de árvore',
   DESLIZAMENTO: 'Deslizamento', VENTOS_FORTES: 'Ventos fortes',
   RESSACA_MARITIMA: 'Ressaca marítima', INCENDIO: 'Incêndio',
-  CHUVA_INTENSA: 'Chuva intensa', QUEDA_GRANIZO: 'Queda de granizo', BURACO_RUA: 'Buraco na rua',
+  CHUVA_INTENSA: 'Chuva intensa', QUEDA_GRANIZO: 'Queda de granizo',
+  BURACO_RUA: 'Buraco na rua',
   BUEIRO_ENTUPIDO: 'Bueiro entupido', POSTE_DANIFICADO: 'Poste danificado',
   SEMAFORO_COM_PROBLEMA: 'Semáforo com problema', RUA_BLOQUEADA: 'Rua bloqueada',
   FALTA_ILUMINACAO: 'Falta de iluminação',
@@ -60,7 +61,7 @@ const occurrenceTypePresentation = {
   DESLIZAMENTO: { icon: Mountain, color: '#8b5e3c', softColor: '#f5ece5' },
   INCENDIO: { icon: Flame, color: '#d83b35', softColor: '#fdeceb' },
   CHUVA_INTENSA: { icon: CloudRain, color: '#174f86', softColor: '#e7eff8' },
-  QUEDA_GRANIZO: { icon: CloudRain, color: '#546d91', softColor: '#edf2fa' },
+  QUEDA_GRANIZO: { icon: CloudHail, color: '#527da3', softColor: '#e9f1f8' },
   RESSACA_MARITIMA: { icon: Waves, color: '#146b9b', softColor: '#e5f3f8' },
   BURACO_RUA: { icon: Construction, color: '#e87918', softColor: '#fff1e3' },
   BUEIRO_ENTUPIDO: { icon: Droplets, color: '#c69212', softColor: '#fff8da' },

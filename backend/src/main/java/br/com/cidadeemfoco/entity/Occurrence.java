@@ -96,6 +96,13 @@ public class Occurrence {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_root_id")
+    private Occurrence groupRoot;
+
+    @Column(nullable = false)
+    private int strength = 1;
+
     protected Occurrence() {
     }
 
@@ -138,28 +145,32 @@ public class Occurrence {
     }
 
     public void changeStatus(OccurrenceStatus status) {
-        Objects.requireNonNull(status);
-        if (this.status == status) return;
-        this.automaticallyResolved = false;
-        this.resolvedAt = status == OccurrenceStatus.RESOLVIDA ? Instant.now() : null;
-        this.status = status;
+        changeStatus(status, false);
     }
 
-    public Instant getResolvedAt() {
-        return resolvedAt;
+    public void resolveAutomatically() {
+        changeStatus(OccurrenceStatus.RESOLVIDA, true);
     }
 
-    public boolean isAutomaticallyResolved() {
-        return automaticallyResolved;
+    private void changeStatus(OccurrenceStatus status, boolean automaticResolution) {
+        OccurrenceStatus newStatus = Objects.requireNonNull(status);
+        if (newStatus == OccurrenceStatus.RESOLVIDA && this.status != OccurrenceStatus.RESOLVIDA) {
+            resolvedAt = Instant.now();
+            automaticallyResolved = automaticResolution;
+        } else if (newStatus != OccurrenceStatus.RESOLVIDA) {
+            resolvedAt = null;
+            automaticallyResolved = false;
+        }
+        this.status = newStatus;
     }
 
-    public boolean resolveAutomatically(Instant now) {
-        if (category != OccurrenceCategory.EVENTO_NATURAL || !type.isTemporary()
-                || status == OccurrenceStatus.RESOLVIDA || status == OccurrenceStatus.NAO_CONFIRMADA) return false;
-        resolvedAt = Objects.requireNonNull(now);
-        status = OccurrenceStatus.RESOLVIDA;
-        automaticallyResolved = true;
-        return true;
+    public void joinCase(Occurrence caseRoot) {
+        Occurrence root = Objects.requireNonNull(caseRoot);
+        if (root.groupRoot != null) {
+            throw new IllegalArgumentException("O agrupamento deve apontar para o caso principal");
+        }
+        groupRoot = root;
+        root.strength++;
     }
 
     public String replaceImage(String imagePath) {
@@ -230,7 +241,27 @@ public class Occurrence {
         return updatedAt;
     }
 
+    public Instant getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public boolean isAutomaticallyResolved() {
+        return automaticallyResolved;
+    }
+
     public User getUser() {
         return user;
+    }
+
+    public Occurrence getGroupRoot() {
+        return groupRoot;
+    }
+
+    public Occurrence getCaseRoot() {
+        return groupRoot == null ? this : groupRoot;
+    }
+
+    public int getStrength() {
+        return strength;
     }
 }

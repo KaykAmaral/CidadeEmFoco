@@ -1,6 +1,6 @@
 ﻿# Cidade em Foco — Frontend
 
-Interface web do **Cidade em Foco**, um MVP acadêmico para moradores de Praia Grande-SP registrarem ocorrências urbanas e consultarem alertas climáticos demonstrativos. A aplicação possui áreas de cidadão e administrador, mapas interativos e interface responsiva em português.
+Interface web do **Cidade em Foco**, um projeto acadêmico para moradores de Praia Grande-SP registrarem ocorrências urbanas e consultarem alertas climáticos demonstrativos. A aplicação possui áreas de cidadão e administrador, mapas interativos e interface responsiva em português.
 
 ## Tecnologias
 
@@ -15,6 +15,7 @@ As faixas abaixo são as declaradas em [package.json](package.json); as versões
 | Leaflet / React Leaflet | `^1.9.4` / `^5.0.0` | Mapas, marcadores e seleção de localização |
 | Lucide React | `^1.33.0` | Ícones |
 | Oxlint | `^1.75.0` | Análise estática, incluindo regras de hooks |
+| Wrangler | `^4.136.3` | Publicação dos arquivos estáticos no Cloudflare Workers |
 
 O código usa **JavaScript com JSX**, módulos ES e CSS próprio. A sessão é compartilhada por Context API e pelo hook `useAuth`. A comunicação HTTP usa `fetch`, `FormData` e `Blob` nativos do navegador. Os pacotes `@types/react` e `@types/react-dom` auxiliam as ferramentas de desenvolvimento; não há código TypeScript nesta versão.
 
@@ -25,7 +26,7 @@ O código usa **JavaScript com JSX**, módulos ES e CSS próprio. A sessão é c
 - Backend do projeto configurado e executando, normalmente em `http://localhost:8080`.
 - Navegador com JavaScript e acesso à internet para os mapas e a busca de endereços.
 
-Consulte o [README do backend](../README-BACKEND.md) para configurar Java 21, MySQL, JWT, executar a API e preparar uma conta administrativa. O frontend não se conecta diretamente ao banco de dados.
+Consulte o [README principal](../README.md) para configurar Java 21, MySQL, JWT, executar a API e preparar uma conta administrativa. O frontend não se conecta diretamente ao banco de dados.
 
 ## Instalação e configuração
 
@@ -75,6 +76,7 @@ Todos os comandos abaixo também partem de `frontend/`:
 | `npm.cmd run lint` | Executar o Oxlint com `.oxlintrc.json` |
 | `npm.cmd run build` | Gerar os arquivos estáticos em `dist/` |
 | `npm.cmd run preview` | Servir localmente o build de `dist/`, normalmente na porta 4173 |
+| `npm.cmd run deploy` | Publicar o conteúdo já gerado em `dist/` no Cloudflare Workers |
 
 Para conferir o build:
 
@@ -86,7 +88,7 @@ npm.cmd run preview
 
 Se preferir permanecer na raiz do repositório, use `npm.cmd --prefix frontend run dev` e o mesmo prefixo para `lint`, `build` e `preview`.
 
-Na hospedagem, publique o conteúdo de `dist/` e configure o servidor para entregar `index.html` nas rotas da aplicação, como `/app/ocorrencias/1`, permitindo acesso direto e atualização da página com `BrowserRouter`. A configuração atual pressupõe hospedagem na raiz do domínio, inclusive para imagens em `/brand` e `/images`. `preview` serve para conferência local do build.
+Na hospedagem, publique o conteúdo de `dist/` e configure o servidor para entregar `index.html` nas rotas da aplicação, como `/app/ocorrencias/1`, permitindo acesso direto e atualização da página com `BrowserRouter`. No Cloudflare Workers, essa regra está em `wrangler.jsonc`, por meio de `not_found_handling: "single-page-application"`. A configuração atual pressupõe hospedagem na raiz do domínio, inclusive para imagens em `/brand` e `/images`. `preview` serve para conferência local do build.
 
 ## Estrutura de pastas
 
@@ -122,6 +124,7 @@ frontend/
 ├── package.json
 ├── package-lock.json
 ├── vite.config.js
+├── wrangler.jsonc            # Assets estáticos e fallback das rotas SPA
 └── README.md
 ```
 
@@ -150,7 +153,7 @@ O cadastro usa `POST /api/auth/register`, solicita nome, e-mail e senha e cria s
 
 O login usa `POST /api/auth/login`. O `AuthProvider` guarda JWT, dados públicos do usuário e vencimento no `localStorage`, sob a chave `cidade-em-foco:auth`, para restaurar a sessão após atualizar a página. A senha não é persistida. O logout e o vencimento removem a sessão; as telas que recebem erro 401 também encerram o acesso. Não há fluxo de renovação automática do token.
 
-Sem sessão, as rotas protegidas redirecionam para `/login`. Usuários com outro perfil são enviados à própria área; quem já está autenticado também é redirecionado ao acessar login ou cadastro. As permissões da API são verificadas pelo backend. Para acessar como administrador, prepare a conta conforme o [guia do backend](../README-BACKEND.md#autenticação-e-administrador) e faça novo login após a alteração do perfil.
+Sem sessão, as rotas protegidas redirecionam para `/login`. Usuários com outro perfil são enviados à própria área; quem já está autenticado também é redirecionado ao acessar login ou cadastro. As permissões da API são verificadas pelo backend. Para acessar como administrador, prepare a conta conforme o [guia principal](../README.md#administrador-inicial) e faça novo login após a alteração do perfil.
 
 ## Funcionalidades do cidadão
 
@@ -193,17 +196,9 @@ Se apenas o upload falhar, a ocorrência permanece criada e a tela de detalhes r
 
 ### Dashboard
 
-`/admin` consulta em paralelo `GET /api/admin/occurrences` e `GET /api/admin/alerts`. As respostas alimentam o total de ocorrências, contagens e distribuição visual dos cinco status, mapa, até cinco ocorrências recentes e até três alertas recentes. A contagem de alertas considera os marcados como ativos, independentemente de estarem dentro do período de validade.
+`/admin` consulta em paralelo `GET /api/admin/occurrences` e `GET /api/admin/alerts`. O administrador pode filtrar as ocorrências por período, categoria, tipo, status e bairro. Os filtros alteram conjuntamente os indicadores, a distribuição visual dos cinco status, o mapa e os registros recentes. A contagem de alertas considera os marcados como ativos, independentemente de estarem dentro do período de validade.
 
 O dashboard é de consulta; alterações ficam nas telas de gestão.
-
-Os filtros de data inicial/final, bairro, categoria, tipo e status são aplicados pelo botão **Aplicar filtros**. Indicadores, distribuição por status e lista recente usam a consulta administrativa completa; o mapa aplica os mesmos filtros em `/api/occurrences/map`, acrescentando a regra de expiração das resolvidas. Por isso, o histórico contado pelos indicadores pode ser maior que a quantidade de marcadores. **Limpar filtros** restaura a consulta completa. Ao alterar a categoria, um tipo incompatível é removido. Carregamento e erro ocultam resultados anteriores; os campos continuam disponíveis.
-
-O período usa a **data de cadastro** da ocorrência no horário local do navegador, incluindo todo o dia final. A consulta administrativa recebe `createdFrom` (instante ISO inclusivo) e `createdBefore` (instante ISO exclusivo, início do dia seguinte), além dos parâmetros existentes `neighborhood`, `category`, `type` e `status`. Ambas as datas são opcionais. Intervalos invertidos são rejeitados. O backend aplica os critérios no banco; não há filtragem de datas apenas no navegador.
-
-Alertas climáticos permanecem gerais e são reutilizados durante a filtragem de ocorrências. **Atualizar dados** renova ocorrências e alertas. Reaplicar filtros iguais não dispara outra consulta; requisições substituídas são canceladas.
-
-Para conferir manualmente, entre como administrador em `/admin`, combine os filtros e compare total, contagens, mapa e os cinco registros mais recentes. Teste um único dia, somente uma das datas, um bairro sem resultados, mudança de categoria e **Limpar filtros**. No painel Network do navegador, cada aplicação de critérios diferentes deve fazer uma consulta a `/api/admin/occurrences`, com os parâmetros escolhidos. Para validar o erro e a recuperação, desative a conexão no navegador, altere um filtro, aplique, reative a conexão e use **Tentar novamente**. Confira também a disposição dos campos em celular.
 
 ### Gestão de ocorrências
 
@@ -234,14 +229,6 @@ O formulário recebe título, tipo, severidade, descrição e período. Os tipos
 
 ## Mapas e serviços externos
 
-Os detalhes de uma ocorrência exibem um aviso quando `automaticallyResolved` é verdadeiro, com a data de resolução enviada pela API. O encerramento de eventos temporários acontece exclusivamente no backend, configurado por `AUTO_CLOSE_*` (veja o README do backend). A lista de tipos naturais também inclui **Queda de granizo**. Não há temporizadores de encerramento no navegador.
-
-Todos os mapas de ocorrências usam `LiveOccurrenceMap` e o endpoint autenticado `GET /api/occurrences/map`, inclusive nas páginas de detalhe (filtradas por `occurrenceId`). As consultas históricas permanecem completas. Uma ocorrência resolvida expirada perde o marcador, mas seus detalhes, fotos e coordenadas continuam acessíveis.
-
-O backend controla o prazo por `MAP_RESOLVED_RETENTION` e a frequência das consultas por `MAP_REFRESH_INTERVAL`; veja o README do backend. O frontend mantém um único ciclo de atualização por mapa, sem temporizadores por marcador e sem calcular o prazo localmente. O ciclo só agenda a próxima consulta depois que a anterior termina, cancela consultas ao desmontar/trocar filtros e atualiza ao voltar à aba. Em caso de erro, oculta os marcadores anteriores e tenta novamente automaticamente. As contagens das categorias no mapa do cidadão usam apenas os marcadores retornados.
-
-Para testar a remoção em pouco tempo, inicie a API com `MAP_RESOLVED_RETENTION=PT1M` e `MAP_REFRESH_INTERVAL=PT5S`, resolva uma ocorrência e mantenha o mapa aberto. Ela deverá desaparecer após um minuto mais o intervalo até a próxima consulta. Confira que continua na listagem administrativa e no detalhe. Reabra a ocorrência para fazê-la reaparecer. A configuração de produção pode manter o padrão de 24 horas.
-
 Os mapas usam Leaflet e React Leaflet, com centro inicial em Praia Grande (`-24.005833, -46.405833`) e tiles de `https://tile.openstreetmap.org/{z}/{x}/{y}.png`, mantendo a atribuição ao OpenStreetMap. Marcadores possuem ícones por tipo, risco, status e link para os detalhes. Não há download de mapas para uso offline.
 
 A busca de endereços e a geocodificação reversa são feitas diretamente pelo navegador no Nominatim (`https://nominatim.openstreetmap.org`), em [geocodingService.js](src/services/geocodingService.js). A busca começa com três caracteres, após uma pausa de 450 ms, e solicita até cinco resultados delimitados à região de Praia Grande. Endereços pesquisados e coordenadas usadas na geocodificação são enviados a esse serviço externo; o JWT é acrescentado somente às requisições da API da aplicação.
@@ -250,7 +237,7 @@ A localização atual é solicitada ao navegador apenas ao acionar **Usar minha 
 
 ## Verificação e problemas comuns
 
-`npm.cmd test` executa os testes dos parâmetros do dashboard e do ciclo de atualização dos mapas usando o test runner nativo do Node.js. Cobrem datas, filtros, remoção de marcadores após nova resposta, cancelamento, ausência de consultas sobrepostas e recuperação após erro. Execute também `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Não há suíte automatizada de navegador. Os testes de regras e permissões do backend são descritos no [README do backend](../README-BACKEND.md#testes).
+O frontend não possui suíte automatizada própria nem script `test`. As verificações disponíveis são `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Os testes de regras e permissões do backend são descritos no [README principal](../README.md#testes-do-backend).
 
 Com frontend e backend em execução, valide no navegador:
 

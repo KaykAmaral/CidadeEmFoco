@@ -29,8 +29,10 @@ class JwtServiceTest {
         JwtService jwtService = new JwtService(TEST_SECRET, 60);
         User user = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
         String token = jwtService.generateToken(user);
-        char replacement = token.charAt(token.length() - 1) == 'a' ? 'b' : 'a';
-        String modifiedToken = token.substring(0, token.length() - 1) + replacement;
+        String[] tokenParts = token.split("\\.");
+        char replacement = tokenParts[2].charAt(0) == 'a' ? 'b' : 'a';
+        tokenParts[2] = replacement + tokenParts[2].substring(1);
+        String modifiedToken = String.join(".", tokenParts);
 
         assertThatThrownBy(() -> jwtService.extractSubject(modifiedToken))
                 .isInstanceOf(JwtException.class);

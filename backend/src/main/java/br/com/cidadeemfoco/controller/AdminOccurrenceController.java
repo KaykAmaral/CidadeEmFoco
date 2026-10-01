@@ -10,6 +10,7 @@ import br.com.cidadeemfoco.service.OccurrenceService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -19,9 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.time.Instant;
-import org.springframework.format.annotation.DateTimeFormat;
+import java.util.List;
 
 @Validated
 @RestController
@@ -41,15 +41,21 @@ public class AdminOccurrenceController {
             @RequestParam(required = false) OccurrenceStatus status,
             @RequestParam(required = false) @Size(max = 100) String neighborhood,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdBefore
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdTo
     ) {
         return occurrenceService.findAll(new OccurrenceFilter(
-                category, type, status, neighborhood, createdFrom, createdBefore));
+                category, type, status, neighborhood, createdFrom, createdTo
+        ));
     }
 
     @GetMapping("/{id}")
     public OccurrenceResponse findById(@PathVariable @Positive Long id) {
         return occurrenceService.findById(id);
+    }
+
+    @GetMapping("/{id}/reports")
+    public List<OccurrenceResponse> findCaseReports(@PathVariable @Positive Long id) {
+        return occurrenceService.findCaseReports(id);
     }
 
     @PatchMapping("/{id}/status")

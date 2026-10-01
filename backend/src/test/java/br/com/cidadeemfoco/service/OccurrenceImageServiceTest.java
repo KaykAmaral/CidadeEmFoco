@@ -37,7 +37,7 @@ class OccurrenceImageServiceTest {
     private OccurrenceRepository occurrenceRepository;
 
     @Mock
-    private LocalImageStorageService imageStorageService;
+    private ImageStorageService imageStorageService;
 
 
     private OccurrenceImageService occurrenceImageService;

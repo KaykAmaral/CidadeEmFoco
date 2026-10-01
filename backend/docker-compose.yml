@@ -1,0 +1,47 @@
+name: cidade-em-foco
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-cidade_em_foco}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - cidade-em-foco-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-cidade_em_foco}?createDatabaseIfNotExist=true&serverTimezone=UTC
+      OCCURRENCE_IMAGE_DIR: /app/uploads/occurrences
+    ports:
+      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
+    volumes:
+      - occurrence_images:/app/uploads/occurrences
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - cidade-em-foco-net
+
+networks:
+  cidade-em-foco-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  occurrence_images:

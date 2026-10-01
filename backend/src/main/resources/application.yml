@@ -24,7 +24,17 @@ spring:
       max-request-size: 5MB
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:${PORT:8080}}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 springdoc:
   api-docs:
@@ -33,18 +43,50 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  public-api:
+    rate-limit:
+      enabled: ${PUBLIC_API_RATE_LIMIT_ENABLED:true}
+      requests-per-minute: ${PUBLIC_API_RATE_LIMIT_PER_MINUTE:60}
+  database:
+    flyway-repair-on-start: ${FLYWAY_REPAIR_ON_START:false}
+  alerts:
+    realtime-connection-timeout: ${ALERT_REALTIME_CONNECTION_TIMEOUT:30m}
+    realtime-refresh-interval: ${ALERT_REALTIME_REFRESH_INTERVAL:30s}
+    cleanup-interval: ${ALERT_CLEANUP_INTERVAL:5m}
+    cleanup-initial-delay: ${ALERT_CLEANUP_INITIAL_DELAY:5m}
+  whatsapp:
+    queue-sync-interval: ${WHATSAPP_QUEUE_SYNC_INTERVAL:1m}
+    queue-sync-initial-delay: ${WHATSAPP_QUEUE_SYNC_INITIAL_DELAY:1m}
+    cloud-api:
+      enabled: ${WHATSAPP_CLOUD_API_ENABLED:false}
+      base-url: ${WHATSAPP_CLOUD_API_BASE_URL:https://graph.facebook.com}
+      api-version: ${WHATSAPP_CLOUD_API_VERSION:v23.0}
+      phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+      access-token: ${WHATSAPP_ACCESS_TOKEN:}
+      template-name: ${WHATSAPP_TEMPLATE_NAME:cidade_em_foco_alerta_climatico}
+      template-language: ${WHATSAPP_TEMPLATE_LANGUAGE:pt_BR}
+      timezone: ${WHATSAPP_TIMEZONE:America/Sao_Paulo}
+      process-interval: ${WHATSAPP_PROCESS_INTERVAL:30s}
+      process-initial-delay: ${WHATSAPP_PROCESS_INITIAL_DELAY:30s}
+      max-attempts: ${WHATSAPP_MAX_ATTEMPTS:3}
+      batch-size: ${WHATSAPP_BATCH_SIZE:20}
   occurrences:
-    auto-close:
-      enabled: ${AUTO_CLOSE_ENABLED:true}
-      types: ${AUTO_CLOSE_TYPES:ALAGAMENTO,ENCHENTE,VENTOS_FORTES,CHUVA_INTENSA,QUEDA_GRANIZO,RESSACA_MARITIMA}
-      validity: ${AUTO_CLOSE_VALIDITY:PT24H}
-      check-interval: ${AUTO_CLOSE_CHECK_INTERVAL:PT1M}
-      batch-size: ${AUTO_CLOSE_BATCH_SIZE:100}
-  map:
-    resolved-retention: ${MAP_RESOLVED_RETENTION:PT24H}
-    refresh-interval: ${MAP_REFRESH_INTERVAL:PT30S}
+    resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
+    temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:2d}
+    auto-resolution-types: ${AUTO_RESOLUTION_TYPES:ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO}
+    auto-resolution-interval: ${AUTO_RESOLUTION_INTERVAL:5m}
+    auto-resolution-initial-delay: ${AUTO_RESOLUTION_INITIAL_DELAY:5m}
+    grouping-window-natural: ${OCCURRENCE_GROUPING_WINDOW_NATURAL:${OCCURRENCE_GROUPING_WINDOW:2d}}
+    grouping-window-infrastructure: ${OCCURRENCE_GROUPING_WINDOW_INFRASTRUCTURE:30d}
+    grouping-radius-meters: ${OCCURRENCE_GROUPING_RADIUS_METERS:500}
   storage:
+    type: ${IMAGE_STORAGE_TYPE:local}
     occurrence-images-directory: ${OCCURRENCE_IMAGE_DIR:uploads/occurrences}
+    cloudinary:
+      cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+      api-key: ${CLOUDINARY_API_KEY:}
+      api-secret: ${CLOUDINARY_API_SECRET:}
+      folder: ${CLOUDINARY_FOLDER:cidade-em-foco/occurrences}
   security:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}

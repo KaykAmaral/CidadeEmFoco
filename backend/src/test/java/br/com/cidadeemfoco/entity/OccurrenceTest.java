@@ -90,4 +90,58 @@ class OccurrenceTest {
 
         assertThat(occurrence.getStatus()).isEqualTo(OccurrenceStatus.NAO_CONFIRMADA);
     }
+
+    @Test
+    void shouldTrackWhenOccurrenceIsResolvedAndClearItWhenReopened() {
+        Occurrence occurrence = occurrence();
+
+        occurrence.changeStatus(OccurrenceStatus.RESOLVIDA);
+        var firstResolvedAt = occurrence.getResolvedAt();
+
+        assertThat(firstResolvedAt).isNotNull();
+
+        occurrence.changeStatus(OccurrenceStatus.RESOLVIDA);
+        assertThat(occurrence.getResolvedAt()).isEqualTo(firstResolvedAt);
+
+        occurrence.changeStatus(OccurrenceStatus.EM_ATENDIMENTO);
+        assertThat(occurrence.getResolvedAt()).isNull();
+        assertThat(occurrence.isAutomaticallyResolved()).isFalse();
+    }
+
+    @Test
+    void shouldRegisterAutomaticResolutionOrigin() {
+        Occurrence occurrence = occurrence();
+
+        occurrence.resolveAutomatically();
+
+        assertThat(occurrence.getStatus()).isEqualTo(OccurrenceStatus.RESOLVIDA);
+        assertThat(occurrence.getResolvedAt()).isNotNull();
+        assertThat(occurrence.isAutomaticallyResolved()).isTrue();
+    }
+
+    @Test
+    void shouldJoinAReportToTheMainCaseAndIncreaseItsStrength() {
+        Occurrence caseRoot = occurrence();
+        Occurrence supportingReport = occurrence();
+
+        supportingReport.joinCase(caseRoot);
+
+        assertThat(supportingReport.getCaseRoot()).isSameAs(caseRoot);
+        assertThat(caseRoot.getStrength()).isEqualTo(2);
+        assertThat(supportingReport.getStrength()).isEqualTo(1);
+    }
+
+    private Occurrence occurrence() {
+        return new Occurrence(
+                OccurrenceCategory.EVENTO_NATURAL,
+                OccurrenceType.ALAGAMENTO,
+                "Alagamento observado na via",
+                PerceivedRisk.ALTO,
+                new BigDecimal("-24.008100"),
+                new BigDecimal("-46.412000"),
+                "Boqueirao",
+                null,
+                citizen
+        );
+    }
 }

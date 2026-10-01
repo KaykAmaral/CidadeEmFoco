@@ -1,32 +1,51 @@
 package br.com.cidadeemfoco.repository;
 
 import br.com.cidadeemfoco.entity.Occurrence;
+import br.com.cidadeemfoco.enums.OccurrenceCategory;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, JpaSpecificationExecutor<Occurrence> {
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select o from Occurrence o where o.id = :id")
-    Optional<Occurrence> findByIdForUpdate(Long id);
+
+    @Query("""
+            SELECT occurrence
+            FROM Occurrence occurrence
+            WHERE occurrence.groupRoot IS NULL
+              AND (occurrence.status <> :resolvedStatus
+               OR occurrence.resolvedAt >= :resolvedSince)
+            ORDER BY occurrence.createdAt DESC
+            """)
+    List<Occurrence> findVisibleOnMap(
+            @Param("resolvedStatus") OccurrenceStatus resolvedStatus,
+            @Param("resolvedSince") Instant resolvedSince
+    );
+
+    List<Occurrence> findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+            OccurrenceCategory category,
+            Collection<OccurrenceType> types,
+            Collection<OccurrenceStatus> statuses,
+            Instant createdBefore
+    );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-            select o from Occurrence o
-            where o.category = br.com.cidadeemfoco.enums.OccurrenceCategory.EVENTO_NATURAL
-              and o.type in :types and o.status in :statuses and o.createdAt <= :cutoff
-              and not exists (select a.id from OccurrenceAutoClosure a where a.occurrence = o)
-            order by o.createdAt, o.id
-            """)
-    List<Occurrence> findEligibleForAutoClosure(Set<OccurrenceType> types, Set<OccurrenceStatus> statuses,
-                                               Instant cutoff, Pageable pageable);
+    List<Occurrence> findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+            OccurrenceCategory category,
+            OccurrenceType type,
+            Collection<OccurrenceStatus> statuses,
+            Instant createdAfter
+    );
+
+    List<Occurrence> findByGroupRootIdOrderByCreatedAtAsc(Long groupRootId);
+
+    boolean existsByGroupRootIdAndUserEmailIgnoreCase(Long groupRootId, String userEmail);
 }

@@ -8,8 +8,14 @@ import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
+import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
+import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
+import br.com.cidadeemfoco.service.ClimateAlertRealtimeService;
 import br.com.cidadeemfoco.service.OccurrenceImageService;
+import br.com.cidadeemfoco.service.UserService;
+import br.com.cidadeemfoco.service.WhatsappNotificationService;
+import br.com.cidadeemfoco.dto.WhatsappPreferencesResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +26,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,12 +38,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = {
@@ -64,10 +75,44 @@ class SecurityIntegrationTest {
     private OccurrenceService occurrenceService;
 
     @MockitoBean
+    private OccurrenceAutoResolutionService occurrenceAutoResolutionService;
+
+    @MockitoBean
     private ClimateAlertService climateAlertService;
 
     @MockitoBean
+    private ClimateAlertCleanupService climateAlertCleanupService;
+
+    @MockitoBean
+    private ClimateAlertRealtimeService climateAlertRealtimeService;
+
+    @MockitoBean
     private OccurrenceImageService occurrenceImageService;
+
+    @MockitoBean
+    private UserService userService;
+
+    @MockitoBean
+    private WhatsappNotificationService whatsappNotificationService;
+
+    @Test
+    void shouldExposePublicHealthCheck() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void shouldExposeOnlyVersionedPublicReadEndpointsWithoutAuthentication() throws Exception {
+        when(climateAlertService.findCurrentlyActive()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/public/alerts/active"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("X-RateLimit-Limit"));
+
+        mockMvc.perform(get("/api/admin/alerts"))
+                .andExpect(status().isUnauthorized());
+    }
 
     @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
@@ -231,6 +276,33 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldRequireAuthenticationToOpenAlertStream() throws Exception {
+        mockMvc.perform(get("/api/alerts/stream"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Autenticacao necessaria"));
+    }
+
+    @Test
+    void shouldAllowAuthenticatedAlertStreamAsyncDispatch() throws Exception {
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        SseEmitter emitter = new SseEmitter();
+        when(climateAlertRealtimeService.subscribe()).thenReturn(emitter);
+        String token = jwtService.generateToken(citizen);
+
+        MvcResult stream = mockMvc.perform(get("/api/alerts/stream")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        emitter.complete();
+
+        mockMvc.perform(asyncDispatch(stream))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void shouldAllowCitizenToReadActiveAlertsButNotManageThem() throws Exception {
         User citizen = citizen();
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
@@ -262,6 +334,69 @@ class SecurityIntegrationTest {
                 .andExpect(status().isCreated());
 
         verify(climateAlertService).create(any(CreateClimateAlertRequest.class));
+    }
+
+    @Test
+    void shouldAllowOnlyAdminToDeleteAlert() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(delete("/api/admin/alerts/10")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/admin/alerts/10")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        verify(climateAlertService).delete(10L);
+    }
+
+    @Test
+    void shouldAllowOnlyCitizenToManageOwnWhatsappPreferences() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        when(userService.findWhatsappPreferences("ana@example.com"))
+                .thenReturn(new WhatsappPreferencesResponse(null, false, null, false));
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(get("/api/users/me/whatsapp")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/me/whatsapp")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        verify(userService).findWhatsappPreferences("ana@example.com");
+    }
+
+    @Test
+    void shouldAllowOnlyAdminToReadWhatsappNotificationHistory() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        when(whatsappNotificationService.findAll(null)).thenReturn(List.of());
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(get("/api/admin/whatsapp-notifications")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/admin/whatsapp-notifications")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        verify(whatsappNotificationService).findAll(null);
     }
 
     @Test

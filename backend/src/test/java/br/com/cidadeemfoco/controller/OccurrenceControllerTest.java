@@ -111,7 +111,9 @@ class OccurrenceControllerTest {
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
                 OccurrenceStatus.REGISTRADA,
-                "Boqueirao"
+                "Boqueirao",
+                null,
+                null
         ));
     }
 
@@ -135,6 +137,17 @@ class OccurrenceControllerTest {
                         .principal(authentication()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(15));
+    }
+
+    @Test
+    void shouldListOccurrencesVisibleOnMap() throws Exception {
+        when(occurrenceService.findVisibleOnMap()).thenReturn(List.of(response()));
+
+        mockMvc.perform(get("/api/occurrences/map"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(15));
+
+        verify(occurrenceService).findVisibleOnMap();
     }
 
     private OccurrenceResponse response() {

@@ -14,10 +14,6 @@ import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Path;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,10 +21,13 @@ import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,8 +36,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,8 +54,7 @@ class OccurrenceServiceTest {
 
     @BeforeEach
     void setUp() {
-        occurrenceService = new OccurrenceService(occurrenceRepository, userRepository,
-                new MapVisibilityPolicy(java.time.Duration.ofHours(24), java.time.Duration.ofSeconds(30), java.time.Clock.systemUTC()));
+        occurrenceService = new OccurrenceService(occurrenceRepository, userRepository);
     }
 
     @Test
@@ -72,6 +70,129 @@ class OccurrenceServiceTest {
         assertThat(response.type()).isEqualTo(OccurrenceType.ALAGAMENTO);
         assertThat(response.status()).isEqualTo(OccurrenceStatus.REGISTRADA);
         verify(occurrenceRepository).save(any(Occurrence.class));
+    }
+
+    @Test
+    void shouldGroupANearbySimilarReportAndIncreaseCaseStrength() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(caseRoot));
+        when(occurrenceRepository.save(any(Occurrence.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        OccurrenceResponse response = occurrenceService.create("ana@example.com", validRequest());
+
+        assertThat(response.caseId()).isEqualTo(10L);
+        assertThat(response.strength()).isEqualTo(2);
+        assertThat(caseRoot.getStrength()).isEqualTo(2);
+        verify(occurrenceRepository).save(caseRoot);
+        verify(occurrenceRepository, times(2)).save(any(Occurrence.class));
+        verify(occurrenceRepository).flush();
+    }
+
+    @Test
+    void shouldRejectSecondContributionFromCaseCreator() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence caseRoot = occurrenceFor("Ana", "ana@example.com");
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(caseRoot));
+
+        assertThatThrownBy(() -> occurrenceService.create("ana@example.com", validRequest()))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("Voce ja contribuiu para esta ocorrencia");
+        verify(occurrenceRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectCitizenWhoAlreadyReportedTheSameCase() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(caseRoot));
+        when(occurrenceRepository.existsByGroupRootIdAndUserEmailIgnoreCase(10L, "ana@example.com"))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> occurrenceService.create("ana@example.com", validRequest()))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("Voce ja contribuiu para esta ocorrencia");
+        verify(occurrenceRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldTranslateConcurrentDuplicateContributionToBusinessRule() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(caseRoot));
+        when(occurrenceRepository.save(any(Occurrence.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new DataIntegrityViolationException("duplicate contribution"))
+                .when(occurrenceRepository).flush();
+
+        assertThatThrownBy(() -> occurrenceService.create("ana@example.com", validRequest()))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("Voce ja contribuiu para esta ocorrencia");
+    }
+
+    @Test
+    void shouldKeepADistantReportAsANewCase() {
+        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        Occurrence distantCase = new Occurrence(
+                OccurrenceCategory.EVENTO_NATURAL,
+                OccurrenceType.ALAGAMENTO,
+                "Outro alagamento",
+                PerceivedRisk.ALTO,
+                new BigDecimal("-23.550520"),
+                new BigDecimal("-46.633308"),
+                "Centro",
+                null,
+                citizen
+        );
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository
+                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(OccurrenceCategory.EVENTO_NATURAL),
+                        eq(OccurrenceType.ALAGAMENTO),
+                        any(),
+                        any(Instant.class)
+                )).thenReturn(List.of(distantCase));
+        when(occurrenceRepository.save(any(Occurrence.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        OccurrenceResponse response = occurrenceService.create("ana@example.com", validRequest());
+
+        assertThat(response.strength()).isEqualTo(1);
+        assertThat(distantCase.getStrength()).isEqualTo(1);
+        verify(occurrenceRepository, times(1)).save(any(Occurrence.class));
     }
 
     @Test
@@ -118,7 +239,7 @@ class OccurrenceServiceTest {
     @Test
     void shouldUpdateOccurrenceStatus() {
         Occurrence occurrence = occurrence();
-        when(occurrenceRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(occurrence));
+        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(occurrence));
         when(occurrenceRepository.saveAndFlush(occurrence)).thenReturn(occurrence);
 
         OccurrenceResponse response = occurrenceService.updateStatus(10L, OccurrenceStatus.EM_ATENDIMENTO);
@@ -128,8 +249,32 @@ class OccurrenceServiceTest {
     }
 
     @Test
+    void shouldResolveTheCaseAndExposeTheSameStatusForAssociatedReports() {
+        Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
+        Occurrence associatedReport = occurrenceFor("Ana", "ana@example.com");
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        ReflectionTestUtils.setField(associatedReport, "id", 11L);
+        associatedReport.joinCase(caseRoot);
+        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(caseRoot));
+        when(occurrenceRepository.saveAndFlush(caseRoot)).thenReturn(caseRoot);
+        when(occurrenceRepository.findByGroupRootIdOrderByCreatedAtAsc(10L))
+                .thenReturn(List.of(associatedReport));
+
+        occurrenceService.updateStatus(10L, OccurrenceStatus.RESOLVIDA);
+        List<OccurrenceResponse> reports = occurrenceService.findCaseReports(10L);
+
+        assertThat(reports).hasSize(2);
+        assertThat(reports).allSatisfy(report -> {
+            assertThat(report.caseId()).isEqualTo(10L);
+            assertThat(report.status()).isEqualTo(OccurrenceStatus.RESOLVIDA);
+            assertThat(report.strength()).isEqualTo(2);
+            assertThat(report.resolvedAt()).isNotNull();
+        });
+    }
+
+    @Test
     void shouldReturnNotFoundWhenUpdatingMissingOccurrence() {
-        when(occurrenceRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
+        when(occurrenceRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> occurrenceService.updateStatus(99L, OccurrenceStatus.RESOLVIDA))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -158,7 +303,9 @@ class OccurrenceServiceTest {
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
                 OccurrenceStatus.REGISTRADA,
-                "boqueirao"
+                "boqueirao",
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-18T23:59:59Z")
         );
 
         List<OccurrenceResponse> responses = occurrenceService.findAll(filter);
@@ -184,41 +331,42 @@ class OccurrenceServiceTest {
     }
 
     @Test
-    void shouldRejectReversedOrEmptyDateRangeBeforeQuerying() {
-        Instant start = Instant.parse("2026-09-28T03:00:00Z");
-        for (Instant end : List.of(start, start.minusSeconds(1))) {
-            assertThatThrownBy(() -> occurrenceService.findAll(
-                    new OccurrenceFilter(null, null, null, null, start, end)))
-                    .isInstanceOf(BusinessRuleException.class)
-                    .hasMessage("O fim do periodo deve ser posterior ao inicio");
-        }
-        verifyNoInteractions(occurrenceRepository);
+    void shouldRejectInvertedFilterPeriod() {
+        OccurrenceFilter filter = new OccurrenceFilter(
+                null,
+                null,
+                null,
+                null,
+                Instant.parse("2026-09-18T23:59:59Z"),
+                Instant.parse("2026-09-01T00:00:00Z")
+        );
+
+        assertThatThrownBy(() -> occurrenceService.findAll(filter))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("O inicio do periodo deve ser anterior ao fim");
+        verify(occurrenceRepository, never()).findAll(
+                any(Specification.class),
+                any(Sort.class)
+        );
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void shouldApplyInclusiveStartAndExclusiveEndToCreationDate() {
-        Instant start = Instant.parse("2026-09-28T03:00:00Z");
-        Instant end = Instant.parse("2026-09-29T03:00:00Z");
-        Root<Occurrence> root = mock(Root.class);
-        CriteriaBuilder builder = mock(CriteriaBuilder.class);
-        Path<Instant> datePath = mock(Path.class);
-        Predicate lowerBound = mock(Predicate.class);
-        Predicate upperBound = mock(Predicate.class);
-        when(root.<Instant>get("createdAt")).thenReturn(datePath);
-        when(builder.greaterThanOrEqualTo(datePath, start)).thenReturn(lowerBound);
-        when(builder.lessThan(datePath, end)).thenReturn(upperBound);
-        when(occurrenceRepository.findAll(any(Specification.class), any(Sort.class)))
+    void shouldListOnlyOccurrencesVisibleOnMapForTheConfiguredPeriod() {
+        when(occurrenceRepository.findVisibleOnMap(eq(OccurrenceStatus.RESOLVIDA), any(Instant.class)))
                 .thenReturn(List.of());
+        Instant earliestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
 
-        occurrenceService.findAll(new OccurrenceFilter(null, null, null, null, start, end));
-        ArgumentCaptor<Specification<Occurrence>> specification = ArgumentCaptor.forClass(Specification.class);
-        verify(occurrenceRepository).findAll(specification.capture(), any(Sort.class));
-        specification.getValue().toPredicate(root, null, builder);
+        List<OccurrenceResponse> responses = occurrenceService.findVisibleOnMap();
 
-        verify(builder).greaterThanOrEqualTo(datePath, start);
-        verify(builder).lessThan(datePath, end);
-        verify(builder).and(new Predicate[]{lowerBound, upperBound});
+        Instant latestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
+        ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(occurrenceRepository).findVisibleOnMap(
+                eq(OccurrenceStatus.RESOLVIDA),
+                cutoffCaptor.capture()
+        );
+        assertThat(responses).isEmpty();
+        assertThat(cutoffCaptor.getValue())
+                .isBetween(earliestExpectedCutoff, latestExpectedCutoff);
     }
 
     private CreateOccurrenceRequest validRequest() {
@@ -235,7 +383,11 @@ class OccurrenceServiceTest {
     }
 
     private Occurrence occurrence() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        return occurrenceFor("Ana", "ana@example.com");
+    }
+
+    private Occurrence occurrenceFor(String name, String email) {
+        User citizen = new User(name, email, "hash", UserRole.CITIZEN);
         return new Occurrence(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.ALAGAMENTO,
