@@ -12,10 +12,13 @@ import br.com.cidadeemfoco.repository.ClimateAlertRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.util.List;
@@ -58,7 +61,8 @@ public class WhatsappNotificationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Notificacao de WhatsApp nao encontrada"));
     }
 
-    @EventListener
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Transactional
     public void handleActivatedAlert(ClimateAlertActivatedEvent event) {
         climateAlertRepository.findById(event.alertId())
