@@ -7,8 +7,8 @@ import OccurrenceCategoryFilter from '../components/map/OccurrenceCategoryFilter
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
+import useAlerts from '../hooks/useAlerts'
 import useAuth from '../hooks/useAuth'
-import { getActiveAlerts } from '../services/alertService'
 import { getMapOccurrences, getOccurrences } from '../services/occurrenceService'
 import './CitizenHomePage.css'
 
@@ -16,7 +16,12 @@ const MAP_REFRESH_INTERVAL_MS = 60_000
 
 function CitizenHomePage() {
   const { logout, token, user } = useAuth()
-  const [alerts, setAlerts] = useState([])
+  const {
+    alerts,
+    error: alertsError,
+    isLoading: areAlertsLoading,
+    retry: retryAlerts,
+  } = useAlerts()
   const [occurrences, setOccurrences] = useState([])
   const [mapOccurrences, setMapOccurrences] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -32,14 +37,12 @@ function CitizenHomePage() {
 
     async function loadDashboard() {
       try {
-        const [activeAlerts, occurrenceList, mapOccurrenceList] = await Promise.all([
-          getActiveAlerts(token),
+        const [occurrenceList, mapOccurrenceList] = await Promise.all([
           getOccurrences(token),
           getMapOccurrences(token),
         ])
 
         if (isCurrent) {
-          setAlerts(activeAlerts)
           setOccurrences(occurrenceList)
           setMapOccurrences(mapOccurrenceList)
         }
@@ -91,6 +94,7 @@ function CitizenHomePage() {
   function handleRetry() {
     setError('')
     setIsLoading(true)
+    retryAlerts()
     setReloadKey((currentKey) => currentKey + 1)
   }
 
@@ -101,7 +105,7 @@ function CitizenHomePage() {
         : [...categories, category])
   }
 
-  if (isLoading) {
+  if (isLoading || areAlertsLoading) {
     return (
       <FeedbackState
         type="loading"
@@ -111,10 +115,12 @@ function CitizenHomePage() {
     )
   }
 
-  if (error) {
+  const dashboardError = error || alertsError
+
+  if (dashboardError) {
     return (
       <div className="dashboard-error">
-        <FeedbackState type="error" message={error} />
+        <FeedbackState type="error" message={dashboardError} />
         <Button variant="outline" onClick={handleRetry}>
           <RotateCw size={17} aria-hidden="true" />
           Tentar novamente

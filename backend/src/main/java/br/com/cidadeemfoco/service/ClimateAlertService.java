@@ -64,6 +64,26 @@ public class ClimateAlertService {
         return ClimateAlertResponse.from(findEntity(id));
     }
 
+    @Transactional
+    public ClimateAlertResponse update(Long id, CreateClimateAlertRequest request) {
+        if (!request.endAt().isAfter(request.startAt())) {
+            throw new BusinessRuleException("O fim do alerta deve ser posterior ao inicio");
+        }
+
+        ClimateAlert alert = findEntity(id);
+        alert.updateDetails(
+                request.title().trim(),
+                request.type(),
+                request.severity(),
+                request.description().trim(),
+                request.startAt(),
+                request.endAt()
+        );
+        ClimateAlertResponse response = ClimateAlertResponse.from(climateAlertRepository.saveAndFlush(alert));
+        eventPublisher.publishEvent(new ClimateAlertsChangedEvent());
+        return response;
+    }
+
     public List<ClimateAlertResponse> findCurrentlyActive() {
         return climateAlertRepository.findCurrentlyActive(Instant.now())
                 .stream()

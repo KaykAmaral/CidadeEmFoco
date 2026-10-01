@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
 import Brand from '../components/ui/Brand'
+import AlertsProvider from '../contexts/AlertsProvider'
 import useAuth from '../hooks/useAuth'
 
 const navigationItems = [
@@ -42,9 +43,11 @@ function CitizenLayout() {
         </div>
       </header>
 
-      <main className="citizen-main citizen-container">
-        <Outlet />
-      </main>
+      <AlertsProvider>
+        <main className="citizen-main citizen-container">
+          <Outlet />
+        </main>
+      </AlertsProvider>
 
       <nav className="citizen-navigation" aria-label="Navegação do cidadão">
         {navigationItems.map(({ to, label, icon: Icon, end, primary }) => (

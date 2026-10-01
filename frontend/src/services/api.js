@@ -60,4 +60,4 @@ async function apiRequest(path, options = {}) {
   return data
 }
 
-export { ApiError, apiRequest }
+export { API_URL, ApiError, apiRequest }

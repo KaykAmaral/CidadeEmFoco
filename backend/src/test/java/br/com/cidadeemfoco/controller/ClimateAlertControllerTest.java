@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -114,6 +115,20 @@ class ClimateAlertControllerTest {
 
         verify(climateAlertService).activate(10L);
         verify(climateAlertService).deactivate(10L);
+    }
+
+    @Test
+    void shouldUpdateAlert() throws Exception {
+        when(climateAlertService.update(eq(10L), any(CreateClimateAlertRequest.class)))
+                .thenReturn(response(false));
+
+        mockMvc.perform(patch("/api/admin/alerts/10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validAlertJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10));
+
+        verify(climateAlertService).update(eq(10L), any(CreateClimateAlertRequest.class));
     }
 
     @Test

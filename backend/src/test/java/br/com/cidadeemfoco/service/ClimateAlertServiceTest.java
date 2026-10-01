@@ -101,6 +101,29 @@ class ClimateAlertServiceTest {
     }
 
     @Test
+    void shouldUpdateAlertAndPublishRealtimeUpdate() {
+        ClimateAlert alert = alert();
+        CreateClimateAlertRequest update = new CreateClimateAlertRequest(
+                "Alerta atualizado",
+                ClimateAlertType.VENTOS_FORTES,
+                AlertSeverity.MODERADA,
+                "Nova orientacao para os cidadaos",
+                Instant.parse("2026-08-22T12:00:00Z"),
+                Instant.parse("2026-08-22T20:00:00Z")
+        );
+        when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
+        when(climateAlertRepository.saveAndFlush(alert)).thenReturn(alert);
+
+        ClimateAlertResponse response = climateAlertService.update(10L, update);
+
+        assertThat(response.title()).isEqualTo("Alerta atualizado");
+        assertThat(response.type()).isEqualTo(ClimateAlertType.VENTOS_FORTES);
+        assertThat(response.severity()).isEqualTo(AlertSeverity.MODERADA);
+        verify(climateAlertRepository).saveAndFlush(alert);
+        verify(eventPublisher).publishEvent(any(ClimateAlertsChangedEvent.class));
+    }
+
+    @Test
     void shouldActivateAndDeactivateAlert() {
         ClimateAlert alert = alert();
         when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));

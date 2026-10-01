@@ -46,6 +46,14 @@ public class AdminClimateAlertController {
         return climateAlertService.findById(id);
     }
 
+    @PatchMapping("/{id}")
+    public ClimateAlertResponse update(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody CreateClimateAlertRequest request
+    ) {
+        return climateAlertService.update(id, request);
+    }
+
     @PatchMapping("/{id}/activate")
     public ClimateAlertResponse activate(@PathVariable @Positive Long id) {
         return climateAlertService.activate(id);

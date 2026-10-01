@@ -1,48 +1,12 @@
 import { Info, RotateCw } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import ClimateAlertCard from '../components/alerts/ClimateAlertCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
-import useAuth from '../hooks/useAuth'
-import { getActiveAlerts } from '../services/alertService'
+import useAlerts from '../hooks/useAlerts'
 import './AlertsPage.css'
 
 function AlertsPage() {
-  const { logout, token } = useAuth()
-  const [alerts, setAlerts] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    let isCurrent = true
-
-    getActiveAlerts(token)
-      .then((data) => {
-        if (isCurrent) setAlerts(data)
-      })
-      .catch((requestError) => {
-        if (!isCurrent) return
-        if (requestError.status === 401) {
-          logout()
-          return
-        }
-        setError(requestError.message)
-      })
-      .finally(() => {
-        if (isCurrent) setIsLoading(false)
-      })
-
-    return () => {
-      isCurrent = false
-    }
-  }, [logout, reloadKey, token])
-
-  function retry() {
-    setError('')
-    setIsLoading(true)
-    setReloadKey((currentKey) => currentKey + 1)
-  }
+  const { alerts, error, isLoading, retry } = useAlerts()
 
   return (
     <section className="alerts-page">
