@@ -1,4 +1,4 @@
-import {
+﻿import {
   AlertCircle,
   CalendarClock,
   CheckCircle2,
@@ -7,6 +7,7 @@ import {
   Power,
   PowerOff,
   RotateCw,
+  Trash2,
   X,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -23,6 +24,7 @@ import {
   activateAdminAlert,
   createAdminAlert,
   deactivateAdminAlert,
+  deleteAdminAlert,
   getAdminAlerts,
 } from '../services/adminService'
 import { formatDateTime } from '../utils/date'
@@ -52,10 +54,12 @@ function AdminAlertsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [changingId, setChangingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [successMessage, setSuccessMessage] = useState('')
+  const [actionError, setActionError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
@@ -104,7 +108,7 @@ function AdminAlertsPage() {
     setSuccessMessage('')
 
     if (new Date(form.endAt) <= new Date(form.startAt)) {
-      setFormError('O fim do alerta deve ser posterior ao início.')
+      setFormError('O fim do alerta deve ser posterior ao inÃ­cio.')
       return
     }
 
@@ -122,7 +126,7 @@ function AdminAlertsPage() {
       setFormError('')
       setFieldErrors({})
       setSuccessMessage(
-        'Alerta criado como inativo. Ative-o quando estiver pronto para publicação.',
+        'Alerta criado como inativo. Ative-o quando estiver pronto para publicaÃ§Ã£o.',
       )
     } catch (requestError) {
       if (requestError.status === 401) {
@@ -138,7 +142,7 @@ function AdminAlertsPage() {
 
   async function toggleAlert(alert) {
     setChangingId(alert.id)
-    setError('')
+    setActionError('')
     setSuccessMessage('')
 
     try {
@@ -161,9 +165,41 @@ function AdminAlertsPage() {
         logout()
         return
       }
-      setError(requestError.message)
+      setActionError(requestError.message)
     } finally {
       setChangingId(null)
+    }
+  }
+
+  async function deleteAlert(alert) {
+    const confirmed = window.confirm(
+      `Excluir o alerta “${alert.title}”? Essa ação não pode ser desfeita.`,
+    )
+    if (!confirmed) return
+
+    setDeletingId(alert.id)
+    setActionError('')
+    setSuccessMessage('')
+
+    try {
+      await deleteAdminAlert(token, alert.id)
+      setAlerts((currentAlerts) => currentAlerts.filter((item) => item.id !== alert.id))
+      setSuccessMessage(`Alerta “${alert.title}” excluído com sucesso.`)
+    } catch (requestError) {
+      if (requestError.status === 401) {
+        logout()
+        return
+      }
+      if (requestError.status === 403) {
+        setActionError('Você não tem permissão para excluir alertas.')
+      } else if (requestError.status === 404) {
+        setAlerts((currentAlerts) => currentAlerts.filter((item) => item.id !== alert.id))
+        setActionError('Este alerta já foi removido ou não foi encontrado.')
+      } else {
+        setActionError(requestError.message)
+      }
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -179,9 +215,9 @@ function AdminAlertsPage() {
     <section className="admin-alerts-page">
       <header className="admin-page-heading">
         <div>
-          <span>Administração</span>
-          <h1>Alertas climáticos</h1>
-          <p>Cadastre e controle os alertas demonstrativos exibidos aos cidadãos.</p>
+          <span>AdministraÃ§Ã£o</span>
+          <h1>Alertas climÃ¡ticos</h1>
+          <p>Cadastre e controle os alertas demonstrativos exibidos aos cidadÃ£os.</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus size={18} aria-hidden="true" />
@@ -192,7 +228,7 @@ function AdminAlertsPage() {
       <div className="admin-alerts-summary">
         <div><strong>{alerts.length}</strong><span>cadastrados</span></div>
         <div><strong>{activeCount}</strong><span>marcados como ativos</span></div>
-        <p><AlertCircle size={18} aria-hidden="true" />Ativar um alerta não altera seu período de validade.</p>
+        <p><AlertCircle size={18} aria-hidden="true" />Ativar um alerta nÃ£o altera seu perÃ­odo de validade.</p>
       </div>
 
       {successMessage && (
@@ -202,18 +238,23 @@ function AdminAlertsPage() {
         </div>
       )}
 
+      {actionError && (
+        <div className="form-message form-message--error" role="alert">
+          {actionError}
+        </div>
+      )}
       {isFormOpen && (
         <form className="admin-alert-form" onSubmit={handleSubmit}>
           <div className="admin-alert-form__heading">
-            <div><strong>Novo alerta</strong><p>O cadastro será salvo inicialmente como inativo.</p></div>
-            <button aria-label="Fechar formulário" onClick={closeForm} type="button"><X size={20} /></button>
+            <div><strong>Novo alerta</strong><p>O cadastro serÃ¡ salvo inicialmente como inativo.</p></div>
+            <button aria-label="Fechar formulÃ¡rio" onClick={closeForm} type="button"><X size={20} /></button>
           </div>
 
           {formError && <div className="form-message form-message--error" role="alert">{formError}</div>}
 
           <div className="form-grid">
             <div className="form-field form-field--wide">
-              <label htmlFor="alert-title">Título</label>
+              <label htmlFor="alert-title">TÃ­tulo</label>
               <input aria-invalid={Boolean(fieldErrors.title)} className="form-control" id="alert-title" maxLength={150} name="title" onChange={handleChange} placeholder="Ex.: Alerta de chuva intensa" required value={form.title} />
               {fieldErrors.title && <small className="field-error">{fieldErrors.title}</small>}
             </div>
@@ -234,7 +275,7 @@ function AdminAlertsPage() {
               {fieldErrors.severity && <small className="field-error">{fieldErrors.severity}</small>}
             </div>
             <div className="form-field">
-              <label htmlFor="alert-start">Início da validade</label>
+              <label htmlFor="alert-start">InÃ­cio da validade</label>
               <input aria-invalid={Boolean(fieldErrors.startAt)} className="form-control" id="alert-start" name="startAt" onChange={handleChange} required type="datetime-local" value={form.startAt} />
               {fieldErrors.startAt && <small className="field-error">{fieldErrors.startAt}</small>}
             </div>
@@ -244,8 +285,8 @@ function AdminAlertsPage() {
               {fieldErrors.endAt && <small className="field-error">{fieldErrors.endAt}</small>}
             </div>
             <div className="form-field form-field--wide">
-              <label htmlFor="alert-description">Descrição</label>
-              <textarea aria-invalid={Boolean(fieldErrors.description)} className="form-control" id="alert-description" maxLength={2000} name="description" onChange={handleChange} placeholder="Descreva o alerta e as orientações relevantes..." required value={form.description} />
+              <label htmlFor="alert-description">DescriÃ§Ã£o</label>
+              <textarea aria-invalid={Boolean(fieldErrors.description)} className="form-control" id="alert-description" maxLength={2000} name="description" onChange={handleChange} placeholder="Descreva o alerta e as orientaÃ§Ãµes relevantes..." required value={form.description} />
               <small>{form.description.length}/2000 caracteres</small>
               {fieldErrors.description && <small className="field-error">{fieldErrors.description}</small>}
             </div>
@@ -285,13 +326,19 @@ function AdminAlertsPage() {
                 <p>{alert.description}</p>
                 <div className="admin-alert-card__period">
                   <CalendarClock size={17} aria-hidden="true" />
-                  <span>{formatDateTime(alert.startAt)} até {formatDateTime(alert.endAt)}</span>
+                  <span>{formatDateTime(alert.startAt)} atÃ© {formatDateTime(alert.endAt)}</span>
                 </div>
               </div>
-              <Button disabled={changingId === alert.id} onClick={() => toggleAlert(alert)} variant={alert.active ? 'outline' : 'primary'}>
-                {changingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : alert.active ? <PowerOff aria-hidden="true" size={17} /> : <Power aria-hidden="true" size={17} />}
-                {changingId === alert.id ? 'Atualizando...' : alert.active ? 'Desativar' : 'Ativar'}
-              </Button>
+              <div className="admin-alert-card__actions">
+                <Button disabled={deletingId !== null || changingId === alert.id} onClick={() => toggleAlert(alert)} variant={alert.active ? 'outline' : 'primary'}>
+                  {changingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : alert.active ? <PowerOff aria-hidden="true" size={17} /> : <Power aria-hidden="true" size={17} />}
+                  {changingId === alert.id ? 'Atualizando...' : alert.active ? 'Desativar' : 'Ativar'}
+                </Button>
+                <Button aria-label={`Excluir alerta ${alert.title}`} className="admin-alert-delete-button" disabled={deletingId !== null || changingId === alert.id} onClick={() => deleteAlert(alert)} variant="outline">
+                  {deletingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : <Trash2 aria-hidden="true" size={17} />}
+                  {deletingId === alert.id ? 'Excluindo...' : 'Excluir'}
+                </Button>
+              </div>
             </article>
           ))}
         </div>
@@ -301,3 +348,7 @@ function AdminAlertsPage() {
 }
 
 export default AdminAlertsPage
+
+
+
+

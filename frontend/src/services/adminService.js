@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+﻿import { apiRequest } from './api'
 
 function buildQuery(filters = {}) {
   const params = new URLSearchParams()
@@ -31,6 +31,10 @@ function getAdminAlerts(token) {
   return apiRequest('/api/admin/alerts', { token })
 }
 
+function deleteAdminAlert(token, id) {
+  return apiRequest(`/api/admin/alerts/${id}`, { method: 'DELETE', token })
+}
+
 function createAdminAlert(token, alert) {
   return apiRequest('/api/admin/alerts', {
     method: 'POST',
@@ -57,6 +61,7 @@ export {
   activateAdminAlert,
   createAdminAlert,
   deactivateAdminAlert,
+  deleteAdminAlert,
   getAdminAlerts,
   getAdminOccurrenceById,
   getAdminOccurrences,
