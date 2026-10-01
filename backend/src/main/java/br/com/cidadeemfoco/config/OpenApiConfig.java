@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
+import org.springdoc.core.models.GroupedOpenApi;
 
 @Configuration
 @OpenAPIDefinition(
@@ -24,4 +26,13 @@ import org.springframework.context.annotation.Configuration;
         description = "Informe o token JWT obtido em /api/auth/login"
 )
 public class OpenApiConfig {
+
+    @Bean
+    GroupedOpenApi publicApiV1() {
+        return GroupedOpenApi.builder()
+                .group("public-v1")
+                .displayName("API pública v1")
+                .pathsToMatch("/api/v1/public/**", "/actuator/health")
+                .build();
+    }
 }

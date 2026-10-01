@@ -111,6 +111,8 @@ Endereços padrão:
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- OpenAPI da API pública v1: `http://localhost:8080/v3/api-docs/public-v1`
+- Guia para integrações externas: [`docs/API_PUBLICA.md`](docs/API_PUBLICA.md)
 
 ### Alternativa com Docker
 

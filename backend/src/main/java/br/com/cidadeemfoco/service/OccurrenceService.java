@@ -3,6 +3,8 @@ package br.com.cidadeemfoco.service;
 import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.dto.OccurrenceResponse;
+import br.com.cidadeemfoco.dto.PageResponse;
+import br.com.cidadeemfoco.dto.PublicOccurrenceResponse;
 import br.com.cidadeemfoco.entity.Occurrence;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
@@ -17,6 +19,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -136,6 +139,15 @@ public class OccurrenceService {
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
+    }
+
+    public PageResponse<PublicOccurrenceResponse> findPublic(Pageable pageable) {
+        Specification<Occurrence> rootCases = (root, query, criteriaBuilder) ->
+                criteriaBuilder.isNull(root.get("groupRoot"));
+        return PageResponse.from(
+                occurrenceRepository.findAll(rootCases, pageable),
+                PublicOccurrenceResponse::from
+        );
     }
 
     @Transactional

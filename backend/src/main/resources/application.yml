@@ -43,6 +43,10 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  public-api:
+    rate-limit:
+      enabled: ${PUBLIC_API_RATE_LIMIT_ENABLED:true}
+      requests-per-minute: ${PUBLIC_API_RATE_LIMIT_PER_MINUTE:60}
   database:
     flyway-repair-on-start: ${FLYWAY_REPAIR_ON_START:false}
   alerts:

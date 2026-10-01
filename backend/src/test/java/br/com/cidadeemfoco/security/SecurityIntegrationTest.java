@@ -103,6 +103,18 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldExposeOnlyVersionedPublicReadEndpointsWithoutAuthentication() throws Exception {
+        when(climateAlertService.findCurrentlyActive()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/public/alerts/active"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("X-RateLimit-Limit"));
+
+        mockMvc.perform(get("/api/admin/alerts"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
         when(userRepository.existsByEmailIgnoreCase("ana@example.com")).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
