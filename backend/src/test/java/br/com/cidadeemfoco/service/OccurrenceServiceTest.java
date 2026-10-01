@@ -249,6 +249,30 @@ class OccurrenceServiceTest {
     }
 
     @Test
+    void shouldResolveTheCaseAndExposeTheSameStatusForAssociatedReports() {
+        Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
+        Occurrence associatedReport = occurrenceFor("Ana", "ana@example.com");
+        ReflectionTestUtils.setField(caseRoot, "id", 10L);
+        ReflectionTestUtils.setField(associatedReport, "id", 11L);
+        associatedReport.joinCase(caseRoot);
+        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(caseRoot));
+        when(occurrenceRepository.saveAndFlush(caseRoot)).thenReturn(caseRoot);
+        when(occurrenceRepository.findByGroupRootIdOrderByCreatedAtAsc(10L))
+                .thenReturn(List.of(associatedReport));
+
+        occurrenceService.updateStatus(10L, OccurrenceStatus.RESOLVIDA);
+        List<OccurrenceResponse> reports = occurrenceService.findCaseReports(10L);
+
+        assertThat(reports).hasSize(2);
+        assertThat(reports).allSatisfy(report -> {
+            assertThat(report.caseId()).isEqualTo(10L);
+            assertThat(report.status()).isEqualTo(OccurrenceStatus.RESOLVIDA);
+            assertThat(report.strength()).isEqualTo(2);
+            assertThat(report.resolvedAt()).isNotNull();
+        });
+    }
+
+    @Test
     void shouldReturnNotFoundWhenUpdatingMissingOccurrence() {
         when(occurrenceRepository.findById(99L)).thenReturn(Optional.empty());
 

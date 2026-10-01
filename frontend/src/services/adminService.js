@@ -19,6 +19,10 @@ function getAdminOccurrenceById(token, id) {
   return apiRequest(`/api/admin/occurrences/${id}`, { token })
 }
 
+function getAdminOccurrenceReports(token, id) {
+  return apiRequest(`/api/admin/occurrences/${id}/reports`, { token })
+}
+
 function updateAdminOccurrenceStatus(token, id, status) {
   return apiRequest(`/api/admin/occurrences/${id}/status`, {
     method: 'PATCH',
@@ -59,6 +63,7 @@ export {
   deactivateAdminAlert,
   getAdminAlerts,
   getAdminOccurrenceById,
+  getAdminOccurrenceReports,
   getAdminOccurrences,
   updateAdminOccurrenceStatus,
 }

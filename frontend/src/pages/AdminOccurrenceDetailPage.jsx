@@ -11,6 +11,7 @@ import { Link, useParams } from 'react-router'
 import OccurrenceMap from '../components/map/OccurrenceMap'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
+import OccurrenceStrength from '../components/occurrences/OccurrenceStrength'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
@@ -23,6 +24,7 @@ import {
 import useAuth from '../hooks/useAuth'
 import {
   getAdminOccurrenceById,
+  getAdminOccurrenceReports,
   updateAdminOccurrenceStatus,
 } from '../services/adminService'
 import { formatDateTime } from '../utils/date'
@@ -33,6 +35,9 @@ function AdminOccurrenceDetailPage() {
   const { id } = useParams()
   const { logout, token } = useAuth()
   const [occurrence, setOccurrence] = useState(null)
+  const [reports, setReports] = useState([])
+  const [reportsLoading, setReportsLoading] = useState(true)
+  const [reportsError, setReportsError] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -49,6 +54,22 @@ function AdminOccurrenceDetailPage() {
           setOccurrence(data)
           setSelectedStatus(data.status)
         }
+      })
+
+    getAdminOccurrenceReports(token, id)
+      .then((data) => {
+        if (isCurrent) setReports(data)
+      })
+      .catch((requestError) => {
+        if (!isCurrent) return
+        if (requestError.status === 401) {
+          logout()
+          return
+        }
+        setReportsError(requestError.message)
+      })
+      .finally(() => {
+        if (isCurrent) setReportsLoading(false)
       })
       .catch((requestError) => {
         if (!isCurrent) return
@@ -82,6 +103,12 @@ function AdminOccurrenceDetailPage() {
       setOccurrence(updatedOccurrence)
       setSelectedStatus(updatedOccurrence.status)
       setSuccessMessage('Status atualizado com sucesso.')
+      try {
+        setReports(await getAdminOccurrenceReports(token, occurrence.id))
+        setReportsError('')
+      } catch (reportsRequestError) {
+        setReportsError(reportsRequestError.message)
+      }
     } catch (requestError) {
       if (requestError.status === 401) {
         logout()
@@ -123,6 +150,7 @@ function AdminOccurrenceDetailPage() {
           <span>{getOccurrenceCategoryLabel(occurrence.category)} · #{occurrence.id}</span>
           <h1>{getOccurrenceTypeLabel(occurrence.type)}</h1>
           <p><MapPin size={16} aria-hidden="true" />{displayedLocation}</p>
+          <OccurrenceStrength strength={occurrence.strength} />
         </div>
         <StatusBadge status={occurrence.status} />
       </header>
@@ -174,6 +202,39 @@ function AdminOccurrenceDetailPage() {
           </section>
         )}
       </div>
+
+      <section className="occurrence-detail__card admin-case-reports" aria-labelledby="case-reports-title">
+        <div className="admin-case-reports__heading">
+          <div>
+            <h2 id="case-reports-title">Relatos que formam esta ocorrência</h2>
+            <p>O relato principal e todas as contribuições preservadas neste agrupamento.</p>
+          </div>
+          <OccurrenceStrength strength={occurrence.strength} />
+        </div>
+
+        {reportsLoading && <FeedbackState type="loading" message="Buscando relatos associados..." />}
+        {!reportsLoading && reportsError && (
+          <FeedbackState type="error" title="Não foi possível carregar os relatos" message={reportsError} />
+        )}
+        {!reportsLoading && !reportsError && reports.length === 0 && (
+          <FeedbackState title="Nenhum relato associado" message="Este caso ainda não possui relatos disponíveis." />
+        )}
+        {!reportsLoading && !reportsError && reports.length > 0 && (
+          <div className="admin-case-reports__list">
+            {reports.map((report, index) => (
+              <article className="admin-case-report" key={report.id}>
+                <div>
+                  <strong>{index === 0 ? 'Relato principal' : `Relato associado #${report.id}`}</strong>
+                  <span>{report.address || report.neighborhood || 'Localização indicada no mapa'}</span>
+                </div>
+                <p>{report.description}</p>
+                <time dateTime={report.createdAt}>{formatDateTime(report.createdAt)}</time>
+                <Link to={`/admin/ocorrencias/${report.id}`}>Ver relato completo</Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </article>
   )
 }
