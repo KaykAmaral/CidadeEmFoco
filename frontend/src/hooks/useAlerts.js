@@ -1,13 +1,9 @@
-import { useContext } from 'react'
-import AlertsContext from '../contexts/alertsContext'
+﻿import { useContext } from 'react'
+import AlertContext from '../contexts/alertContext'
 
 function useAlerts() {
-  const context = useContext(AlertsContext)
-
-  if (!context) {
-    throw new Error('useAlerts deve ser usado dentro de AlertsProvider')
-  }
-
+  const context = useContext(AlertContext)
+  if (!context) throw new Error('useAlerts deve ser usado dentro de AlertProvider.')
   return context
 }
 

@@ -1,66 +1,113 @@
-import { API_URL, ApiError, apiRequest } from './api'
+﻿import { ApiError, apiRequest } from './api'
 
 function getActiveAlerts(token) {
   return apiRequest('/api/alerts/active', { token })
 }
 
-async function listenForAlertUpdates(token, { onUpdate, signal }) {
-  let response
+const RECONNECT_DELAY_MS = 2_000
+const MAX_RECONNECT_DELAY_MS = 30_000
 
-  try {
-    response = await fetch(`${API_URL}/api/alerts/stream`, {
-      headers: {
-        Accept: 'text/event-stream',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
-    })
-  } catch (error) {
-    if (error.name === 'AbortError') throw error
-    throw new ApiError('Canal de alertas temporariamente indisponível.')
-  }
+function waitForReconnect(delay, signal) {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve()
+      return
+    }
 
-  if (!response.ok) {
-    throw new ApiError(
-      response.status === 401
-        ? 'Sua sessão expirou.'
-        : 'Canal de alertas temporariamente indisponível.',
-      response.status,
-    )
-  }
+    const timeoutId = window.setTimeout(finish, delay)
 
-  if (!response.body) {
-    throw new ApiError('O servidor não disponibilizou o canal de alertas.')
-  }
+    function finish() {
+      window.clearTimeout(timeoutId)
+      signal.removeEventListener('abort', finish)
+      resolve()
+    }
 
-  const reader = response.body.getReader()
+    signal.addEventListener('abort', finish, { once: true })
+  })
+}
+
+async function readAlertEvents(response, onUpdate, signal) {
+  const reader = response.body?.getReader()
+  if (!reader) throw new Error('O servidor não disponibilizou o fluxo de alertas.')
+
   const decoder = new TextDecoder()
   let buffer = ''
-  let lastEventId = ''
+  let eventName = ''
+  let data = []
 
-  while (!signal.aborted) {
-    const { done, value } = await reader.read()
-    if (done) break
+  function dispatchEvent() {
+    if (eventName === 'alerts-updated' && data.join('\n').trim() === 'refresh') {
+      onUpdate()
+    }
+    eventName = ''
+    data = []
+  }
 
-    buffer += decoder.decode(value, { stream: true }).replaceAll('\r\n', '\n')
-    const messages = buffer.split('\n\n')
-    buffer = messages.pop() ?? ''
+  function processLine(line) {
+    if (line === '') {
+      dispatchEvent()
+      return
+    }
+    if (line.startsWith(':')) return
 
-    messages.forEach((message) => {
-      let eventName = 'message'
-      let eventId = ''
+    const separator = line.indexOf(':')
+    const field = separator === -1 ? line : line.slice(0, separator)
+    const value = separator === -1 ? '' : line.slice(separator + 1).replace(/^ /, '')
+    if (field === 'event') eventName = value
+    if (field === 'data') data.push(value)
+  }
 
-      message.split('\n').forEach((line) => {
-        if (line.startsWith('event:')) eventName = line.slice(6).trim()
-        if (line.startsWith('id:')) eventId = line.slice(3).trim()
-      })
+  try {
+    while (!signal.aborted) {
+      const { done, value } = await reader.read()
+      if (done) return
 
-      if (eventName === 'alerts-updated' && (!eventId || eventId !== lastEventId)) {
-        lastEventId = eventId
-        onUpdate()
-      }
-    })
+      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n')
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      lines.forEach(processLine)
+    }
+  } finally {
+    await reader.cancel().catch(() => {})
+    reader.releaseLock()
   }
 }
 
-export { getActiveAlerts, listenForAlertUpdates }
+async function streamAlertUpdates(token, { signal, onUpdate, onUnauthorized }) {
+  const apiUrl = import.meta.env.VITE_API_URL
+  let reconnectDelay = RECONNECT_DELAY_MS
+
+  while (!signal.aborted) {
+    try {
+      const response = await fetch(`${apiUrl}/api/alerts/stream`, {
+        headers: {
+          Accept: 'text/event-stream',
+          Authorization: `Bearer ${token}`,
+        },
+        signal,
+      })
+
+      if (response.status === 401) {
+        onUnauthorized()
+        return
+      }
+      if (!response.ok) {
+        throw new ApiError('Não foi possível conectar às atualizações dos alertas.', response.status)
+      }
+
+      reconnectDelay = RECONNECT_DELAY_MS
+      await readAlertEvents(response, onUpdate, signal)
+    } catch (error) {
+      if (signal.aborted || error.name === 'AbortError') return
+      if (error.status === 401) {
+        onUnauthorized()
+        return
+      }
+    }
+
+    await waitForReconnect(reconnectDelay, signal)
+    reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS)
+  }
+}
+
+export { getActiveAlerts, streamAlertUpdates }

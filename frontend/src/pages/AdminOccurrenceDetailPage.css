@@ -126,58 +126,6 @@
   height: auto;
 }
 
-.admin-case-reports {
-  margin-top: 20px;
-}
-
-.admin-case-reports__heading {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 16px;
-}
-
-.admin-case-reports__heading h2 {
-  margin-bottom: 5px !important;
-  padding: 0 !important;
-  border: 0 !important;
-}
-
-.admin-case-reports__heading p {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 0.78rem;
-}
-
-.admin-case-reports__list {
-  display: grid;
-  gap: 10px;
-}
-
-.admin-case-report {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.7fr) minmax(240px, 1.3fr) auto auto;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-background);
-}
-
-.admin-case-report > div {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.admin-case-report strong { color: var(--color-navy); font-size: 0.8rem; }
-.admin-case-report span,
-.admin-case-report time { color: var(--color-muted); font-size: 0.7rem; }
-.admin-case-report p { margin: 0; color: var(--color-text); font-size: 0.76rem; line-height: 1.45; }
-.admin-case-report a { color: var(--color-blue); font-size: 0.72rem; font-weight: 750; text-decoration: none; }
-
 .admin-occurrence-detail .occurrence-image-gallery {
   align-items: start;
 }
@@ -192,10 +140,6 @@
   .admin-status-panel {
     grid-template-columns: 1fr;
     align-items: stretch;
-  }
-
-  .admin-case-report {
-    grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1.2fr);
   }
 }
 
@@ -220,7 +164,4 @@
   .admin-occurrence-detail .occurrence-detail__metadata > div {
     min-height: 0;
   }
-
-  .admin-case-reports__heading { display: grid; }
-  .admin-case-report { grid-template-columns: 1fr; }
 }

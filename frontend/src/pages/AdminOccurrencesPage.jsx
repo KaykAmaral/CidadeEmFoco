@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import Button from '../components/ui/Button'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
-import OccurrenceStrength from '../components/occurrences/OccurrenceStrength'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
 import occurrenceStatusConfig from '../constants/occurrenceStatus'
@@ -159,7 +158,7 @@ function AdminOccurrencesPage() {
         <div className="admin-occurrences-table-wrapper">
           <table className="admin-occurrences-table">
             <thead>
-              <tr><th>ID</th><th>Ocorrência</th><th>Local</th><th>Data</th><th>Força</th><th>Status</th><th><span className="visually-hidden">Ações</span></th></tr>
+              <tr><th>ID</th><th>Ocorrência</th><th>Local</th><th>Data</th><th>Status</th><th><span className="visually-hidden">Ações</span></th></tr>
             </thead>
             <tbody>
               {occurrences.map((occurrence) => (
@@ -168,7 +167,6 @@ function AdminOccurrencesPage() {
                   <td data-label="Ocorrência"><OccurrenceTypeIcon size={18} type={occurrence.type} /><div><strong>{getOccurrenceTypeLabel(occurrence.type)}</strong><span>{getOccurrenceCategoryLabel(occurrence.category)}</span></div></td>
                   <td data-label="Local">{occurrence.address || occurrence.neighborhood || 'Somente coordenadas'}</td>
                   <td data-label="Data">{formatDateTime(occurrence.createdAt)}</td>
-                  <td data-label="Força"><OccurrenceStrength compact strength={occurrence.strength} /></td>
                   <td data-label="Status"><StatusBadge status={occurrence.status} /></td>
                   <td><Link aria-label={`Analisar ocorrência ${occurrence.id}`} to={`/admin/ocorrencias/${occurrence.id}`}><Eye size={18} aria-hidden="true" /><span>Analisar</span></Link></td>
                 </tr>

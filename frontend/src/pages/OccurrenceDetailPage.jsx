@@ -4,7 +4,6 @@ import { Link, useLocation, useParams } from 'react-router'
 import OccurrenceMap from '../components/map/OccurrenceMap'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
-import OccurrenceStrength from '../components/occurrences/OccurrenceStrength'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
 import {
@@ -96,7 +95,6 @@ function OccurrenceDetailPage() {
           <span>{getOccurrenceCategoryLabel(occurrence.category)}</span>
           <h1>{getOccurrenceTypeLabel(occurrence.type)}</h1>
           <p><MapPin size={16} aria-hidden="true" />{displayedLocation}</p>
-          <OccurrenceStrength strength={occurrence.strength} />
         </div>
         <StatusBadge status={occurrence.status} />
       </header>

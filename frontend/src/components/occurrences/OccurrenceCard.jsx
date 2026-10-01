@@ -2,7 +2,6 @@ import { Link } from 'react-router'
 import { getOccurrenceTypeLabel } from '../../constants/occurrencePresentation'
 import { formatDateTime } from '../../utils/date'
 import StatusBadge from '../ui/StatusBadge'
-import OccurrenceStrength from './OccurrenceStrength'
 import OccurrenceTypeIcon from './OccurrenceTypeIcon'
 import './OccurrenceCard.css'
 
@@ -20,7 +19,6 @@ function OccurrenceCard({ occurrence, to }) {
         <time dateTime={occurrence.createdAt}>
           {formatDateTime(occurrence.createdAt)}
         </time>
-        <OccurrenceStrength compact strength={occurrence.strength} />
       </div>
 
       <StatusBadge status={occurrence.status} />
