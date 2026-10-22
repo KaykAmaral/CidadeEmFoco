@@ -103,8 +103,8 @@ function CitizenHomePage() {
     return (
       <FeedbackState
         type="loading"
-        title="Preparando sua visÃ£o da cidade"
-        message="Buscando alertas e ocorrÃªncias recentes."
+        title="Preparando sua visão da cidade"
+        message="Buscando alertas e ocorrências recentes."
       />
     )
   }
@@ -128,12 +128,12 @@ function CitizenHomePage() {
     <div className="citizen-dashboard">
       <header className="dashboard-heading">
         <div>
-          <span>VisÃ£o geral</span>
-          <h1>OlÃ¡, {firstName}</h1>
-          <p>Acompanhe o que estÃ¡ acontecendo em Praia Grande.</p>
+          <span>Visão geral</span>
+          <h1>Olá, {firstName}</h1>
+          <p>Acompanhe o que está acontecendo em Praia Grande.</p>
         </div>
         <Link className="button button--primary" to="/app/ocorrencias/nova">
-          Registrar ocorrÃªncia
+          Registrar ocorrência
           <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </header>
@@ -145,21 +145,21 @@ function CitizenHomePage() {
           <div className="dashboard-section-heading">
             <div>
               <MapPinned size={20} aria-hidden="true" />
-              <h2 id="map-title">Mapa de ocorrÃªncias</h2>
+              <h2 id="map-title">Mapa de ocorrências</h2>
             </div>
             <OccurrenceCategoryFilter activeCategories={activeMapCategories} occurrences={mapOccurrences} onToggle={toggleMapCategory} />
           </div>
           <OccurrenceMap activeCategories={activeMapCategories} occurrences={mapOccurrences} />
           {mapOccurrences.length === 0 && (
             <p className="map-empty-message">
-              Ainda nÃ£o hÃ¡ ocorrÃªncias para posicionar no mapa.
+              Ainda não há ocorrências para posicionar no mapa.
             </p>
           )}
         </section>
 
         <section className="recent-occurrences" aria-labelledby="recent-title">
           <div className="dashboard-section-heading">
-            <h2 id="recent-title">OcorrÃªncias recentes</h2>
+            <h2 id="recent-title">Ocorrências recentes</h2>
             <Link to="/app/ocorrencias">Ver todas</Link>
           </div>
 
@@ -176,8 +176,8 @@ function CitizenHomePage() {
           ) : (
             <FeedbackState
               type="empty"
-              title="Nenhuma ocorrÃªncia registrada"
-              message="As novas ocorrÃªncias aparecerÃ£o aqui."
+              title="Nenhuma ocorrência registrada"
+              message="As novas ocorrências aparecerão aqui."
             />
           )}
         </section>

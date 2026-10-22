@@ -16,6 +16,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -63,7 +64,7 @@ public class WhatsappNotificationService {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleActivatedAlert(ClimateAlertActivatedEvent event) {
         climateAlertRepository.findById(event.alertId())
                 .filter(alert -> alert.isCurrentlyActive(Instant.now()))

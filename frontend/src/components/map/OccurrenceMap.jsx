@@ -23,13 +23,14 @@ function createMarkerIcon(type) {
 }
 
 function OccurrenceMap({ occurrences, activeCategories }) {
+  const mapOccurrences = Array.isArray(occurrences) ? occurrences : []
   const location = useLocation()
   const detailBasePath = location.pathname.startsWith('/admin')
     ? '/admin/ocorrencias' : '/app/ocorrencias'
   const selectedCategories = activeCategories ?? Object.keys(
-    occurrences.reduce((categories, occurrence) => ({ ...categories, [occurrence.category]: true }), {}),
+    mapOccurrences.reduce((categories, occurrence) => ({ ...categories, [occurrence.category]: true }), {}),
   )
-  const mappedOccurrences = occurrences.filter((occurrence) =>
+  const mappedOccurrences = mapOccurrences.filter((occurrence) =>
     selectedCategories.includes(occurrence.category) &&
     Number.isFinite(Number(occurrence.latitude)) && Number.isFinite(Number(occurrence.longitude)))
 

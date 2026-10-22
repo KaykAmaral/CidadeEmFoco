@@ -14,8 +14,10 @@ function startMapPolling(load, onSuccess, onError) {
     try {
       const response = await load(controller.signal)
       if (controller.signal.aborted) return
-      delay = response.refreshAfterMillis
-      onSuccess(response.occurrences)
+      // The current API returns the occurrence list directly. Keep compatibility
+      // with a future response envelope that may also inform the refresh interval.
+      delay = response?.refreshAfterMillis ?? INITIAL_RETRY_MS
+      onSuccess(Array.isArray(response) ? response : (response?.occurrences ?? []))
     } catch (error) {
       if (!controller.signal.aborted) onError(error)
     } finally {
