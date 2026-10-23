@@ -2,6 +2,10 @@ package br.com.cidadeemfoco.controller;
 
 import br.com.cidadeemfoco.dto.UpdateWhatsappPreferencesRequest;
 import br.com.cidadeemfoco.dto.WhatsappPreferencesResponse;
+import br.com.cidadeemfoco.dto.AddressResponse;
+import br.com.cidadeemfoco.dto.CityResponse;
+import br.com.cidadeemfoco.dto.UpdateUserProfileRequest;
+import br.com.cidadeemfoco.dto.UserProfileResponse;
 import br.com.cidadeemfoco.exception.GlobalExceptionHandler;
 import br.com.cidadeemfoco.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +62,45 @@ class UserControllerTest {
     }
 
     @Test
+    void shouldReturnAuthenticatedUserProfile() throws Exception {
+        when(userService.findProfile("ana@example.com")).thenReturn(profileResponse());
+
+        mockMvc.perform(get("/api/users/me").principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Ana"))
+                .andExpect(jsonPath("$.cpf").value("52998224725"))
+                .andExpect(jsonPath("$.city.ibgeCode").value("3541000"));
+    }
+
+    @Test
+    void shouldUpdateAuthenticatedUserProfile() throws Exception {
+        when(userService.updateProfile(
+                org.mockito.ArgumentMatchers.eq("ana@example.com"),
+                any(UpdateUserProfileRequest.class)
+        )).thenReturn(profileResponse());
+
+        mockMvc.perform(put("/api/users/me")
+                        .principal(authentication)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Ana",
+                                  "cpf": "529.982.247-25",
+                                  "whatsappPhone": "(13) 99999-9999",
+                                  "whatsappConsentGiven": true,
+                                  "street": "Avenida Brasil",
+                                  "addressNumber": "100",
+                                  "addressComplement": "Apto 12",
+                                  "neighborhood": "Boqueirao",
+                                  "postalCode": "11700-000",
+                                  "cityIbgeCode": "3541000"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("ana@example.com"));
+    }
+
+    @Test
     void shouldEnableWhatsappNotificationsWithExplicitConsent() throws Exception {
         when(userService.enableWhatsappNotifications(
                 org.mockito.ArgumentMatchers.eq("ana@example.com"),
@@ -106,6 +149,21 @@ class UserControllerTest {
                 true,
                 Instant.parse("2026-09-19T12:00:00Z"),
                 false
+        );
+    }
+
+    private UserProfileResponse profileResponse() {
+        return new UserProfileResponse(
+                1L,
+                "Ana",
+                "ana@example.com",
+                "52998224725",
+                "+5513999999999",
+                true,
+                Instant.parse("2026-10-23T12:00:00Z"),
+                new AddressResponse("Avenida Brasil", "100", "Apto 12", "Boqueirao", "11700000"),
+                new CityResponse(1L, "Praia Grande", "SP", "3541000"),
+                Instant.parse("2026-10-23T12:00:00Z")
         );
     }
 }

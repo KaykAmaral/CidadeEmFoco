@@ -409,6 +409,29 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldAllowOnlyCitizenToReadOwnProfile() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService).findProfile("ana@example.com");
+    }
+
+    @Test
     void shouldAllowOnlyAdminToReadWhatsappNotificationHistory() throws Exception {
         User citizen = citizen();
         User admin = admin();

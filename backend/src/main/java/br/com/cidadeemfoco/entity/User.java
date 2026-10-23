@@ -194,4 +194,24 @@ public class User {
         this.whatsappConsentAt = null;
         this.whatsappNotificationsEnabled = false;
     }
+
+    public void updateProfile(
+            String name,
+            String cpf,
+            String street,
+            String addressNumber,
+            String addressComplement,
+            String neighborhood,
+            String postalCode,
+            City city
+    ) {
+        this.name = Objects.requireNonNull(name);
+        this.cpf = Objects.requireNonNull(cpf);
+        this.street = Objects.requireNonNull(street);
+        this.addressNumber = Objects.requireNonNull(addressNumber);
+        this.addressComplement = addressComplement;
+        this.neighborhood = Objects.requireNonNull(neighborhood);
+        this.postalCode = Objects.requireNonNull(postalCode);
+        this.city = Objects.requireNonNull(city);
+    }
 }
