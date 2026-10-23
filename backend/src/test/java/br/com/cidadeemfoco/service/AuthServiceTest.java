@@ -5,10 +5,12 @@ import br.com.cidadeemfoco.dto.LoginRequest;
 import br.com.cidadeemfoco.dto.RegisterRequest;
 import br.com.cidadeemfoco.dto.UserResponse;
 import br.com.cidadeemfoco.entity.User;
+import br.com.cidadeemfoco.entity.City;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.InvalidCredentialsException;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,16 +46,21 @@ class AuthServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private CityRepository cityRepository;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, authenticationManager, jwtService);
+        authService = new AuthService(userRepository, passwordEncoder, authenticationManager, jwtService, cityRepository);
     }
 
     @Test
     void shouldRegisterOnlyCitizenWithEncodedPassword() {
         when(userRepository.existsByEmailIgnoreCase("ana@example.com")).thenReturn(false);
+        when(cityRepository.findByIbgeCodeAndActiveTrue("3541000"))
+                .thenReturn(Optional.of(new City("Praia Grande", "SP", "3541000")));
         when(passwordEncoder.encode("senha123")).thenReturn("bcrypt-hash");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

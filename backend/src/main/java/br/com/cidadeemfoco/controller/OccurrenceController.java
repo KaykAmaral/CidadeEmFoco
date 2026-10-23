@@ -46,12 +46,13 @@ public class OccurrenceController {
 
     @GetMapping
     public List<OccurrenceResponse> findAll(
+            Authentication authentication,
             @RequestParam(required = false) OccurrenceCategory category,
             @RequestParam(required = false) OccurrenceType type,
             @RequestParam(required = false) OccurrenceStatus status,
             @RequestParam(required = false) @Size(max = 100) String neighborhood
     ) {
-        return occurrenceService.findAll(new OccurrenceFilter(
+        return occurrenceService.findAll(authentication.getName(), new OccurrenceFilter(
                 category, type, status, neighborhood, null, null
         ));
     }
@@ -62,12 +63,12 @@ public class OccurrenceController {
     }
 
     @GetMapping("/map")
-    public List<OccurrenceResponse> findVisibleOnMap() {
-        return occurrenceService.findVisibleOnMap();
+    public List<OccurrenceResponse> findVisibleOnMap(Authentication authentication) {
+        return occurrenceService.findVisibleOnMap(authentication.getName());
     }
 
     @GetMapping("/{id}")
-    public OccurrenceResponse findById(@PathVariable @Positive Long id) {
-        return occurrenceService.findById(id);
+    public OccurrenceResponse findById(Authentication authentication, @PathVariable @Positive Long id) {
+        return occurrenceService.findById(authentication.getName(), id);
     }
 }

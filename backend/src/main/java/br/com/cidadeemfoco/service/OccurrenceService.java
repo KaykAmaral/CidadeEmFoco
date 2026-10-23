@@ -67,8 +67,7 @@ public class OccurrenceService {
 
     @Transactional
     public OccurrenceResponse create(String userEmail, CreateOccurrenceRequest request) {
-        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(userEmail))
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
+        User user = findUser(userEmail);
 
         if (user.getRole() != UserRole.CITIZEN) {
             throw new BusinessRuleException("Somente cidadaos podem registrar ocorrencias");
@@ -87,7 +86,7 @@ public class OccurrenceService {
                 user
         );
 
-        Optional<Occurrence> similarCase = findSimilarCase(request);
+        Optional<Occurrence> similarCase = findSimilarCase(user.getCity().getId(), request);
         similarCase.ifPresent(caseRoot -> {
             validateCitizenHasNotContributed(caseRoot, user);
             occurrence.joinCase(caseRoot);
@@ -108,34 +107,38 @@ public class OccurrenceService {
         }
     }
 
-    public List<OccurrenceResponse> findAll(OccurrenceFilter filter) {
+    public List<OccurrenceResponse> findAll(String userEmail, OccurrenceFilter filter) {
+        Long cityId = findUser(userEmail).getCity().getId();
         validateCategoryAndType(filter.category(), filter.type());
         validatePeriod(filter.createdFrom(), filter.createdTo());
-        return occurrenceRepository.findAll(toSpecification(filter, null), NEWEST_FIRST)
+        return occurrenceRepository.findAll(toSpecification(filter, null, cityId), NEWEST_FIRST)
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
     }
 
-    public OccurrenceResponse findById(Long id) {
-        return occurrenceRepository.findById(id)
+    public OccurrenceResponse findById(String userEmail, Long id) {
+        Long cityId = findUser(userEmail).getCity().getId();
+        return occurrenceRepository.findByIdAndCityId(id, cityId)
                 .map(OccurrenceResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
     }
 
-    public List<OccurrenceResponse> findCaseReports(Long id) {
-        Occurrence occurrence = occurrenceRepository.findById(id)
+    public List<OccurrenceResponse> findCaseReports(String userEmail, Long id) {
+        Long cityId = findUser(userEmail).getCity().getId();
+        Occurrence occurrence = occurrenceRepository.findByIdAndCityId(id, cityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
         Occurrence caseRoot = occurrence.getCaseRoot();
         List<Occurrence> reports = new ArrayList<>();
         reports.add(caseRoot);
-        reports.addAll(occurrenceRepository.findByGroupRootIdOrderByCreatedAtAsc(caseRoot.getId()));
+        reports.addAll(occurrenceRepository.findByGroupRootIdAndCityIdOrderByCreatedAtAsc(caseRoot.getId(), cityId));
         return reports.stream().map(OccurrenceResponse::from).toList();
     }
 
-    public List<OccurrenceResponse> findVisibleOnMap() {
+    public List<OccurrenceResponse> findVisibleOnMap(String userEmail) {
+        Long cityId = findUser(userEmail).getCity().getId();
         Instant resolvedSince = Instant.now().minus(resolvedMapVisibility);
-        return occurrenceRepository.findVisibleOnMap(OccurrenceStatus.RESOLVIDA, resolvedSince)
+        return occurrenceRepository.findVisibleOnMap(cityId, OccurrenceStatus.RESOLVIDA, resolvedSince)
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
@@ -151,8 +154,9 @@ public class OccurrenceService {
     }
 
     @Transactional
-    public OccurrenceResponse updateStatus(Long id, OccurrenceStatus status) {
-        Occurrence occurrence = occurrenceRepository.findById(id)
+    public OccurrenceResponse updateStatus(String userEmail, Long id, OccurrenceStatus status) {
+        Long cityId = findUser(userEmail).getCity().getId();
+        Occurrence occurrence = occurrenceRepository.findByIdAndCityId(id, cityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
         Occurrence caseRoot = occurrence.getCaseRoot();
         caseRoot.changeStatus(status);
@@ -160,16 +164,21 @@ public class OccurrenceService {
     }
 
     public List<OccurrenceResponse> findByUser(String userEmail) {
+        User user = findUser(userEmail);
         OccurrenceFilter emptyFilter = new OccurrenceFilter(null, null, null, null, null, null);
-        return occurrenceRepository.findAll(toSpecification(emptyFilter, normalizeEmail(userEmail)), NEWEST_FIRST)
+        return occurrenceRepository.findAll(
+                        toSpecification(emptyFilter, normalizeEmail(userEmail), user.getCity().getId()),
+                        NEWEST_FIRST
+                )
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
     }
 
-    private Specification<Occurrence> toSpecification(OccurrenceFilter filter, String userEmail) {
+    private Specification<Occurrence> toSpecification(OccurrenceFilter filter, String userEmail, Long cityId) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("city").get("id"), cityId));
             if (userEmail == null) {
                 predicates.add(criteriaBuilder.isNull(root.get("groupRoot")));
             }
@@ -223,10 +232,11 @@ public class OccurrenceService {
         }
     }
 
-    private Optional<Occurrence> findSimilarCase(CreateOccurrenceRequest request) {
+    private Optional<Occurrence> findSimilarCase(Long cityId, CreateOccurrenceRequest request) {
         Instant createdAfter = Instant.now().minus(groupingWindowFor(request.category()));
         List<Occurrence> candidates = occurrenceRepository
-                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                .findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        cityId,
                         request.category(),
                         request.type(),
                         GROUPABLE_STATUSES,
@@ -290,6 +300,15 @@ public class OccurrenceService {
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private User findUser(String email) {
+        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(email))
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
+        if (user.getCity() == null) {
+            throw new BusinessRuleException("O usuario nao possui uma cidade vinculada");
+        }
+        return user;
     }
 
     private record CaseDistance(Occurrence occurrence, double distance) {

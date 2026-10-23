@@ -7,6 +7,7 @@ import br.com.cidadeemfoco.entity.OccurrenceImage;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
+import br.com.cidadeemfoco.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,11 +22,14 @@ public class OccurrenceImageService {
     private static final int MAX_IMAGES = 4;
     private final OccurrenceRepository occurrenceRepository;
     private final ImageStorageService imageStorageService;
+    private final UserRepository userRepository;
 
     public OccurrenceImageService(OccurrenceRepository occurrenceRepository,
-            ImageStorageService imageStorageService) {
+            ImageStorageService imageStorageService,
+            UserRepository userRepository) {
         this.occurrenceRepository = occurrenceRepository;
         this.imageStorageService = imageStorageService;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -35,7 +39,7 @@ public class OccurrenceImageService {
 
     @Transactional
     public OccurrenceResponse uploadMany(String userEmail, Long occurrenceId, List<MultipartFile> files) {
-        Occurrence occurrence = findOccurrence(occurrenceId);
+        Occurrence occurrence = findOccurrence(userEmail, occurrenceId);
         if (!occurrence.getUser().getEmail().equalsIgnoreCase(userEmail)) {
             throw new AccessDeniedException("Somente o autor pode adicionar fotos");
         }
@@ -57,23 +61,27 @@ public class OccurrenceImageService {
         }
     }
 
-    public StoredImage load(Long occurrenceId) {
-        Occurrence occurrence = findOccurrence(occurrenceId);
+    public StoredImage load(String userEmail, Long occurrenceId) {
+        Occurrence occurrence = findOccurrence(userEmail, occurrenceId);
         if (!occurrence.getImages().isEmpty()) return imageStorageService.load(occurrence.getImages().getFirst().getImagePath());
         if (occurrence.getImagePath() != null) return imageStorageService.load(occurrence.getImagePath());
         throw new ResourceNotFoundException("A ocorrencia nao possui imagem");
     }
 
-    public StoredImage load(Long occurrenceId, Long imageId) {
-        OccurrenceImage image = findOccurrence(occurrenceId).getImages().stream()
+    public StoredImage load(String userEmail, Long occurrenceId, Long imageId) {
+        OccurrenceImage image = findOccurrence(userEmail, occurrenceId).getImages().stream()
                 .filter(value -> value.getId().equals(imageId))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Imagem da ocorrencia nao encontrada"));
         return imageStorageService.load(image.getImagePath());
     }
 
-    private Occurrence findOccurrence(Long id) {
-        return occurrenceRepository.findById(id)
+    private Occurrence findOccurrence(String userEmail, Long id) {
+        Long cityId = userRepository.findByEmailIgnoreCase(userEmail.trim())
+                .filter(user -> user.getCity() != null)
+                .map(user -> user.getCity().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
+        return occurrenceRepository.findByIdAndCityId(id, cityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
     }
 }

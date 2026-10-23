@@ -1,6 +1,7 @@
 package br.com.cidadeemfoco;
 
 import br.com.cidadeemfoco.repository.ClimateAlertRepository;
+import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
@@ -19,6 +20,9 @@ class CidadeEmFocoApplicationTests {
 
 	@MockitoBean
 	private ClimateAlertRepository climateAlertRepository;
+
+	@MockitoBean
+	private CityRepository cityRepository;
 
 	@MockitoBean
 	private OccurrenceRepository occurrenceRepository;

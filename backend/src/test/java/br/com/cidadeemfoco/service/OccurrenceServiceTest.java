@@ -4,6 +4,7 @@ import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.dto.OccurrenceResponse;
 import br.com.cidadeemfoco.entity.Occurrence;
+import br.com.cidadeemfoco.entity.City;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
@@ -51,15 +52,18 @@ class OccurrenceServiceTest {
     private UserRepository userRepository;
 
     private OccurrenceService occurrenceService;
+    private City city;
 
     @BeforeEach
     void setUp() {
+        city = new City("Praia Grande", "SP", "3541000");
+        ReflectionTestUtils.setField(city, "id", 1L);
         occurrenceService = new OccurrenceService(occurrenceRepository, userRepository);
     }
 
     @Test
     void shouldCreateRegisteredOccurrenceForCitizen() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(occurrenceRepository.save(any(Occurrence.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -74,12 +78,13 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldGroupANearbySimilarReportAndIncreaseCaseStrength() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
         ReflectionTestUtils.setField(caseRoot, "id", 10L);
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(occurrenceRepository
-                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                .findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(1L),
                         eq(OccurrenceCategory.EVENTO_NATURAL),
                         eq(OccurrenceType.ALAGAMENTO),
                         any(),
@@ -100,12 +105,13 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldRejectSecondContributionFromCaseCreator() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         Occurrence caseRoot = occurrenceFor("Ana", "ana@example.com");
         ReflectionTestUtils.setField(caseRoot, "id", 10L);
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(occurrenceRepository
-                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                .findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(1L),
                         eq(OccurrenceCategory.EVENTO_NATURAL),
                         eq(OccurrenceType.ALAGAMENTO),
                         any(),
@@ -120,12 +126,13 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldRejectCitizenWhoAlreadyReportedTheSameCase() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
         ReflectionTestUtils.setField(caseRoot, "id", 10L);
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(occurrenceRepository
-                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                .findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(1L),
                         eq(OccurrenceCategory.EVENTO_NATURAL),
                         eq(OccurrenceType.ALAGAMENTO),
                         any(),
@@ -142,12 +149,13 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldTranslateConcurrentDuplicateContributionToBusinessRule() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         Occurrence caseRoot = occurrenceFor("Bruno", "bruno@example.com");
         ReflectionTestUtils.setField(caseRoot, "id", 10L);
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(occurrenceRepository
-                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                .findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(1L),
                         eq(OccurrenceCategory.EVENTO_NATURAL),
                         eq(OccurrenceType.ALAGAMENTO),
                         any(),
@@ -165,7 +173,7 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldKeepADistantReportAsANewCase() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         Occurrence distantCase = new Occurrence(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.ALAGAMENTO,
@@ -179,7 +187,8 @@ class OccurrenceServiceTest {
         );
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(occurrenceRepository
-                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                .findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        eq(1L),
                         eq(OccurrenceCategory.EVENTO_NATURAL),
                         eq(OccurrenceType.ALAGAMENTO),
                         any(),
@@ -197,7 +206,7 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldRejectOccurrenceCreatedByAdmin() {
-        User admin = new User("Admin", "admin@example.com", "hash", UserRole.ADMIN);
+        User admin = user("Admin", "admin@example.com", UserRole.ADMIN);
         when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
 
         assertThatThrownBy(() -> occurrenceService.create("admin@example.com", validRequest()))
@@ -208,7 +217,7 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldRejectTypeFromAnotherCategory() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         CreateOccurrenceRequest request = new CreateOccurrenceRequest(
                 OccurrenceCategory.EVENTO_NATURAL,
@@ -229,9 +238,11 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldReturnNotFoundWhenOccurrenceDoesNotExist() {
-        when(occurrenceRepository.findById(99L)).thenReturn(Optional.empty());
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository.findByIdAndCityId(99L, 1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> occurrenceService.findById(99L))
+        assertThatThrownBy(() -> occurrenceService.findById("ana@example.com", 99L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Ocorrencia nao encontrada");
     }
@@ -239,10 +250,11 @@ class OccurrenceServiceTest {
     @Test
     void shouldUpdateOccurrenceStatus() {
         Occurrence occurrence = occurrence();
-        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(occurrence));
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(occurrence.getUser()));
+        when(occurrenceRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(occurrence));
         when(occurrenceRepository.saveAndFlush(occurrence)).thenReturn(occurrence);
 
-        OccurrenceResponse response = occurrenceService.updateStatus(10L, OccurrenceStatus.EM_ATENDIMENTO);
+        OccurrenceResponse response = occurrenceService.updateStatus("ana@example.com", 10L, OccurrenceStatus.EM_ATENDIMENTO);
 
         assertThat(response.status()).isEqualTo(OccurrenceStatus.EM_ATENDIMENTO);
         verify(occurrenceRepository).saveAndFlush(occurrence);
@@ -255,13 +267,15 @@ class OccurrenceServiceTest {
         ReflectionTestUtils.setField(caseRoot, "id", 10L);
         ReflectionTestUtils.setField(associatedReport, "id", 11L);
         associatedReport.joinCase(caseRoot);
-        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(caseRoot));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com"))
+                .thenReturn(Optional.of(user("Admin", "admin@example.com", UserRole.ADMIN)));
+        when(occurrenceRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(caseRoot));
         when(occurrenceRepository.saveAndFlush(caseRoot)).thenReturn(caseRoot);
-        when(occurrenceRepository.findByGroupRootIdOrderByCreatedAtAsc(10L))
+        when(occurrenceRepository.findByGroupRootIdAndCityIdOrderByCreatedAtAsc(10L, 1L))
                 .thenReturn(List.of(associatedReport));
 
-        occurrenceService.updateStatus(10L, OccurrenceStatus.RESOLVIDA);
-        List<OccurrenceResponse> reports = occurrenceService.findCaseReports(10L);
+        occurrenceService.updateStatus("admin@example.com", 10L, OccurrenceStatus.RESOLVIDA);
+        List<OccurrenceResponse> reports = occurrenceService.findCaseReports("admin@example.com", 10L);
 
         assertThat(reports).hasSize(2);
         assertThat(reports).allSatisfy(report -> {
@@ -274,9 +288,11 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldReturnNotFoundWhenUpdatingMissingOccurrence() {
-        when(occurrenceRepository.findById(99L)).thenReturn(Optional.empty());
+        User admin = user("Admin", "admin@example.com", UserRole.ADMIN);
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        when(occurrenceRepository.findByIdAndCityId(99L, 1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> occurrenceService.updateStatus(99L, OccurrenceStatus.RESOLVIDA))
+        assertThatThrownBy(() -> occurrenceService.updateStatus("admin@example.com", 99L, OccurrenceStatus.RESOLVIDA))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Ocorrencia nao encontrada");
         verify(occurrenceRepository, never()).saveAndFlush(any());
@@ -285,7 +301,7 @@ class OccurrenceServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void shouldListOccurrencesUsingFiltersAndNewestFirst() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         Occurrence occurrence = new Occurrence(
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
@@ -299,6 +315,7 @@ class OccurrenceServiceTest {
         );
         when(occurrenceRepository.findAll(any(Specification.class), any(Sort.class)))
                 .thenReturn(List.of(occurrence));
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         OccurrenceFilter filter = new OccurrenceFilter(
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
@@ -308,7 +325,7 @@ class OccurrenceServiceTest {
                 Instant.parse("2026-09-18T23:59:59Z")
         );
 
-        List<OccurrenceResponse> responses = occurrenceService.findAll(filter);
+        List<OccurrenceResponse> responses = occurrenceService.findAll("ana@example.com", filter);
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().type()).isEqualTo(OccurrenceType.BURACO_RUA);
@@ -323,6 +340,8 @@ class OccurrenceServiceTest {
     void shouldListOnlyOccurrencesFromRequestedUser() {
         when(occurrenceRepository.findAll(any(Specification.class), any(Sort.class)))
                 .thenReturn(List.of());
+        when(userRepository.findByEmailIgnoreCase("ana@example.com"))
+                .thenReturn(Optional.of(user("Ana", "ana@example.com", UserRole.CITIZEN)));
 
         List<OccurrenceResponse> responses = occurrenceService.findByUser("ANA@EXAMPLE.COM");
 
@@ -341,7 +360,9 @@ class OccurrenceServiceTest {
                 Instant.parse("2026-09-01T00:00:00Z")
         );
 
-        assertThatThrownBy(() -> occurrenceService.findAll(filter))
+        when(userRepository.findByEmailIgnoreCase("admin@example.com"))
+                .thenReturn(Optional.of(user("Admin", "admin@example.com", UserRole.ADMIN)));
+        assertThatThrownBy(() -> occurrenceService.findAll("admin@example.com", filter))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("O inicio do periodo deve ser anterior ao fim");
         verify(occurrenceRepository, never()).findAll(
@@ -352,15 +373,18 @@ class OccurrenceServiceTest {
 
     @Test
     void shouldListOnlyOccurrencesVisibleOnMapForTheConfiguredPeriod() {
-        when(occurrenceRepository.findVisibleOnMap(eq(OccurrenceStatus.RESOLVIDA), any(Instant.class)))
+        when(userRepository.findByEmailIgnoreCase("ana@example.com"))
+                .thenReturn(Optional.of(user("Ana", "ana@example.com", UserRole.CITIZEN)));
+        when(occurrenceRepository.findVisibleOnMap(eq(1L), eq(OccurrenceStatus.RESOLVIDA), any(Instant.class)))
                 .thenReturn(List.of());
         Instant earliestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
 
-        List<OccurrenceResponse> responses = occurrenceService.findVisibleOnMap();
+        List<OccurrenceResponse> responses = occurrenceService.findVisibleOnMap("ana@example.com");
 
         Instant latestExpectedCutoff = Instant.now().minus(Duration.ofHours(24));
         ArgumentCaptor<Instant> cutoffCaptor = ArgumentCaptor.forClass(Instant.class);
         verify(occurrenceRepository).findVisibleOnMap(
+                eq(1L),
                 eq(OccurrenceStatus.RESOLVIDA),
                 cutoffCaptor.capture()
         );
@@ -387,7 +411,7 @@ class OccurrenceServiceTest {
     }
 
     private Occurrence occurrenceFor(String name, String email) {
-        User citizen = new User(name, email, "hash", UserRole.CITIZEN);
+        User citizen = user(name, email, UserRole.CITIZEN);
         return new Occurrence(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.ALAGAMENTO,
@@ -399,5 +423,9 @@ class OccurrenceServiceTest {
                 null,
                 citizen
         );
+    }
+
+    private User user(String name, String email, UserRole role) {
+        return new User(name, email, "hash", role, city);
     }
 }

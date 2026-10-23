@@ -46,6 +46,7 @@ class OccurrenceControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new OccurrenceController(occurrenceService))
+                .defaultRequest(get("/").principal(authentication()))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -98,7 +99,7 @@ class OccurrenceControllerTest {
 
     @Test
     void shouldForwardFiltersToService() throws Exception {
-        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        when(occurrenceService.findAll(eq("citizen@example.com"), any(OccurrenceFilter.class))).thenReturn(List.of());
 
         mockMvc.perform(get("/api/occurrences")
                         .param("category", "INFRAESTRUTURA_URBANA")
@@ -107,7 +108,7 @@ class OccurrenceControllerTest {
                         .param("neighborhood", "Boqueirao"))
                 .andExpect(status().isOk());
 
-        verify(occurrenceService).findAll(new OccurrenceFilter(
+        verify(occurrenceService).findAll("citizen@example.com", new OccurrenceFilter(
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
                 OccurrenceStatus.REGISTRADA,
@@ -119,7 +120,7 @@ class OccurrenceControllerTest {
 
     @Test
     void shouldReturnStructuredNotFoundError() throws Exception {
-        when(occurrenceService.findById(99L))
+        when(occurrenceService.findById("citizen@example.com", 99L))
                 .thenThrow(new ResourceNotFoundException("Ocorrencia nao encontrada"));
 
         mockMvc.perform(get("/api/occurrences/99"))
@@ -141,13 +142,13 @@ class OccurrenceControllerTest {
 
     @Test
     void shouldListOccurrencesVisibleOnMap() throws Exception {
-        when(occurrenceService.findVisibleOnMap()).thenReturn(List.of(response()));
+        when(occurrenceService.findVisibleOnMap("citizen@example.com")).thenReturn(List.of(response()));
 
         mockMvc.perform(get("/api/occurrences/map"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(15));
 
-        verify(occurrenceService).findVisibleOnMap();
+        verify(occurrenceService).findVisibleOnMap("citizen@example.com");
     }
 
     private OccurrenceResponse response() {

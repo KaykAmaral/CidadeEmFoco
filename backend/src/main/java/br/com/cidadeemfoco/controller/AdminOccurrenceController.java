@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,6 +37,7 @@ public class AdminOccurrenceController {
 
     @GetMapping
     public List<OccurrenceResponse> findAll(
+            Authentication authentication,
             @RequestParam(required = false) OccurrenceCategory category,
             @RequestParam(required = false) OccurrenceType type,
             @RequestParam(required = false) OccurrenceStatus status,
@@ -43,26 +45,27 @@ public class AdminOccurrenceController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdTo
     ) {
-        return occurrenceService.findAll(new OccurrenceFilter(
+        return occurrenceService.findAll(authentication.getName(), new OccurrenceFilter(
                 category, type, status, neighborhood, createdFrom, createdTo
         ));
     }
 
     @GetMapping("/{id}")
-    public OccurrenceResponse findById(@PathVariable @Positive Long id) {
-        return occurrenceService.findById(id);
+    public OccurrenceResponse findById(Authentication authentication, @PathVariable @Positive Long id) {
+        return occurrenceService.findById(authentication.getName(), id);
     }
 
     @GetMapping("/{id}/reports")
-    public List<OccurrenceResponse> findCaseReports(@PathVariable @Positive Long id) {
-        return occurrenceService.findCaseReports(id);
+    public List<OccurrenceResponse> findCaseReports(Authentication authentication, @PathVariable @Positive Long id) {
+        return occurrenceService.findCaseReports(authentication.getName(), id);
     }
 
     @PatchMapping("/{id}/status")
     public OccurrenceResponse updateStatus(
+            Authentication authentication,
             @PathVariable @Positive Long id,
             @Valid @RequestBody UpdateOccurrenceStatusRequest request
     ) {
-        return occurrenceService.updateStatus(id, request.status());
+        return occurrenceService.updateStatus(authentication.getName(), id, request.status());
     }
 }

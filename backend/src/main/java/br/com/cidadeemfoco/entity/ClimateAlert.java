@@ -9,6 +9,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -53,6 +56,10 @@ public class ClimateAlert {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "city_id", nullable = false)
+    private City city;
+
     protected ClimateAlert() {
     }
 
@@ -64,12 +71,25 @@ public class ClimateAlert {
             Instant startAt,
             Instant endAt
     ) {
+        this(title, type, severity, description, startAt, endAt, null);
+    }
+
+    public ClimateAlert(
+            String title,
+            ClimateAlertType type,
+            AlertSeverity severity,
+            String description,
+            Instant startAt,
+            Instant endAt,
+            City city
+    ) {
         this.title = Objects.requireNonNull(title);
         this.type = Objects.requireNonNull(type);
         this.severity = Objects.requireNonNull(severity);
         this.description = Objects.requireNonNull(description);
         this.startAt = Objects.requireNonNull(startAt);
         this.endAt = Objects.requireNonNull(endAt);
+        this.city = city;
         validatePeriod();
     }
 
@@ -145,6 +165,10 @@ public class ClimateAlert {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public City getCity() {
+        return city;
     }
 
     public boolean isCurrentlyActive(Instant now) {

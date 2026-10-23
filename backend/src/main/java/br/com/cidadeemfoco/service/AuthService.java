@@ -9,7 +9,9 @@ import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.InvalidCredentialsException;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.security.JwtService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -27,17 +29,23 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final CityRepository cityRepository;
+
+    @Value("${app.default-city.ibge-code:3541000}")
+    private String defaultCityIbgeCode = "3541000";
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            JwtService jwtService
+            JwtService jwtService,
+            CityRepository cityRepository
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.cityRepository = cityRepository;
     }
 
     @Transactional
@@ -47,11 +55,15 @@ public class AuthService {
             throw new BusinessRuleException("Ja existe um usuario cadastrado com este email");
         }
 
+        var defaultCity = cityRepository.findByIbgeCodeAndActiveTrue(defaultCityIbgeCode)
+                .orElseThrow(() -> new BusinessRuleException("A cidade padrao nao esta disponivel para cadastro"));
+
         User user = new User(
                 request.name().trim(),
                 email,
                 passwordEncoder.encode(request.password()),
-                UserRole.CITIZEN
+                UserRole.CITIZEN,
+                defaultCity
         );
         return UserResponse.from(userRepository.save(user));
     }

@@ -3,12 +3,16 @@ package br.com.cidadeemfoco.service;
 import br.com.cidadeemfoco.dto.ClimateAlertResponse;
 import br.com.cidadeemfoco.dto.CreateClimateAlertRequest;
 import br.com.cidadeemfoco.entity.ClimateAlert;
+import br.com.cidadeemfoco.entity.City;
+import br.com.cidadeemfoco.entity.User;
+import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.enums.AlertSeverity;
 import br.com.cidadeemfoco.enums.ClimateAlertType;
 import br.com.cidadeemfoco.event.ClimateAlertsChangedEvent;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.ClimateAlertRepository;
+import br.com.cidadeemfoco.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,11 +43,22 @@ class ClimateAlertServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private UserRepository userRepository;
+
+    private City city;
+    private User admin;
+
     private ClimateAlertService climateAlertService;
 
     @BeforeEach
     void setUp() {
-        climateAlertService = new ClimateAlertService(climateAlertRepository, eventPublisher);
+        city = new City("Praia Grande", "SP", "3541000");
+        ReflectionTestUtils.setField(city, "id", 1L);
+        admin = new User("Admin", "admin@example.com", "hash", UserRole.ADMIN, city);
+        org.mockito.Mockito.lenient().when(userRepository.findByEmailIgnoreCase("admin@example.com"))
+                .thenReturn(Optional.of(admin));
+        climateAlertService = new ClimateAlertService(climateAlertRepository, eventPublisher, userRepository);
     }
 
     @Test
@@ -50,7 +66,7 @@ class ClimateAlertServiceTest {
         when(climateAlertRepository.save(any(ClimateAlert.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ClimateAlertResponse response = climateAlertService.create(validRequest());
+        ClimateAlertResponse response = climateAlertService.create("admin@example.com", validRequest());
 
         assertThat(response.active()).isFalse();
         assertThat(response.type()).isEqualTo(ClimateAlertType.CHUVA_INTENSA);
@@ -70,7 +86,7 @@ class ClimateAlertServiceTest {
                 Instant.parse("2026-08-21T12:00:00Z")
         );
 
-        assertThatThrownBy(() -> climateAlertService.create(request))
+        assertThatThrownBy(() -> climateAlertService.create("admin@example.com", request))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("posterior");
         verify(climateAlertRepository, never()).save(any());
@@ -92,12 +108,12 @@ class ClimateAlertServiceTest {
 
     @Test
     void shouldListAllAlertsNewestFirstForAdmin() {
-        when(climateAlertRepository.findAll(any(Sort.class))).thenReturn(List.of(alert()));
+        when(climateAlertRepository.findAllByCityId(eq(1L), any(Sort.class))).thenReturn(List.of(alert()));
 
-        List<ClimateAlertResponse> responses = climateAlertService.findAll();
+        List<ClimateAlertResponse> responses = climateAlertService.findAll("admin@example.com");
 
         assertThat(responses).hasSize(1);
-        verify(climateAlertRepository).findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+        verify(climateAlertRepository).findAllByCityId(1L, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
     @Test
@@ -111,10 +127,10 @@ class ClimateAlertServiceTest {
                 Instant.parse("2026-08-22T12:00:00Z"),
                 Instant.parse("2026-08-22T20:00:00Z")
         );
-        when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
+        when(climateAlertRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(alert));
         when(climateAlertRepository.saveAndFlush(alert)).thenReturn(alert);
 
-        ClimateAlertResponse response = climateAlertService.update(10L, update);
+        ClimateAlertResponse response = climateAlertService.update("admin@example.com", 10L, update);
 
         assertThat(response.title()).isEqualTo("Alerta atualizado");
         assertThat(response.type()).isEqualTo(ClimateAlertType.VENTOS_FORTES);
@@ -126,11 +142,11 @@ class ClimateAlertServiceTest {
     @Test
     void shouldActivateAndDeactivateAlert() {
         ClimateAlert alert = alert();
-        when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
+        when(climateAlertRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(alert));
         when(climateAlertRepository.saveAndFlush(alert)).thenReturn(alert);
 
-        ClimateAlertResponse activated = climateAlertService.activate(10L);
-        ClimateAlertResponse deactivated = climateAlertService.deactivate(10L);
+        ClimateAlertResponse activated = climateAlertService.activate("admin@example.com", 10L);
+        ClimateAlertResponse deactivated = climateAlertService.deactivate("admin@example.com", 10L);
 
         assertThat(activated.active()).isTrue();
         assertThat(deactivated.active()).isFalse();
@@ -141,9 +157,9 @@ class ClimateAlertServiceTest {
 
     @Test
     void shouldReturnNotFoundForMissingAlert() {
-        when(climateAlertRepository.findById(99L)).thenReturn(Optional.empty());
+        when(climateAlertRepository.findByIdAndCityId(99L, 1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> climateAlertService.activate(99L))
+        assertThatThrownBy(() -> climateAlertService.activate("admin@example.com", 99L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Alerta climatico nao encontrado");
     }
@@ -151,9 +167,9 @@ class ClimateAlertServiceTest {
     @Test
     void shouldDeleteAnyAlertAndPublishUpdate() {
         ClimateAlert alert = alert();
-        when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
+        when(climateAlertRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(alert));
 
-        climateAlertService.delete(10L);
+        climateAlertService.delete("admin@example.com", 10L);
 
         verify(climateAlertRepository).delete(alert);
         verify(eventPublisher).publishEvent(any(ClimateAlertsChangedEvent.class));
@@ -178,7 +194,8 @@ class ClimateAlertServiceTest {
                 request.severity(),
                 request.description(),
                 request.startAt(),
-                request.endAt()
+                request.endAt(),
+                city
         );
         ReflectionTestUtils.setField(alert, "id", 10L);
         return alert;

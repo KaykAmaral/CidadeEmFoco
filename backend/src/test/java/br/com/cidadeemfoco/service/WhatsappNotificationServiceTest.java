@@ -1,6 +1,7 @@
 package br.com.cidadeemfoco.service;
 
 import br.com.cidadeemfoco.entity.ClimateAlert;
+import br.com.cidadeemfoco.entity.City;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.entity.WhatsappNotification;
 import br.com.cidadeemfoco.enums.AlertSeverity;
@@ -56,18 +57,21 @@ class WhatsappNotificationServiceTest {
                 userRepository
         );
         Instant now = Instant.now();
+        City city = new City("Praia Grande", "SP", "3541000");
+        ReflectionTestUtils.setField(city, "id", 1L);
         alert = new ClimateAlert(
                 "Alerta de chuva",
                 ClimateAlertType.CHUVA_INTENSA,
                 AlertSeverity.ALTA,
                 "Possibilidade de chuva intensa",
                 now.minusSeconds(60),
-                now.plusSeconds(3600)
+                now.plusSeconds(3600),
+                city
         );
         alert.activate();
         ReflectionTestUtils.setField(alert, "id", 10L);
 
-        citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN, city);
         citizen.enableWhatsappNotifications("+5513999999999", now);
         ReflectionTestUtils.setField(citizen, "id", 20L);
     }
@@ -75,7 +79,7 @@ class WhatsappNotificationServiceTest {
     @Test
     void shouldEnqueueSubscribedUsersWhenAlertIsActivated() {
         when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
-        when(userRepository.findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull())
+        when(userRepository.findByCityIdAndWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull(1L))
                 .thenReturn(List.of(citizen));
         when(notificationRepository.existsByAlertIdAndUserId(10L, 20L)).thenReturn(false);
 
@@ -92,7 +96,7 @@ class WhatsappNotificationServiceTest {
     @Test
     void shouldNotCreateDuplicateNotification() {
         when(climateAlertRepository.findById(10L)).thenReturn(Optional.of(alert));
-        when(userRepository.findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull())
+        when(userRepository.findByCityIdAndWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull(1L))
                 .thenReturn(List.of(citizen));
         when(notificationRepository.existsByAlertIdAndUserId(10L, 20L)).thenReturn(true);
 
@@ -104,7 +108,7 @@ class WhatsappNotificationServiceTest {
     @Test
     void shouldSynchronizeAlertsThatBecameActiveLater() {
         when(climateAlertRepository.findCurrentlyActive(any(Instant.class))).thenReturn(List.of(alert));
-        when(userRepository.findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull())
+        when(userRepository.findByCityIdAndWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull(1L))
                 .thenReturn(List.of(citizen));
         when(notificationRepository.existsByAlertIdAndUserId(10L, 20L)).thenReturn(false);
 

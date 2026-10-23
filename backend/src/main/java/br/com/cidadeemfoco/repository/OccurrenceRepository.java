@@ -21,11 +21,13 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
             SELECT occurrence
             FROM Occurrence occurrence
             WHERE occurrence.groupRoot IS NULL
+              AND occurrence.city.id = :cityId
               AND (occurrence.status <> :resolvedStatus
                OR occurrence.resolvedAt >= :resolvedSince)
             ORDER BY occurrence.createdAt DESC
             """)
     List<Occurrence> findVisibleOnMap(
+            @Param("cityId") Long cityId,
             @Param("resolvedStatus") OccurrenceStatus resolvedStatus,
             @Param("resolvedSince") Instant resolvedSince
     );
@@ -38,14 +40,17 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<Occurrence> findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+    List<Occurrence> findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+            Long cityId,
             OccurrenceCategory category,
             OccurrenceType type,
             Collection<OccurrenceStatus> statuses,
             Instant createdAfter
     );
 
-    List<Occurrence> findByGroupRootIdOrderByCreatedAtAsc(Long groupRootId);
+    List<Occurrence> findByGroupRootIdAndCityIdOrderByCreatedAtAsc(Long groupRootId, Long cityId);
+
+    java.util.Optional<Occurrence> findByIdAndCityId(Long id, Long cityId);
 
     boolean existsByGroupRootIdAndUserEmailIgnoreCase(Long groupRootId, String userEmail);
 }

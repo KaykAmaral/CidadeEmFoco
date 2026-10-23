@@ -8,6 +8,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -50,14 +53,23 @@ public class User {
     @Column(name = "whatsapp_consent_at")
     private Instant whatsappConsentAt;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "city_id", nullable = false)
+    private City city;
+
     protected User() {
     }
 
     public User(String name, String email, String passwordHash, UserRole role) {
+        this(name, email, passwordHash, role, null);
+    }
+
+    public User(String name, String email, String passwordHash, UserRole role, City city) {
         this.name = Objects.requireNonNull(name);
         this.email = Objects.requireNonNull(email);
         this.passwordHash = Objects.requireNonNull(passwordHash);
         this.role = Objects.requireNonNull(role);
+        this.city = city;
     }
 
     @PrePersist
@@ -101,6 +113,10 @@ public class User {
 
     public Instant getWhatsappConsentAt() {
         return whatsappConsentAt;
+    }
+
+    public City getCity() {
+        return city;
     }
 
     public void enableWhatsappNotifications(String phone, Instant consentAt) {

@@ -43,6 +43,8 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  default-city:
+    ibge-code: ${DEFAULT_CITY_IBGE_CODE:3541000}
   public-api:
     rate-limit:
       enabled: ${PUBLIC_API_RATE_LIMIT_ENABLED:true}

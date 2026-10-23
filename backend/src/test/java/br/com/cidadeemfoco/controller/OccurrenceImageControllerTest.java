@@ -47,6 +47,7 @@ class OccurrenceImageControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new OccurrenceImageController(occurrenceImageService))
+                .defaultRequest(get("/").principal(authentication()))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -72,7 +73,7 @@ class OccurrenceImageControllerTest {
     @Test
     void shouldDownloadImageInline() throws Exception {
         byte[] content = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
-        when(occurrenceImageService.load(10L)).thenReturn(new StoredImage(
+        when(occurrenceImageService.load("citizen@example.com", 10L)).thenReturn(new StoredImage(
                 "imagem.jpg",
                 MediaType.IMAGE_JPEG,
                 new ByteArrayResource(content)

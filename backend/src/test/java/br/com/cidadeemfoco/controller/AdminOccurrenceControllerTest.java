@@ -14,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -22,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -41,13 +44,14 @@ class AdminOccurrenceControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new AdminOccurrenceController(occurrenceService))
+                .defaultRequest(get("/").principal(authentication()))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
 
     @Test
     void shouldUpdateStatus() throws Exception {
-        when(occurrenceService.updateStatus(10L, OccurrenceStatus.EM_ANALISE))
+        when(occurrenceService.updateStatus("admin@example.com", 10L, OccurrenceStatus.EM_ANALISE))
                 .thenReturn(response(OccurrenceStatus.EM_ANALISE));
 
         mockMvc.perform(patch("/api/admin/occurrences/10/status")
@@ -70,7 +74,7 @@ class AdminOccurrenceControllerTest {
 
     @Test
     void shouldForwardAdministrativeFilters() throws Exception {
-        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        when(occurrenceService.findAll(eq("admin@example.com"), any(OccurrenceFilter.class))).thenReturn(List.of());
 
         mockMvc.perform(get("/api/admin/occurrences")
                         .param("category", "EVENTO_NATURAL")
@@ -81,7 +85,7 @@ class AdminOccurrenceControllerTest {
                         .param("createdTo", "2026-09-18T23:59:59Z"))
                 .andExpect(status().isOk());
 
-        verify(occurrenceService).findAll(new OccurrenceFilter(
+        verify(occurrenceService).findAll("admin@example.com", new OccurrenceFilter(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.ALAGAMENTO,
                 OccurrenceStatus.REGISTRADA,
@@ -93,7 +97,7 @@ class AdminOccurrenceControllerTest {
 
     @Test
     void shouldForwardDateRangeAlongsideExistingFilters() throws Exception {
-        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        when(occurrenceService.findAll(eq("admin@example.com"), any(OccurrenceFilter.class))).thenReturn(List.of());
 
         mockMvc.perform(get("/api/admin/occurrences")
                         .param("category", "EVENTO_NATURAL")
@@ -104,7 +108,7 @@ class AdminOccurrenceControllerTest {
                         .param("createdTo", "2026-10-01T03:00:00Z"))
                 .andExpect(status().isOk());
 
-        verify(occurrenceService).findAll(new OccurrenceFilter(
+        verify(occurrenceService).findAll("admin@example.com", new OccurrenceFilter(
                 OccurrenceCategory.EVENTO_NATURAL, OccurrenceType.ALAGAMENTO,
                 OccurrenceStatus.REGISTRADA, "Boqueirao",
                 Instant.parse("2026-09-01T03:00:00Z"), Instant.parse("2026-10-01T03:00:00Z")));
@@ -119,17 +123,17 @@ class AdminOccurrenceControllerTest {
 
     @Test
     void shouldAcceptEndDateWithoutStartDate() throws Exception {
-        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        when(occurrenceService.findAll(eq("admin@example.com"), any(OccurrenceFilter.class))).thenReturn(List.of());
         mockMvc.perform(get("/api/admin/occurrences")
                         .param("createdTo", "2026-10-01T03:00:00Z"))
                 .andExpect(status().isOk());
-        verify(occurrenceService).findAll(new OccurrenceFilter(
+        verify(occurrenceService).findAll("admin@example.com", new OccurrenceFilter(
                 null, null, null, null, null, Instant.parse("2026-10-01T03:00:00Z")));
     }
 
     @Test
     void shouldReturnAdministrativeOccurrenceDetails() throws Exception {
-        when(occurrenceService.findById(10L)).thenReturn(response(OccurrenceStatus.REGISTRADA));
+        when(occurrenceService.findById("admin@example.com", 10L)).thenReturn(response(OccurrenceStatus.REGISTRADA));
 
         mockMvc.perform(get("/api/admin/occurrences/10"))
                 .andExpect(status().isOk())
@@ -139,13 +143,13 @@ class AdminOccurrenceControllerTest {
 
     @Test
     void shouldListReportsThatFormACase() throws Exception {
-        when(occurrenceService.findCaseReports(10L)).thenReturn(List.of(response(OccurrenceStatus.REGISTRADA)));
+        when(occurrenceService.findCaseReports("admin@example.com", 10L)).thenReturn(List.of(response(OccurrenceStatus.REGISTRADA)));
 
         mockMvc.perform(get("/api/admin/occurrences/10/reports"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(10));
 
-        verify(occurrenceService).findCaseReports(10L);
+        verify(occurrenceService).findCaseReports("admin@example.com", 10L);
     }
 
     private OccurrenceResponse response(OccurrenceStatus status) {
@@ -164,5 +168,9 @@ class AdminOccurrenceControllerTest {
                 Instant.parse("2026-08-21T18:00:00Z"),
                 Instant.parse("2026-08-21T18:00:00Z")
         );
+    }
+
+    private Authentication authentication() {
+        return UsernamePasswordAuthenticationToken.authenticated("admin@example.com", null, List.of());
     }
 }

@@ -4,9 +4,11 @@ import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.CreateClimateAlertRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.entity.User;
+import br.com.cidadeemfoco.entity.City;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
@@ -72,6 +74,9 @@ class SecurityIntegrationTest {
     private UserRepository userRepository;
 
     @MockitoBean
+    private CityRepository cityRepository;
+
+    @MockitoBean
     private OccurrenceService occurrenceService;
 
     @MockitoBean
@@ -117,6 +122,8 @@ class SecurityIntegrationTest {
     @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
         when(userRepository.existsByEmailIgnoreCase("ana@example.com")).thenReturn(false);
+        when(cityRepository.findByIbgeCodeAndActiveTrue("3541000"))
+                .thenReturn(Optional.of(new City("Praia Grande", "SP", "3541000")));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(post("/api/auth/register")
@@ -220,7 +227,7 @@ class SecurityIntegrationTest {
     void shouldForbidAdminFromCreatingOccurrenceButAllowReading() throws Exception {
         User admin = admin();
         when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
-        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        when(occurrenceService.findAll(eq("admin@example.com"), any(OccurrenceFilter.class))).thenReturn(List.of());
         String token = jwtService.generateToken(admin);
 
         mockMvc.perform(post("/api/occurrences")
@@ -265,7 +272,7 @@ class SecurityIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        verify(occurrenceService).updateStatus(10L, OccurrenceStatus.RESOLVIDA);
+        verify(occurrenceService).updateStatus("admin@example.com", 10L, OccurrenceStatus.RESOLVIDA);
     }
 
     @Test
@@ -306,7 +313,7 @@ class SecurityIntegrationTest {
     void shouldAllowCitizenToReadActiveAlertsButNotManageThem() throws Exception {
         User citizen = citizen();
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
-        when(climateAlertService.findCurrentlyActive()).thenReturn(List.of());
+        when(climateAlertService.findCurrentlyActive("ana@example.com")).thenReturn(List.of());
         String token = jwtService.generateToken(citizen);
 
         mockMvc.perform(get("/api/alerts/active")
@@ -333,7 +340,7 @@ class SecurityIntegrationTest {
                         .content(validAlertJson()))
                 .andExpect(status().isCreated());
 
-        verify(climateAlertService).create(any(CreateClimateAlertRequest.class));
+        verify(climateAlertService).create(eq("admin@example.com"), any(CreateClimateAlertRequest.class));
     }
 
     @Test
@@ -353,7 +360,7 @@ class SecurityIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
-        verify(climateAlertService).delete(10L);
+        verify(climateAlertService).delete("admin@example.com", 10L);
     }
 
     @Test
@@ -384,7 +391,7 @@ class SecurityIntegrationTest {
         User admin = admin();
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
-        when(whatsappNotificationService.findAll(null)).thenReturn(List.of());
+        when(whatsappNotificationService.findAll("admin@example.com", null)).thenReturn(List.of());
         String citizenToken = jwtService.generateToken(citizen);
         String adminToken = jwtService.generateToken(admin);
 
@@ -396,7 +403,7 @@ class SecurityIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        verify(whatsappNotificationService).findAll(null);
+        verify(whatsappNotificationService).findAll("admin@example.com", null);
     }
 
     @Test
