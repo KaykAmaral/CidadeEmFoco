@@ -10,12 +10,12 @@ import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
+import br.com.cidadeemfoco.util.UserDataNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import java.util.List;
 import java.util.Set;
 
@@ -23,7 +23,6 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class UserService {
 
-    private static final Pattern E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{7,14}$");
     private static final Set<WhatsappNotificationStatus> CHANGEABLE_STATUSES = Set.of(
             WhatsappNotificationStatus.PENDING,
             WhatsappNotificationStatus.FAILED
@@ -56,7 +55,7 @@ public class UserService {
             throw new BusinessRuleException("E necessario autorizar o recebimento de alertas pelo WhatsApp");
         }
         User user = findUser(email);
-        String phone = normalizePhone(request.phoneNumber());
+        String phone = UserDataNormalizer.normalizePhone(request.phoneNumber());
         userRepository.findByWhatsappPhone(phone)
                 .filter(existingUser -> !existingUser.getEmail().equalsIgnoreCase(user.getEmail()))
                 .ifPresent(existingUser -> {
@@ -106,24 +105,4 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
     }
 
-    private String normalizePhone(String value) {
-        String trimmed = value.trim();
-        String digits = trimmed.replaceAll("\\D", "");
-        String normalized;
-
-        if (trimmed.startsWith("+")) {
-            normalized = "+" + digits;
-        } else if ((digits.length() == 12 || digits.length() == 13) && digits.startsWith("55")) {
-            normalized = "+" + digits;
-        } else if (digits.length() == 10 || digits.length() == 11) {
-            normalized = "+55" + digits;
-        } else {
-            throw new BusinessRuleException("Informe um numero de WhatsApp valido com DDD");
-        }
-
-        if (!E164_PATTERN.matcher(normalized).matches()) {
-            throw new BusinessRuleException("Informe um numero de WhatsApp valido no formato internacional");
-        }
-        return normalized;
-    }
 }

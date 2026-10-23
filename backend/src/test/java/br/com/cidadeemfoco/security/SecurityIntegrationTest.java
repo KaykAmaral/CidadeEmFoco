@@ -108,6 +108,18 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldExposeActiveCitiesWithoutAuthentication() throws Exception {
+        when(cityRepository.findAllByActiveTrueOrderByStateCodeAscNameAsc())
+                .thenReturn(List.of(new City("Praia Grande", "SP", "3541000")));
+
+        mockMvc.perform(get("/api/cities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Praia Grande"))
+                .andExpect(jsonPath("$[0].stateCode").value("SP"))
+                .andExpect(jsonPath("$[0].ibgeCode").value("3541000"));
+    }
+
+    @Test
     void shouldExposeOnlyVersionedPublicReadEndpointsWithoutAuthentication() throws Exception {
         when(climateAlertService.findCurrentlyActive()).thenReturn(List.of());
 
@@ -133,13 +145,24 @@ class SecurityIntegrationTest {
                                   "name": "Ana",
                                   "email": "ANA@example.com",
                                   "password": "senha123",
+                                  "cpf": "529.982.247-25",
+                                  "whatsappPhone": "(13) 99999-9999",
+                                  "whatsappConsentGiven": true,
+                                  "street": "Avenida Brasil",
+                                  "addressNumber": "100",
+                                  "addressComplement": "Apto 12",
+                                  "neighborhood": "Boqueirao",
+                                  "postalCode": "11700-000",
+                                  "cityIbgeCode": "3541000",
                                   "role": "ADMIN"
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("ana@example.com"))
-                .andExpect(jsonPath("$.role").value("CITIZEN"))
-                .andExpect(jsonPath("$.password").doesNotExist());
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.user.email").value("ana@example.com"))
+                .andExpect(jsonPath("$.user.role").value("CITIZEN"))
+                .andExpect(jsonPath("$.user.password").doesNotExist());
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());

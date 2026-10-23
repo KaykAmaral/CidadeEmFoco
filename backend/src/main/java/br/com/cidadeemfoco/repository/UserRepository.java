@@ -14,6 +14,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmailIgnoreCase(String email);
 
+    boolean existsByCpf(String cpf);
+
     List<User> findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull();
 
     List<User> findByCityIdAndWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull(Long cityId);
