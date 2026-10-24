@@ -22,12 +22,26 @@ spring:
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
 
 server:
   port: ${SERVER_PORT:${PORT:8080}}
   forward-headers-strategy: framework
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -43,6 +57,10 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@cidadeemfoco.local}
+    registration-subject: ${REGISTRATION_EMAIL_SUBJECT:Teste - inscrição concluída no Cidade em Foco}
   public-api:
     rate-limit:
       enabled: ${PUBLIC_API_RATE_LIMIT_ENABLED:true}

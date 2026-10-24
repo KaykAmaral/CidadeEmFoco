@@ -48,11 +48,21 @@ class AuthServiceTest {
     @Mock
     private CityRepository cityRepository;
 
+    @Mock
+    private RegistrationEmailSender registrationEmailSender;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, authenticationManager, jwtService, cityRepository);
+        authService = new AuthService(
+                userRepository,
+                passwordEncoder,
+                authenticationManager,
+                jwtService,
+                cityRepository,
+                registrationEmailSender
+        );
     }
 
     @Test
@@ -76,6 +86,7 @@ class AuthServiceTest {
         assertThat(response.user().whatsappPhone()).isEqualTo("+5513999999999");
         assertThat(response.user().address().postalCode()).isEqualTo("11700000");
         verify(passwordEncoder).encode("senha123");
+        verify(registrationEmailSender).sendRegistrationCompleted("ana@example.com", "Ana");
     }
 
     @Test
@@ -87,6 +98,7 @@ class AuthServiceTest {
 
         verify(passwordEncoder, never()).encode(any());
         verify(userRepository, never()).save(any());
+        verify(registrationEmailSender, never()).sendRegistrationCompleted(any(), any());
     }
 
     @Test

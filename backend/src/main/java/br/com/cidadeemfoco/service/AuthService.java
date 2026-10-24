@@ -31,19 +31,22 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final CityRepository cityRepository;
+    private final RegistrationEmailSender registrationEmailSender;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             JwtService jwtService,
-            CityRepository cityRepository
+            CityRepository cityRepository,
+            RegistrationEmailSender registrationEmailSender
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.cityRepository = cityRepository;
+        this.registrationEmailSender = registrationEmailSender;
     }
 
     @Transactional
@@ -86,6 +89,7 @@ public class AuthService {
         );
         user.enableWhatsappNotifications(whatsappPhone, Instant.now());
         User savedUser = userRepository.save(user);
+        registrationEmailSender.sendRegistrationCompleted(savedUser.getEmail(), savedUser.getName());
         return createAuthResponse(savedUser);
     }
 
