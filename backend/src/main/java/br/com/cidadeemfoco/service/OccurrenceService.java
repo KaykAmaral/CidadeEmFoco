@@ -61,6 +61,9 @@ public class OccurrenceService {
     @Value("${app.occurrences.grouping-radius-meters:500}")
     private double groupingRadiusMeters = 500;
 
+    @Value("${app.occurrences.creation-cooldown:15m}")
+    private Duration creationCooldown = Duration.ofMinutes(15);
+
     public OccurrenceService(
             OccurrenceRepository occurrenceRepository,
             UserRepository userRepository,
@@ -80,6 +83,7 @@ public class OccurrenceService {
         }
         validateCategoryAndType(request.category(), request.type());
         cityBoundaryService.validateCoordinates(user.getCity(), request.latitude(), request.longitude());
+        validateCreationCooldown(user);
 
         Occurrence occurrence = new Occurrence(
                 request.category(),
@@ -285,6 +289,26 @@ public class OccurrenceService {
         if (createdCase || alreadyReported) {
             throw new BusinessRuleException("Voce ja contribuiu para esta ocorrencia");
         }
+    }
+
+    private void validateCreationCooldown(User user) {
+        if (creationCooldown.isZero() || creationCooldown.isNegative()) {
+            return;
+        }
+
+        Instant now = Instant.now();
+        occurrenceRepository.findFirstByUserEmailIgnoreCaseOrderByCreatedAtDesc(user.getEmail())
+                .map(Occurrence::getCreatedAt)
+                .filter(createdAt -> createdAt != null)
+                .map(createdAt -> createdAt.plus(creationCooldown))
+                .filter(nextAllowedAt -> nextAllowedAt.isAfter(now))
+                .ifPresent(nextAllowedAt -> {
+                    long remainingSeconds = Duration.between(now, nextAllowedAt).getSeconds();
+                    long remainingMinutes = Math.max(1, (remainingSeconds + 59) / 60);
+                    throw new BusinessRuleException(
+                            "Aguarde " + remainingMinutes + " minuto(s) para registrar outra ocorrencia"
+                    );
+                });
     }
 
     private double distanceInMeters(

@@ -89,6 +89,7 @@ app:
       max-attempts: ${WHATSAPP_MAX_ATTEMPTS:3}
       batch-size: ${WHATSAPP_BATCH_SIZE:20}
   occurrences:
+    creation-cooldown: ${OCCURRENCE_CREATION_COOLDOWN:15m}
     resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
     temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:2d}
     auto-resolution-types: ${AUTO_RESOLUTION_TYPES:ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO}

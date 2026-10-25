@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, JpaSpecificationExecutor<Occurrence> {
 
@@ -50,7 +51,9 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
 
     List<Occurrence> findByGroupRootIdAndCityIdOrderByCreatedAtAsc(Long groupRootId, Long cityId);
 
-    java.util.Optional<Occurrence> findByIdAndCityId(Long id, Long cityId);
+    Optional<Occurrence> findByIdAndCityId(Long id, Long cityId);
+
+    Optional<Occurrence> findFirstByUserEmailIgnoreCaseOrderByCreatedAtDesc(String userEmail);
 
     boolean existsByGroupRootIdAndUserEmailIgnoreCase(Long groupRootId, String userEmail);
 }

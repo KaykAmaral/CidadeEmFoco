@@ -234,6 +234,38 @@ class OccurrenceServiceTest {
     }
 
     @Test
+    void shouldRejectOccurrenceDuringCreationCooldown() {
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
+        Occurrence previousOccurrence = occurrenceFor("Ana", "ana@example.com");
+        ReflectionTestUtils.setField(previousOccurrence, "createdAt", Instant.now().minus(Duration.ofMinutes(5)));
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository.findFirstByUserEmailIgnoreCaseOrderByCreatedAtDesc("ana@example.com"))
+                .thenReturn(Optional.of(previousOccurrence));
+
+        assertThatThrownBy(() -> occurrenceService.create("ana@example.com", validRequest()))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("Aguarde 10 minuto(s) para registrar outra ocorrencia");
+        verify(occurrenceRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldAllowOccurrenceAfterCreationCooldown() {
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
+        Occurrence previousOccurrence = occurrenceFor("Ana", "ana@example.com");
+        ReflectionTestUtils.setField(previousOccurrence, "createdAt", Instant.now().minus(Duration.ofMinutes(16)));
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(occurrenceRepository.findFirstByUserEmailIgnoreCaseOrderByCreatedAtDesc("ana@example.com"))
+                .thenReturn(Optional.of(previousOccurrence));
+        when(occurrenceRepository.save(any(Occurrence.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        OccurrenceResponse response = occurrenceService.create("ana@example.com", validRequest());
+
+        assertThat(response.status()).isEqualTo(OccurrenceStatus.REGISTRADA);
+        verify(occurrenceRepository).save(any(Occurrence.class));
+    }
+
+    @Test
     void shouldRejectTypeFromAnotherCategory() {
         User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));

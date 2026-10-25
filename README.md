@@ -258,6 +258,11 @@ o código IBGE de sete dígitos. O arquivo de Praia Grande utiliza a malha ofici
 do IBGE. Uma nova cidade só deve ser habilitada depois que seu respectivo
 GeoJSON for adicionado; sem ele, o backend recusa o cadastro da ocorrência.
 
+O cidadão também possui um intervalo mínimo entre relatos. Por padrão, ele deve
+aguardar 15 minutos após uma ocorrência antes de registrar outra, inclusive
+quando o novo relato contribuiria para um caso agrupado. O período pode ser
+ajustado pela variável `OCCURRENCE_CREATION_COOLDOWN`.
+
 ### Segurança
 
 - O cadastro público sempre cria um `CITIZEN`.
@@ -444,6 +449,7 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `CLOUDINARY_API_KEY` | vazio | Chave da API Cloudinary |
 | `CLOUDINARY_API_SECRET` | vazio | Segredo da API Cloudinary |
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
+| `OCCURRENCE_CREATION_COOLDOWN` | `15m` | Intervalo mínimo entre relatos do mesmo cidadão |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
 | `AUTO_RESOLUTION_TYPES` | `ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO` | Tipos de evento natural elegíveis, separados por vírgula |
