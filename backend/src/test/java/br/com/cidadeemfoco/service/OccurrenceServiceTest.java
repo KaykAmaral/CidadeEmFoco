@@ -51,6 +51,9 @@ class OccurrenceServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CityBoundaryService cityBoundaryService;
+
     private OccurrenceService occurrenceService;
     private City city;
 
@@ -58,7 +61,7 @@ class OccurrenceServiceTest {
     void setUp() {
         city = new City("Praia Grande", "SP", "3541000");
         ReflectionTestUtils.setField(city, "id", 1L);
-        occurrenceService = new OccurrenceService(occurrenceRepository, userRepository);
+        occurrenceService = new OccurrenceService(occurrenceRepository, userRepository, cityBoundaryService);
     }
 
     @Test
@@ -212,6 +215,21 @@ class OccurrenceServiceTest {
         assertThatThrownBy(() -> occurrenceService.create("admin@example.com", validRequest()))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessage("Somente cidadaos podem registrar ocorrencias");
+        verify(occurrenceRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectOccurrenceOutsideCitizensCity() {
+        User citizen = user("Ana", "ana@example.com", UserRole.CITIZEN);
+        CreateOccurrenceRequest request = validRequest();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        doThrow(new BusinessRuleException(
+                "A localizacao da ocorrencia deve estar dentro do municipio de Praia Grande"
+        )).when(cityBoundaryService).validateCoordinates(city, request.latitude(), request.longitude());
+
+        assertThatThrownBy(() -> occurrenceService.create("ana@example.com", request))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessage("A localizacao da ocorrencia deve estar dentro do municipio de Praia Grande");
         verify(occurrenceRepository, never()).save(any());
     }
 

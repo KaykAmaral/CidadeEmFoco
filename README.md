@@ -249,6 +249,15 @@ backend/src/main/java/br/com/cidadeemfoco/
 - `ClimateAlert`: alerta demonstrativo, tipo, severidade, validade e estado de ativação.
 - `WhatsappNotification`: item persistente da fila, destinatário, cópia dos dados do alerta, estado e tentativas de envio.
 
+### Validação geográfica das ocorrências
+
+Antes de salvar uma ocorrência, o backend verifica se suas coordenadas estão
+dentro do limite da cidade vinculada ao cidadão. Os limites ficam em
+`backend/src/main/resources/city-boundaries/`, em arquivos GeoJSON nomeados com
+o código IBGE de sete dígitos. O arquivo de Praia Grande utiliza a malha oficial
+do IBGE. Uma nova cidade só deve ser habilitada depois que seu respectivo
+GeoJSON for adicionado; sem ele, o backend recusa o cadastro da ocorrência.
+
 ### Segurança
 
 - O cadastro público sempre cria um `CITIZEN`.

@@ -47,6 +47,7 @@ public class OccurrenceService {
 
     private final OccurrenceRepository occurrenceRepository;
     private final UserRepository userRepository;
+    private final CityBoundaryService cityBoundaryService;
 
     @Value("${app.occurrences.resolved-map-visibility:24h}")
     private Duration resolvedMapVisibility = Duration.ofHours(24);
@@ -60,9 +61,14 @@ public class OccurrenceService {
     @Value("${app.occurrences.grouping-radius-meters:500}")
     private double groupingRadiusMeters = 500;
 
-    public OccurrenceService(OccurrenceRepository occurrenceRepository, UserRepository userRepository) {
+    public OccurrenceService(
+            OccurrenceRepository occurrenceRepository,
+            UserRepository userRepository,
+            CityBoundaryService cityBoundaryService
+    ) {
         this.occurrenceRepository = occurrenceRepository;
         this.userRepository = userRepository;
+        this.cityBoundaryService = cityBoundaryService;
     }
 
     @Transactional
@@ -73,6 +79,7 @@ public class OccurrenceService {
             throw new BusinessRuleException("Somente cidadaos podem registrar ocorrencias");
         }
         validateCategoryAndType(request.category(), request.type());
+        cityBoundaryService.validateCoordinates(user.getCity(), request.latitude(), request.longitude());
 
         Occurrence occurrence = new Occurrence(
                 request.category(),
