@@ -323,8 +323,17 @@ cancelar, o número e a data do consentimento são removidos.
 | GET | `/api/admin/occurrences/{id}` | ADMIN | Detalhes administrativos |
 | GET | `/api/admin/occurrences/{id}/reports` | ADMIN | Relatos agrupados no caso |
 | PATCH | `/api/admin/occurrences/{id}/status` | ADMIN | Alterar status |
+| GET | `/api/admin/dashboard/occurrences` | ADMIN | Indicadores e distribuições da cidade administrada |
 
 A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `createdFrom` e `createdTo` como filtros opcionais. As datas usam o formato ISO 8601.
+
+O dashboard aceita os mesmos filtros e considera somente casos principais da
+cidade do ADMIN. A resposta informa totais de casos e relatos, casos abertos,
+resolvidos, não confirmados e resolvidos automaticamente, tempo médio de
+resolução, distribuições por status, categoria, tipo e bairro e a evolução
+diária. O índice de resolução é calculado por
+`casos resolvidos / (total de casos - casos não confirmados) * 100`; quando não
+há casos confirmados, o índice é `0.00`.
 
 Ao receber o status `RESOLVIDA`, a ocorrência passa a registrar `resolvedAt`. O endpoint do mapa continua retornando esse pin durante 24 horas e depois o omite, sem excluir a ocorrência das listagens ou do histórico. O prazo pode ser alterado por `RESOLVED_MAP_VISIBILITY`.
 

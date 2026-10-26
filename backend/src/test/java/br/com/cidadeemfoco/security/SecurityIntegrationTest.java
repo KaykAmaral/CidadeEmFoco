@@ -10,6 +10,7 @@ import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
+import br.com.cidadeemfoco.service.AdminDashboardService;
 import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
@@ -78,6 +79,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private OccurrenceService occurrenceService;
+
+    @MockitoBean
+    private AdminDashboardService adminDashboardService;
 
     @MockitoBean
     private OccurrenceAutoResolutionService occurrenceAutoResolutionService;
