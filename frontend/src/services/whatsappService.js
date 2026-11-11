@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest } from './api.js'
 
 function getWhatsappPreferences(token) {
   return apiRequest('/api/users/me/whatsapp', { token })
