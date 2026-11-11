@@ -50,6 +50,11 @@
   white-space: nowrap;
 }
 
+.occurrence-card__content .occurrence-strength {
+  margin-top: 3px;
+  overflow: visible;
+}
+
 .occurrence-card > .status-badge {
   grid-column: 2;
 }

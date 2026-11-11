@@ -40,6 +40,10 @@
   color: var(--color-muted);
 }
 
+.occurrence-detail__heading-content .occurrence-strength {
+  margin-top: 10px;
+}
+
 .occurrence-detail__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

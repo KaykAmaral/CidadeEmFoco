@@ -126,6 +126,45 @@
   height: auto;
 }
 
+.associated-reports {
+  height: auto !important;
+  grid-column: 1 / -1;
+}
+
+.associated-reports__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.associated-report {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  background: var(--color-background);
+}
+
+.associated-report header,
+.associated-report dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.associated-report header strong { color: var(--color-navy); }
+.associated-report header span { color: var(--color-muted); font-size: 0.7rem; }
+.associated-report p { margin: 0; line-height: 1.55; white-space: pre-wrap; }
+.associated-report dl { display: grid; gap: 7px; margin: 0; }
+.associated-report dt { display: flex; align-items: center; gap: 5px; color: var(--color-muted); font-size: 0.68rem; }
+.associated-report dd { margin: 0; color: var(--color-text); font-size: 0.72rem; text-align: right; }
+.associated-report .occurrence-image-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.associated-report .occurrence-image-gallery img { height: 100px; }
+.associated-reports__error { display: grid; justify-items: start; gap: 12px; }
+
 .admin-occurrence-detail .occurrence-image-gallery {
   align-items: start;
 }
@@ -164,4 +203,7 @@
   .admin-occurrence-detail .occurrence-detail__metadata > div {
     min-height: 0;
   }
+
+  .associated-reports__list { grid-template-columns: 1fr; }
+  .associated-report .occurrence-image-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

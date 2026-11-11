@@ -9,8 +9,10 @@ import {
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
+import AssociatedOccurrenceReports from '../components/occurrences/AssociatedOccurrenceReports'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
+import OccurrenceStrength from '../components/occurrences/OccurrenceStrength'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
@@ -123,6 +125,7 @@ function AdminOccurrenceDetailPage() {
           <span>{getOccurrenceCategoryLabel(occurrence.category)} · #{occurrence.id}</span>
           <h1>{getOccurrenceTypeLabel(occurrence.type)}</h1>
           <p><MapPin size={16} aria-hidden="true" />{displayedLocation}</p>
+          <OccurrenceStrength strength={occurrence.strength} />
         </div>
         <StatusBadge status={occurrence.status} />
       </header>
@@ -174,6 +177,11 @@ function AdminOccurrenceDetailPage() {
             <OccurrenceImageGallery occurrence={occurrence} onUnauthorized={logout} token={token} />
           </section>
         )}
+
+        <section className="occurrence-detail__card associated-reports">
+          <h2>Relatos que compõem esta ocorrência</h2>
+          <AssociatedOccurrenceReports occurrence={occurrence} onUnauthorized={logout} token={token} />
+        </section>
       </div>
     </article>
   )
