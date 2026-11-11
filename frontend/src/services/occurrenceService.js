@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest } from './api.js'
 
 function buildQuery(filters = {}) {
   const params = new URLSearchParams()

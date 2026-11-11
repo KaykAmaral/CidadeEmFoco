@@ -1,5 +1,5 @@
 import { ArrowLeft, LocateFixed, LoaderCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import AddressSearch from '../components/map/AddressSearch'
 import LocationPickerMap from '../components/map/LocationPickerMap'
@@ -12,6 +12,11 @@ import Button from '../components/ui/Button'
 import useAuth from '../hooks/useAuth'
 import { reverseGeocode } from '../services/geocodingService'
 import { createOccurrence, getOccurrences, uploadOccurrenceImages } from '../services/occurrenceService'
+import {
+  cooldownSecondsFromError,
+  formatCooldown,
+  isOutsideCitizenCity,
+} from '../utils/occurrenceSubmission'
 import './OccurrenceForm.css'
 
 const initialForm = { category: '', type: '', description: '', perceivedRisk: '', latitude: '', longitude: '', neighborhood: '', address: '' }
@@ -36,6 +41,9 @@ function NewOccurrencePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showReview, setShowReview] = useState(false)
   const [similarOccurrence, setSimilarOccurrence] = useState(null)
+  const [cooldownSeconds, setCooldownSeconds] = useState(0)
+  const submittingRef = useRef(false)
+  const isCooldownActive = cooldownSeconds > 0
   const occurrenceType = form.type
   const occurrenceLatitude = form.latitude
   const occurrenceLongitude = form.longitude
@@ -52,6 +60,14 @@ function NewOccurrencePage() {
     }, 600)
     return () => { current = false; window.clearTimeout(timer) }
   }, [occurrenceLatitude, occurrenceLongitude, occurrenceType, token])
+
+  useEffect(() => {
+    if (!isCooldownActive) return undefined
+    const timer = window.setInterval(() => {
+      setCooldownSeconds((remaining) => Math.max(0, remaining - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [isCooldownActive])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -80,10 +96,16 @@ function NewOccurrencePage() {
     }, () => { setLocationError('Não foi possível obter sua localização. Marque o ponto no mapa.'); setIsLocating(false) }, { enableHighAccuracy: true, timeout: 10000 })
   }
 
-  function requestReview(event) { event.preventDefault(); setShowReview(true) }
+  function requestReview(event) {
+    event.preventDefault()
+    if (isSubmitting || isCooldownActive) return
+    setShowReview(true)
+  }
 
   async function confirmOccurrence() {
-    setError(''); setFieldErrors({}); setIsSubmitting(true)
+    if (submittingRef.current || isCooldownActive) return
+    submittingRef.current = true
+    setError(''); setLocationError(''); setFieldErrors({}); setIsSubmitting(true)
     try {
       const occurrence = await createOccurrence(token, { ...form, latitude: Number(form.latitude), longitude: Number(form.longitude) })
       let photoWarning = ''
@@ -97,8 +119,18 @@ function NewOccurrencePage() {
       navigate(`/app/ocorrencias/${occurrence.id}`, { replace: true, state: { created: true, photoWarning } })
     } catch (requestError) {
       if (requestError.status === 401) { logout(); return }
-      setError(requestError.message); setFieldErrors(requestError.fieldErrors ?? {}); setShowReview(false)
-    } finally { setIsSubmitting(false) }
+      const apiCooldownSeconds = cooldownSecondsFromError(requestError)
+      if (apiCooldownSeconds > 0) setCooldownSeconds(apiCooldownSeconds)
+      if (isOutsideCitizenCity(requestError)) {
+        setLocationError(`${requestError.message}. Você só pode registrar ocorrências na cidade vinculada ao seu cadastro.`)
+      } else {
+        setError(requestError.message)
+      }
+      setFieldErrors(requestError.fieldErrors ?? {}); setShowReview(false)
+    } finally {
+      submittingRef.current = false
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -117,7 +149,7 @@ function NewOccurrencePage() {
         </div>
 
         <div className="occurrence-form__section">
-          <div className="occurrence-form__section-heading"><span>2</span><div><strong>Localização</strong><p>Pesquise, clique no mapa, arraste o marcador ou use sua localização.</p></div></div>
+          <div className="occurrence-form__section-heading"><span>2</span><div><strong>Localização</strong><p>Pesquise, clique no mapa, arraste o marcador ou use sua localização. Você só pode registrar ocorrências na cidade vinculada ao seu cadastro.</p></div></div>
           <AddressSearch onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))} onSelect={applyLocation} value={form.address} />
           <Button onClick={useCurrentLocation} variant="outline">{isLocating ? <LoaderCircle className="button__spinner" size={17} /> : <LocateFixed size={17} />}{isLocating ? 'Localizando...' : 'Usar minha localização'}</Button>
           {locationError && <p className="location-error" role="alert">{locationError}</p>}
@@ -131,9 +163,9 @@ function NewOccurrencePage() {
         </div>
 
         <div className="occurrence-form__section"><div className="occurrence-form__section-heading"><span>3</span><div><strong>Imagens opcionais</strong><p>Adicione até quatro imagens que ajudem a compreender a ocorrência.</p></div></div><ImagePicker images={images} onChange={setImages} /></div>
-        <Button className="occurrence-form__submit" type="submit">Revisar ocorrência</Button>
+        <Button className="occurrence-form__submit" disabled={isSubmitting || isCooldownActive} type="submit">{isCooldownActive ? `Aguarde ${formatCooldown(cooldownSeconds)}` : 'Revisar ocorrência'}</Button>
       </form>
-      {showReview && <OccurrenceReviewModal form={form} imageCount={images.length} onBack={() => setShowReview(false)} onConfirm={confirmOccurrence} submitting={isSubmitting} />}
+      {showReview && <OccurrenceReviewModal cooldownLabel={isCooldownActive ? formatCooldown(cooldownSeconds) : ''} form={form} imageCount={images.length} onBack={() => setShowReview(false)} onConfirm={confirmOccurrence} submitting={isSubmitting} />}
     </section>
   )
 }
