@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { loginRequest, registerRequest } from '../services/authService'
+import { loginRequest, registerAndLoginRequest } from '../services/authService'
+import { createSession } from '../utils/authSession'
 import AuthContext from './authContext'
 
 const STORAGE_KEY = 'cidade-em-foco:auth'
@@ -43,21 +44,23 @@ function AuthProvider({ children }) {
     return () => window.clearTimeout(timer)
   }, [logout, session])
 
-  const login = useCallback(async (credentials) => {
-    const response = await loginRequest(credentials)
-    const newSession = {
-      token: response.token,
-      tokenType: response.tokenType,
-      expiresAt: Date.now() + response.expiresInSeconds * 1000,
-      user: response.user,
-    }
+  const saveSession = useCallback((response) => {
+    const newSession = createSession(response)
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession))
     setSession(newSession)
     return response.user
   }, [])
 
-  const register = useCallback((citizen) => registerRequest(citizen), [])
+  const login = useCallback(async (credentials) => {
+    const response = await loginRequest(credentials)
+    return saveSession(response)
+  }, [saveSession])
+
+  const register = useCallback(async (citizen) => {
+    const response = await registerAndLoginRequest(citizen)
+    return saveSession(response)
+  }, [saveSession])
 
   const value = useMemo(
     () => ({
