@@ -149,7 +149,7 @@ frontend/
 | `/admin/alertas` | `ADMIN` | Gestão de alertas |
 | Demais caminhos | Qualquer | Página não encontrada |
 
-O cadastro usa `POST /api/auth/register`, solicita nome, e-mail e senha e cria somente cidadãos. Após o cadastro, o usuário é encaminhado ao login. A senha de cadastro aceita entre 8 e 72 caracteres no formulário.
+O cadastro usa `POST /api/auth/register`, solicita nome, e-mail e senha e cria somente cidadãos. Após o cadastro, o frontend chama `POST /api/auth/login`, salva o JWT retornado e direciona o usuário automaticamente para a área cidadã. A senha de cadastro aceita entre 8 e 72 caracteres no formulário.
 
 O login usa `POST /api/auth/login`. O `AuthProvider` guarda JWT, dados públicos do usuário e vencimento no `localStorage`, sob a chave `cidade-em-foco:auth`, para restaurar a sessão após atualizar a página. A senha não é persistida. O logout e o vencimento removem a sessão; as telas que recebem erro 401 também encerram o acesso. Não há fluxo de renovação automática do token.
 
@@ -161,7 +161,9 @@ Sem sessão, as rotas protegidas redirecionam para `/login`. Usuários com outro
 
 A página inicial carrega em paralelo `GET /api/alerts/active` e `GET /api/occurrences`, exibindo um banner com o primeiro alerta retornado, acesso à lista de alertas, mapa com filtros por categoria e até cinco ocorrências recentes.
 
-A listagem permite consultar todas as ocorrências com filtros de categoria, tipo, status e bairro (`category`, `type`, `status`, `neighborhood`) ou alternar para **Minhas ocorrências**, via `GET /api/occurrences/mine`. Os filtros aparecem apenas no modo de todas as ocorrências. Os detalhes mostram descrição, classificação, risco percebido, data de registro, coordenadas, mapa e imagens.
+A listagem permite consultar todas as ocorrências com filtros de categoria, tipo, status e bairro (`category`, `type`, `status`, `neighborhood`) ou alternar para **Minhas ocorrências**, via `GET /api/occurrences/mine`. Os filtros aparecem apenas no modo de todas as ocorrências. Cards, detalhes, popups e pins identificam relatos individuais e ocorrências agrupadas usando `strength`, sem calcular agrupamentos no frontend.
+
+O mapa consulta periodicamente `GET /api/occurrences/map` e substitui os pins pela resposta mais recente. A API determina quais registros permanecem visíveis; o frontend não remove ocorrências com base apenas no tempo.
 
 ### Registro de ocorrências
 
@@ -188,9 +190,9 @@ Se apenas o upload falhar, a ocorrência permanece criada e a tela de detalhes r
 
 ### Alertas e perfil
 
-`/app/alertas` mostra os alertas ativos e dentro da validade retornados por `GET /api/alerts/active`, incluindo tipo, severidade, descrição, início, fim e aviso demonstrativo. São cadastrados manualmente; a aplicação não consulta serviços meteorológicos nem produz previsão própria, e os alertas não substituem avisos oficiais.
+`/app/alertas` mostra os alertas ativos e dentro da validade retornados por `GET /api/alerts/active`, incluindo tipo, severidade, descrição, início, fim e aviso demonstrativo. A lista é sincronizada por SSE, com reconexão e limpeza da conexão ao sair da área cidadã. O estado vazio possui ilustrações responsivas de dia, tarde e noite; os efeitos decorativos por tipo respeitam movimento reduzido. Os alertas são cadastrados manualmente, não substituem avisos oficiais e não representam previsão própria.
 
-`/app/perfil` exibe nome, e-mail, perfil de acesso e data de cadastro recebidos no login, além de totais, ocorrências em andamento, resolvidas e até três registros recentes do cidadão. A tela consulta `GET /api/occurrences/mine`. Edição de perfil e alteração de senha não estão disponíveis no MVP.
+`/app/perfil` exibe nome, e-mail, perfil de acesso e data de cadastro recebidos no login, além de totais, ocorrências em andamento, resolvidas e até três registros recentes do cidadão. A tela consulta `GET /api/occurrences/mine` e permite consultar, ativar ou remover as preferências de WhatsApp pelos endpoints `/api/users/me/whatsapp`, exigindo consentimento explícito. Nome, CPF, endereço, cidade, UF e senha não são editáveis porque o contrato atual não oferece essa atualização.
 
 ## Funcionalidades administrativas
 
@@ -198,11 +200,13 @@ Se apenas o upload falhar, a ocorrência permanece criada e a tela de detalhes r
 
 `/admin` consulta em paralelo `GET /api/admin/occurrences` e `GET /api/admin/alerts`. O administrador pode filtrar as ocorrências por período, categoria, tipo, status e bairro. Os filtros alteram conjuntamente os indicadores, a distribuição visual dos cinco status, o mapa e os registros recentes. A contagem de alertas considera os marcados como ativos, independentemente de estarem dentro do período de validade.
 
-O dashboard é de consulta; alterações ficam nas telas de gestão.
+O dashboard é de consulta; alterações ficam nas telas de gestão. O layout exibe a cidade gerenciada quando `user.city` é fornecida pela API e sinaliza sua ausência sem presumir ou filtrar uma cidade no navegador.
 
 ### Gestão de ocorrências
 
 `/admin/ocorrencias` oferece filtros de categoria, tipo, status e bairro, com listagem em tabela e acesso ao detalhe por ID. O detalhe consulta `GET /api/admin/occurrences/{id}` e apresenta descrição, risco percebido, datas de criação e atualização, localização e imagens.
+
+A tela de detalhes também consulta `GET /api/admin/occurrences/{id}/reports` para ocorrências agrupadas, com estados de carregamento, vazio e erro. Os relatos exibem somente os campos retornados pela API e não identificam seus autores.
 
 A alteração de status envia `PATCH /api/admin/occurrences/{id}/status`, com JSON no formato `{ "status": "EM_ANALISE" }`. Os valores disponíveis são:
 
@@ -216,14 +220,16 @@ A alteração de status envia `PATCH /api/admin/occurrences/{id}/status`, com JS
 
 ### Gestão de alertas
 
-`/admin/alertas` permite listar todos os alertas, criar um alerta inicialmente inativo e ativá-lo ou desativá-lo. A interface distingue períodos agendados, vigentes e encerrados.
+`/admin/alertas` permite listar todos os alertas, criar um alerta inicialmente inativo, ativá-lo, desativá-lo e excluí-lo após confirmação. A página mantém uma conexão SSE, atualiza a lista automaticamente e impede que respostas antigas restaurem alertas excluídos. A interface distingue períodos agendados, vigentes e encerrados.
 
 | Método e endpoint | Ação |
 | --- | --- |
 | `GET /api/admin/alerts` | Listar alertas |
 | `POST /api/admin/alerts` | Criar alerta |
+| `PATCH /api/admin/alerts/{id}` | Editar alerta |
 | `PATCH /api/admin/alerts/{id}/activate` | Ativar |
 | `PATCH /api/admin/alerts/{id}/deactivate` | Desativar |
+| `DELETE /api/admin/alerts/{id}` | Excluir |
 
 O formulário recebe título, tipo, severidade, descrição e período. Os tipos são chuva intensa, alagamento, ventos fortes, ressaca marítima, deslizamento e outro; as severidades são baixa, moderada e alta. O fim deve ser posterior ao início. As datas digitadas no horário local do navegador são convertidas para ISO antes do envio, e a exibição usa `pt-BR`. Ativar um alerta não modifica sua validade.
 
@@ -237,7 +243,13 @@ A localização atual é solicitada ao navegador apenas ao acionar **Usar minha 
 
 ## Verificação e problemas comuns
 
-O frontend não possui suíte automatizada própria nem script `test`. As verificações disponíveis são `npm.cmd run lint`, `npm.cmd run build` e a validação manual com a API ativa. Os testes de regras e permissões do backend são descritos no [README principal](../README.md#testes-do-backend).
+O frontend possui testes automatizados com o test runner nativo do Node.js:
+
+```powershell
+npm.cmd test
+```
+
+A suíte cobre serviços e utilitários de autenticação, perfil, ocorrências, cooldown, agrupamento, mapa, alertas/SSE e regressões de layout e acessibilidade. Execute também `npm.cmd run lint`, `npm.cmd run build` e os fluxos principais no navegador. Os testes de regras e permissões do backend são descritos no [README principal](../README.md#testes-do-backend).
 
 Com frontend e backend em execução, valide no navegador:
 
@@ -248,7 +260,7 @@ Com frontend e backend em execução, valide no navegador:
 5. Mapa, filtros, detalhes, galeria, minhas ocorrências e dados do perfil.
 6. Alertas ativos e ausência de alertas fora da validade.
 7. Login administrativo, dashboard, filtros e alteração de status.
-8. Criação, ativação e desativação de alertas e validação das datas.
+8. Criação, ativação, desativação e exclusão de alertas, SSE e validação das datas.
 9. Navegação em celular e computador, inclusive menu administrativo.
 10. Estados de carregamento, lista vazia, validação de campos, página inexistente e erro de conexão.
 

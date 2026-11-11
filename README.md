@@ -30,15 +30,19 @@ O projeto possui dois perfis:
 
 ### Funcionalidades implementadas
 
-- Cadastro público de cidadãos e autenticação com JWT.
+- Cadastro público de cidadãos, login automático após o cadastro e autenticação com JWT.
 - Separação de acesso entre cidadão e administrador.
 - Cadastro, consulta, filtros e detalhes de ocorrências.
 - Localização por latitude, longitude, endereço e bairro.
 - Mapa interativo de Praia Grande.
-- Até quatro imagens por ocorrência, armazenadas localmente.
+- Até quatro imagens por ocorrência, com armazenamento local ou Cloudinary.
 - Consulta das ocorrências do usuário autenticado.
+- Agrupamento de relatos semelhantes no backend, com exibição de força e relatos associados no frontend.
+- Sincronização dos pins do mapa com a lista e os status retornados pela API.
 - Gestão administrativa dos status das ocorrências.
-- Criação, ativação e desativação de alertas demonstrativos.
+- Criação, edição, ativação, desativação e exclusão de alertas demonstrativos.
+- Atualização de alertas em tempo real por SSE, com reconexão automática.
+- Preferências e consentimento para recebimento de alertas pelo WhatsApp.
 - Dashboard para cidadão e dashboard administrativo.
 - Tratamento padronizado de erros e validações.
 - Documentação da API com Swagger/OpenAPI.
@@ -52,7 +56,7 @@ O projeto possui dois perfis:
 | Banco | MySQL 8 e Flyway |
 | Autenticação | JWT e BCrypt |
 | Documentação | Swagger/OpenAPI |
-| Infraestrutura | Docker e Docker Compose |
+| Infraestrutura | Docker, Docker Compose, Render, Aiven, Cloudinary e Cloudflare Workers |
 
 ## Estrutura do repositório
 
@@ -60,6 +64,7 @@ O projeto possui dois perfis:
 CidadeEmFoco/
 ├── backend/                 API Spring Boot e Dockerfile
 ├── frontend/                aplicação React
+├── docs/                    documentação da API pública
 ├── infra/                   Docker Compose e modelo de variáveis
 │   ├── docker-compose.yml
 │   └── .env.example
@@ -166,6 +171,10 @@ O frontend está em `frontend/` e utiliza React com JavaScript. A aplicação é
 
 ### Autenticação no frontend
 
+Após um cadastro bem-sucedido, o frontend utiliza o endpoint de login para obter
+o JWT e direciona o cidadão automaticamente para a área autenticada. O endpoint
+de cadastro retorna os dados do usuário, não o token.
+
 Após o login, o frontend armazena no `localStorage`:
 
 - token JWT;
@@ -173,6 +182,19 @@ Após o login, o frontend armazena no `localStorage`:
 - informações públicas do usuário.
 
 A senha nunca é armazenada. Rotas protegidas verificam a autenticação e o perfil, mas a autorização definitiva sempre é realizada pelo backend.
+
+### Perfil e dados do usuário
+
+O contrato atual de autenticação disponibiliza `id`, `name`, `email`, `role` e
+`createdAt`. CPF, endereço, cidade e UF não fazem parte do `UserResponse` desta
+branch e, portanto, não são apresentados como campos editáveis. O painel
+administrativo está preparado para identificar `user.city.name` e
+`user.city.stateCode`; enquanto esses dados não forem fornecidos pela API, ele
+exibe que a cidade gerenciada não foi informada.
+
+O frontend não filtra dados por cidade como mecanismo de segurança. O isolamento
+dos registros precisa ser garantido pela autenticação e pelas consultas do
+backend; ocultar registros recebidos incorretamente não substituiria essa regra.
 
 ### Mapas e localização
 
@@ -186,6 +208,15 @@ O cadastro de ocorrência permite:
 - informar coordenadas manualmente.
 
 Esses recursos dependem de conexão com a internet e enviam a pesquisa ou as coordenadas ao serviço externo Nominatim.
+
+Os pins são atualizados periodicamente a partir de `/api/occurrences/map`. O
+frontend substitui a coleção anterior pela resposta atual da API; portanto, a
+decisão de manter ou remover uma ocorrência do mapa pertence ao backend. O
+frontend não remove pins apenas pela passagem do tempo.
+
+Ocorrências agrupadas exibem a quantidade de relatos nos cards, detalhes,
+popups e pins. Os detalhes dos relatos associados ficam disponíveis somente na
+área administrativa e não expõem a identidade dos autores.
 
 ### Imagens
 
@@ -213,12 +244,17 @@ Essa variável é pública e incorporada ao build. Senhas e segredos nunca devem
 ```powershell
 cd frontend
 npm.cmd run dev
+npm.cmd test
 npm.cmd run lint
 npm.cmd run build
 npm.cmd run preview
 ```
 
-O frontend ainda não possui suíte automatizada de testes. As verificações disponíveis são lint, build e testes manuais dos fluxos.
+Os testes usam o test runner nativo do Node.js e cobrem utilitários e contratos
+de serviços, incluindo autenticação, preferências de WhatsApp, registro de
+ocorrências, cooldown, agrupamento, polling do mapa, sincronização SSE, alertas
+e regressões de layout e acessibilidade. Eles não substituem testes completos em
+navegador nem testes de integração com o backend publicado.
 
 Mais detalhes estão disponíveis em [frontend/README.md](frontend/README.md).
 
@@ -333,14 +369,18 @@ As listagens gerais, administrativas e do mapa retornam apenas os casos principa
 | POST | `/api/admin/alerts` | ADMIN | Criar alerta inicialmente inativo |
 | GET | `/api/admin/alerts` | ADMIN | Listar todos os alertas |
 | GET | `/api/admin/alerts/{id}` | ADMIN | Consultar alerta |
+| PATCH | `/api/admin/alerts/{id}` | ADMIN | Editar alerta |
 | PATCH | `/api/admin/alerts/{id}/activate` | ADMIN | Ativar alerta |
 | PATCH | `/api/admin/alerts/{id}/deactivate` | ADMIN | Desativar alerta |
 | DELETE | `/api/admin/alerts/{id}` | ADMIN | Excluir qualquer alerta |
 
 O endpoint `/api/alerts/stream` mantém uma conexão SSE e envia o evento
-`alerts-updated` quando um alerta é criado, ativado ou desativado. O evento também
-é enviado periodicamente para cobrir o início e o término da vigência. Ao
-recebê-lo, o frontend deve consultar novamente `/api/alerts/active`.
+`alerts-updated` quando um alerta é criado, editado, ativado, desativado ou
+excluído. O evento também é enviado periodicamente para cobrir o início e o
+término da vigência. Ao recebê-lo, o frontend consulta novamente a lista
+correspondente. A conexão usa reconexão progressiva, é encerrada ao sair da tela
+e a interface ignora respostas antigas que poderiam restaurar um alerta já
+excluído.
 
 O ADMIN pode excluir manualmente qualquer alerta. Além disso, alertas cuja
 `endAt` for igual ou anterior ao momento da verificação são excluídos
@@ -350,6 +390,11 @@ notifica os clientes conectados ao stream.
 A conexão é protegida por JWT. Como o `EventSource` nativo do navegador não
 permite adicionar o cabeçalho `Authorization`, o frontend deve consumir o stream
 com uma requisição SSE baseada em `fetch` que envie `Authorization: Bearer <token>`.
+
+Na área do cidadão, os cards variam visualmente conforme o tipo e a severidade
+recebidos da API. O estado sem alertas apresenta uma ilustração leve com versões
+de dia, tarde e noite. Efeitos decorativos de chuva e vento respeitam
+`prefers-reduced-motion` e não alteram o significado nem a prioridade dos dados.
 
 #### Fila de WhatsApp
 
@@ -520,6 +565,14 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - O estado `SENT` confirma que a Meta aceitou a mensagem; sem o webhook, ele ainda não confirma entrega ou leitura pelo cidadão.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.
+- O contrato atual do usuário não retorna CPF, endereço, cidade ou UF e não
+  oferece endpoint de edição cadastral geral. Apenas as preferências de WhatsApp
+  podem ser atualizadas pelo perfil nesta branch.
+- A identificação da cidade administrada depende de `city` ser incluída pela API
+  na sessão. Sem esse dado, o painel informa a ausência e não presume uma cidade.
+- O frontend permite quatro imagens de até 5 MB, mas o backend desta branch limita
+  a requisição multipart completa a 5 MB; envios com várias imagens grandes podem
+  ser recusados até que esses limites sejam compatibilizados.
 
 ## Aviso
 
