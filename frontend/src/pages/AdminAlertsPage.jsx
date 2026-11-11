@@ -10,7 +10,7 @@
   Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import {
@@ -20,6 +20,7 @@ import {
   getAlertTypeLabel,
 } from '../constants/alertPresentation'
 import useAuth from '../hooks/useAuth'
+import { streamAlertUpdates } from '../services/alertService'
 import {
   activateAdminAlert,
   createAdminAlert,
@@ -28,6 +29,7 @@ import {
   getAdminAlerts,
 } from '../services/adminService'
 import { formatDateTime } from '../utils/date'
+import { canDeleteAlert, isLatestAlertRequest, synchronizeAlerts } from '../utils/alertSync'
 import './AdminAlertsPage.css'
 
 const initialForm = {
@@ -47,7 +49,7 @@ function getPeriodState(alert) {
 }
 
 function AdminAlertsPage() {
-  const { logout, token } = useAuth()
+  const { logout, token, user } = useAuth()
   const [alerts, setAlerts] = useState([])
   const [form, setForm] = useState(initialForm)
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -61,13 +63,20 @@ function AdminAlertsPage() {
   const [successMessage, setSuccessMessage] = useState('')
   const [actionError, setActionError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const requestIdRef = useRef(0)
+  const deletedIdsRef = useRef(new Set())
+  const sseRefreshInFlightRef = useRef(false)
+  const sseRefreshPendingRef = useRef(false)
 
   useEffect(() => {
     let isCurrent = true
+    const requestId = ++requestIdRef.current
 
     getAdminAlerts(token)
       .then((data) => {
-        if (isCurrent) setAlerts(data)
+        if (isCurrent && isLatestAlertRequest(requestId, requestIdRef.current)) {
+          setAlerts(synchronizeAlerts(data, deletedIdsRef.current))
+        }
       })
       .catch((requestError) => {
         if (!isCurrent) return
@@ -85,6 +94,47 @@ function AdminAlertsPage() {
       isCurrent = false
     }
   }, [logout, reloadKey, token])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function refreshFromSse() {
+      if (sseRefreshInFlightRef.current) {
+        sseRefreshPendingRef.current = true
+        return
+      }
+      sseRefreshInFlightRef.current = true
+      const requestId = ++requestIdRef.current
+      try {
+        const data = await getAdminAlerts(token, controller.signal)
+        if (!controller.signal.aborted && isLatestAlertRequest(requestId, requestIdRef.current)) {
+          setAlerts(synchronizeAlerts(data, deletedIdsRef.current))
+          setError('')
+        }
+      } catch (requestError) {
+        if (controller.signal.aborted) return
+        if (requestError.status === 401) logout()
+      } finally {
+        sseRefreshInFlightRef.current = false
+        if (!controller.signal.aborted && sseRefreshPendingRef.current) {
+          sseRefreshPendingRef.current = false
+          window.queueMicrotask(refreshFromSse)
+        }
+      }
+    }
+
+    streamAlertUpdates(token, {
+      signal: controller.signal,
+      onUpdate: refreshFromSse,
+      onUnauthorized: logout,
+    })
+
+    return () => {
+      controller.abort()
+      requestIdRef.current += 1
+      sseRefreshPendingRef.current = false
+    }
+  }, [logout, token])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -183,6 +233,8 @@ function AdminAlertsPage() {
 
     try {
       await deleteAdminAlert(token, alert.id)
+      deletedIdsRef.current.add(alert.id)
+      requestIdRef.current += 1
       setAlerts((currentAlerts) => currentAlerts.filter((item) => item.id !== alert.id))
       setSuccessMessage(`Alerta “${alert.title}” excluído com sucesso.`)
     } catch (requestError) {
@@ -193,6 +245,8 @@ function AdminAlertsPage() {
       if (requestError.status === 403) {
         setActionError('Você não tem permissão para excluir alertas.')
       } else if (requestError.status === 404) {
+        deletedIdsRef.current.add(alert.id)
+        requestIdRef.current += 1
         setAlerts((currentAlerts) => currentAlerts.filter((item) => item.id !== alert.id))
         setActionError('Este alerta já foi removido ou não foi encontrado.')
       } else {
@@ -334,10 +388,12 @@ function AdminAlertsPage() {
                   {changingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : alert.active ? <PowerOff aria-hidden="true" size={17} /> : <Power aria-hidden="true" size={17} />}
                   {changingId === alert.id ? 'Atualizando...' : alert.active ? 'Desativar' : 'Ativar'}
                 </Button>
-                <Button aria-label={`Excluir alerta ${alert.title}`} className="admin-alert-delete-button" disabled={deletingId !== null || changingId === alert.id} onClick={() => deleteAlert(alert)} variant="outline">
-                  {deletingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : <Trash2 aria-hidden="true" size={17} />}
-                  {deletingId === alert.id ? 'Excluindo...' : 'Excluir'}
-                </Button>
+                {canDeleteAlert(user.role) && (
+                  <Button aria-label={`Excluir alerta ${alert.title}`} className="admin-alert-delete-button" disabled={deletingId !== null || changingId === alert.id} onClick={() => deleteAlert(alert)} variant="outline">
+                    {deletingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : <Trash2 aria-hidden="true" size={17} />}
+                    {deletingId === alert.id ? 'Excluindo...' : 'Excluir'}
+                  </Button>
+                )}
               </div>
             </article>
           ))}
