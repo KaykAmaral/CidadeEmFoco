@@ -1,6 +1,7 @@
 ﻿import { Info, RotateCw } from 'lucide-react'
 import { useState } from 'react'
 import ClimateAlertCard from '../components/alerts/ClimateAlertCard'
+import CalmCityIllustration from '../components/alerts/CalmCityIllustration'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import useAlerts from '../hooks/useAlerts'
@@ -53,11 +54,7 @@ function AlertsPage() {
           </Button>
         </div>
       ) : alerts.length === 0 ? (
-        <FeedbackState
-          type="empty"
-          title="Nenhum alerta ativo"
-          message="Não há alertas válidos neste momento."
-        />
+        <CalmCityIllustration />
       ) : (
         <div className="alerts-page__list">
           {alerts.map((alert) => (

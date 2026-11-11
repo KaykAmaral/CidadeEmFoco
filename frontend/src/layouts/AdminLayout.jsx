@@ -12,11 +12,17 @@ const navigationItems = [
 function AdminLayout() {
   const { logout, user } = useAuth()
   const [isNavigationOpen, setIsNavigationOpen] = useState(false)
+  const managedCity = user.city
+    ? `${user.city.name} — ${user.city.stateCode}`
+    : null
 
   return (
     <div className="admin-layout">
       <header className="admin-mobile-header">
-        <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco" />
+        <div className="admin-mobile-header__brand">
+          <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco" />
+          <span>{managedCity ?? 'Cidade não informada'}</span>
+        </div>
         <button
           aria-controls="admin-sidebar"
           aria-expanded={isNavigationOpen}
@@ -36,7 +42,13 @@ function AdminLayout() {
           <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco — Nossa cidade, nosso olhar" />
         </div>
 
+        <div className={`admin-managed-city${managedCity ? '' : ' admin-managed-city--missing'}`}>
+          <span>Cidade gerenciada</span>
+          <strong>{managedCity ?? 'Não informada pela API'}</strong>
+        </div>
+
         <nav className="admin-navigation" aria-label="Navegação administrativa">
+          <span className="admin-navigation__label">Navegação</span>
           {navigationItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               className={({ isActive }) =>
