@@ -8,6 +8,7 @@
 }
 
 .occurrence-marker {
+  position: relative;
   width: 40px;
   height: 40px;
   display: grid;
@@ -17,6 +18,22 @@
   color: white;
   background: var(--marker-color);
   box-shadow: 0 4px 12px rgba(6, 43, 82, 0.3);
+}
+
+.occurrence-marker b {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid white;
+  border-radius: 999px;
+  color: white;
+  background: var(--color-navy);
+  font-size: 0.62rem;
 }
 
 .selected-location-dot { width: 9px; height: 9px; border-radius: 50%; background: white; }

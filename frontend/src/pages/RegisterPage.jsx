@@ -10,7 +10,7 @@ import {
   UserRound,
   Users,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Button from '../components/ui/Button'
 import useAuth from '../hooks/useAuth'
@@ -36,31 +36,40 @@ function RegisterPage() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const submittingRef = useRef(false)
 
   function handleChange(event) {
     const { name, value } = event.target
     setForm((currentForm) => ({ ...currentForm, [name]: value }))
     setError('')
-    setFieldErrors({})
+    setFieldErrors((currentErrors) => ({ ...currentErrors, [name]: undefined }))
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (submittingRef.current) return
+
+    submittingRef.current = true
     setError('')
     setFieldErrors({})
     setIsSubmitting(true)
+    setIsSuccess(false)
 
     try {
-      await register(form)
-      navigate('/login', {
+      const user = await register(form)
+      setIsSuccess(true)
+      navigate(user.role === 'ADMIN' ? '/admin' : '/app', {
         replace: true,
-        state: { registered: true, email: form.email },
+        state: { registered: true },
       })
     } catch (requestError) {
-      setError(requestError.message)
-      setFieldErrors(requestError.fieldErrors ?? {})
+      const requestFieldErrors = requestError.fieldErrors ?? {}
+      setFieldErrors(requestFieldErrors)
+      setError(Object.keys(requestFieldErrors).length === 0 ? requestError.message : '')
     } finally {
+      submittingRef.current = false
       setIsSubmitting(false)
     }
   }
@@ -127,7 +136,13 @@ function RegisterPage() {
             </div>
           )}
 
-          <form className="auth-form" onSubmit={handleSubmit}>
+          {isSuccess && (
+            <div className="form-message form-message--success" role="status">
+              Cadastro concluído. Entrando na sua conta...
+            </div>
+          )}
+
+          <form className="auth-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
             <div className="form-field">
               <label htmlFor="register-name">Nome</label>
               <div className="login-input">

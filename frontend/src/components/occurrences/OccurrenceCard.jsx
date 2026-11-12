@@ -3,6 +3,7 @@ import { getOccurrenceTypeLabel } from '../../constants/occurrencePresentation'
 import { formatDateTime } from '../../utils/date'
 import StatusBadge from '../ui/StatusBadge'
 import OccurrenceTypeIcon from './OccurrenceTypeIcon'
+import OccurrenceStrength from './OccurrenceStrength'
 import './OccurrenceCard.css'
 
 function OccurrenceCard({ occurrence, to }) {
@@ -19,6 +20,7 @@ function OccurrenceCard({ occurrence, to }) {
         <time dateTime={occurrence.createdAt}>
           {formatDateTime(occurrence.createdAt)}
         </time>
+        <OccurrenceStrength compact strength={occurrence.strength} />
       </div>
 
       <StatusBadge status={occurrence.status} />

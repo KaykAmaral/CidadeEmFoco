@@ -480,23 +480,54 @@
 }
 
 .admin-sidebar__brand {
-  min-height: 134px;
+  min-height: 112px;
   display: flex;
   align-items: center;
-  padding: 0 10px;
+  justify-content: center;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 30px rgba(0, 18, 39, 0.2);
 }
 
 .admin-sidebar__brand img {
-  width: 132px;
+  width: 118px;
+  max-height: 88px;
   height: auto;
   display: block;
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.16));
 }
 
+.admin-managed-city {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(105, 189, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(8, 117, 209, 0.14);
+}
+
+.admin-managed-city span,
+.admin-navigation__label {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-managed-city strong { color: white; font-size: 0.78rem; line-height: 1.35; }
+.admin-managed-city--missing { border-color: rgba(255, 184, 0, 0.32); background: rgba(255, 184, 0, 0.1); }
+.admin-managed-city--missing strong { color: #ffe59a; }
+
 .admin-navigation {
   gap: 8px;
-  margin-top: 34px;
+  margin-top: 22px;
 }
+
+.admin-navigation__label { margin: 0 12px 4px; }
 
 .admin-navigation__item {
   position: relative;
@@ -639,10 +670,16 @@
   }
 
   .admin-mobile-header img {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
+    padding: 4px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.94);
     object-fit: contain;
   }
+
+  .admin-mobile-header__brand { min-width: 0; display: flex; align-items: center; gap: 10px; }
+  .admin-mobile-header__brand span { overflow: hidden; color: rgba(255,255,255,.76); font-size: .7rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 
   .admin-mobile-header button {
     width: 42px;
@@ -675,6 +712,8 @@
   .admin-sidebar__brand {
     display: none;
   }
+
+  .admin-managed-city { margin-top: 0; }
 
   .admin-navigation {
     display: grid;

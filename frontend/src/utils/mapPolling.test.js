@@ -4,11 +4,11 @@ import { startMapPolling } from './mapPolling.js'
 
 const flush = async () => { await Promise.resolve(); await Promise.resolve() }
 
-test('refreshes the entire map on the server interval and removes expired markers', async (t) => {
+test('replaces pins when the API changes status or removes an occurrence', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] })
   const responses = [
-    { occurrences: [{ id: 1 }, { id: 2 }], refreshAfterMillis: 1000 },
-    { occurrences: [{ id: 1 }], refreshAfterMillis: 1000 },
+    { occurrences: [{ id: 1, status: 'REGISTRADA' }, { id: 2, status: 'EM_ANALISE' }], refreshAfterMillis: 1000 },
+    { occurrences: [{ id: 1, status: 'RESOLVIDA' }], refreshAfterMillis: 1000 },
   ]
   const results = []
   const polling = startMapPolling(async () => responses.shift(), (rows) => results.push(rows), assert.fail)
@@ -20,7 +20,7 @@ test('refreshes the entire map on the server interval and removes expired marker
   assert.equal(results.length, 1)
   t.mock.timers.tick(1)
   await flush()
-  assert.deepEqual(results[1], [{ id: 1 }])
+  assert.deepEqual(results[1], [{ id: 1, status: 'RESOLVIDA' }])
 })
 
 test('cancels the initial StrictMode request and never overlaps requests', async (t) => {

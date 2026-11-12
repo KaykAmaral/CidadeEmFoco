@@ -74,7 +74,7 @@ async function readAlertEvents(response, onUpdate, signal) {
 }
 
 async function streamAlertUpdates(token, { signal, onUpdate, onUnauthorized }) {
-  const apiUrl = import.meta.env.VITE_API_URL
+  const apiUrl = import.meta.env?.VITE_API_URL ?? ''
   let reconnectDelay = RECONNECT_DELAY_MS
 
   while (!signal.aborted) {
@@ -110,4 +110,4 @@ async function streamAlertUpdates(token, { signal, onUpdate, onUnauthorized }) {
   }
 }
 
-export { getActiveAlerts, streamAlertUpdates }
+export { getActiveAlerts, readAlertEvents, streamAlertUpdates }

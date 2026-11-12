@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest } from './api.js'
 
 function loginRequest(credentials) {
   return apiRequest('/api/auth/login', {
@@ -14,4 +14,12 @@ function registerRequest(citizen) {
   })
 }
 
-export { loginRequest, registerRequest }
+async function registerAndLoginRequest(citizen) {
+  await registerRequest(citizen)
+  return loginRequest({
+    email: citizen.email,
+    password: citizen.password,
+  })
+}
+
+export { loginRequest, registerAndLoginRequest, registerRequest }
