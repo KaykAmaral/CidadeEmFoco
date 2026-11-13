@@ -293,6 +293,9 @@ dentro do limite da cidade vinculada ao cidadão. Os limites ficam em
 o código IBGE de sete dígitos. O arquivo de Praia Grande utiliza a malha oficial
 do IBGE. Uma nova cidade só deve ser habilitada depois que seu respectivo
 GeoJSON for adicionado; sem ele, o backend recusa o cadastro da ocorrência.
+Além disso, todas as cidades ativas são validadas na inicialização. Um GeoJSON
+ausente ou inválido impede que o backend suba, evitando disponibilizar uma cidade
+que ainda não consegue receber relatos corretamente.
 
 O cidadão também possui um intervalo mínimo entre relatos. Por padrão, ele deve
 aguardar 15 minutos após uma ocorrência antes de registrar outra, inclusive
@@ -318,15 +321,23 @@ o arquivo correspondente na pasta de limites municipais.
 
 ### Administrador inicial
 
-Cadastre o usuário normalmente e promova-o diretamente no banco:
+O cadastro público continua criando exclusivamente cidadãos. Para cadastrar um
+administrador sem manipular diretamente o banco, configure temporariamente:
 
-```sql
-UPDATE users
-SET role = 'ADMIN'
-WHERE email = 'admin@exemplo.com';
+```dotenv
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_NAME=Prefeitura de Praia Grande
+ADMIN_BOOTSTRAP_EMAIL=admin@exemplo.com
+ADMIN_BOOTSTRAP_PASSWORD=uma-senha-segura
+ADMIN_BOOTSTRAP_CITY_IBGE_CODE=3541000
 ```
 
-Faça um novo login após a alteração para gerar um token com o perfil atualizado.
+Inicie a aplicação uma vez e confirme no log que o administrador foi criado.
+Depois, altere obrigatoriamente `ADMIN_BOOTSTRAP_ENABLED` para `false` e remova a
+senha da configuração. A operação é idempotente: reiniciar por engano não duplica
+o administrador nem redefine sua senha. Um email já pertencente a um cidadão não
+é promovido automaticamente. O ADMIN recebe acesso somente aos dados da cidade
+ativa indicada pelo código IBGE.
 
 ### Endpoints principais
 
@@ -514,11 +525,14 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `SERVER_PORT` | `8080` | Porta da API |
 | `IMAGE_STORAGE_TYPE` | `local` | Armazenamento de imagens: `local` ou `cloudinary` |
 | `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório usado quando o armazenamento é local |
+| `MAX_IMAGE_FILE_SIZE` | `5MB` | Tamanho máximo de cada foto |
+| `MAX_IMAGE_REQUEST_SIZE` | `20MB` | Tamanho máximo da requisição com até quatro fotos |
 | `CLOUDINARY_CLOUD_NAME` | vazio | Identificador da conta Cloudinary |
 | `CLOUDINARY_API_KEY` | vazio | Chave da API Cloudinary |
 | `CLOUDINARY_API_SECRET` | vazio | Segredo da API Cloudinary |
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
 | `OCCURRENCE_CREATION_COOLDOWN` | `15m` | Intervalo mínimo entre relatos do mesmo cidadão |
+| `CITY_BOUNDARY_VALIDATION_ENABLED` | `true` | Valida os limites de todas as cidades ativas ao iniciar |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
 | `AUTO_RESOLUTION_TYPES` | `ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO` | Tipos de evento natural elegíveis, separados por vírgula |
@@ -568,7 +582,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 173 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 179 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 
@@ -607,9 +621,6 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - A API já retorna a cidade na sessão e oferece consulta e atualização do perfil
   completo; a tela do cidadão ainda precisa conectar a edição de todos esses
   campos ao endpoint `PUT /api/users/me`.
-- O frontend permite quatro imagens de até 5 MB, mas o backend desta branch limita
-  a requisição multipart completa a 5 MB; envios com várias imagens grandes podem
-  ser recusados até que esses limites sejam compatibilizados.
 
 ## Aviso
 

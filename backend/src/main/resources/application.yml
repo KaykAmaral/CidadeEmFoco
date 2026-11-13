@@ -20,8 +20,8 @@ spring:
     validate-migration-naming: true
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: ${MAX_IMAGE_FILE_SIZE:5MB}
+      max-request-size: ${MAX_IMAGE_REQUEST_SIZE:20MB}
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
@@ -57,6 +57,14 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  city-boundaries:
+    validate-on-start: ${CITY_BOUNDARY_VALIDATION_ENABLED:true}
+  admin-bootstrap:
+    enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+    name: ${ADMIN_BOOTSTRAP_NAME:}
+    email: ${ADMIN_BOOTSTRAP_EMAIL:}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+    city-ibge-code: ${ADMIN_BOOTSTRAP_CITY_IBGE_CODE:}
   email:
     enabled: ${EMAIL_ENABLED:false}
     from: ${MAIL_FROM:no-reply@cidadeemfoco.local}
