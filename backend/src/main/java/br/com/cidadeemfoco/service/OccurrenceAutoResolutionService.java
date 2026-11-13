@@ -26,9 +26,11 @@ public class OccurrenceAutoResolutionService {
     private final OccurrenceRepository occurrenceRepository;
     private final Duration temporaryEventLifetime;
     private final Set<OccurrenceType> autoResolutionTypes;
+    private final GamificationService gamificationService;
 
     public OccurrenceAutoResolutionService(
             OccurrenceRepository occurrenceRepository,
+            GamificationService gamificationService,
             @Value("${app.occurrences.temporary-event-lifetime:2d}") Duration temporaryEventLifetime,
             @Value("${app.occurrences.auto-resolution-types:ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO}")
             Set<OccurrenceType> autoResolutionTypes
@@ -37,6 +39,7 @@ public class OccurrenceAutoResolutionService {
             throw new IllegalArgumentException("O tempo de vida dos eventos temporarios deve ser positivo");
         }
         this.occurrenceRepository = occurrenceRepository;
+        this.gamificationService = gamificationService;
         this.temporaryEventLifetime = temporaryEventLifetime;
         this.autoResolutionTypes = Set.copyOf(autoResolutionTypes);
     }
@@ -63,6 +66,7 @@ public class OccurrenceAutoResolutionService {
         expiredOccurrences.forEach(Occurrence::resolveAutomatically);
         if (!expiredOccurrences.isEmpty()) {
             occurrenceRepository.saveAll(expiredOccurrences);
+            expiredOccurrences.forEach(gamificationService::awardCaseResolved);
         }
 
         return expiredOccurrences.size();

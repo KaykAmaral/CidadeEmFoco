@@ -49,6 +49,7 @@ public class OccurrenceService {
     private final OccurrenceRepository occurrenceRepository;
     private final UserRepository userRepository;
     private final CityBoundaryService cityBoundaryService;
+    private final GamificationService gamificationService;
 
     @Value("${app.occurrences.resolved-map-visibility:24h}")
     private Duration resolvedMapVisibility = Duration.ofHours(24);
@@ -68,11 +69,13 @@ public class OccurrenceService {
     public OccurrenceService(
             OccurrenceRepository occurrenceRepository,
             UserRepository userRepository,
-            CityBoundaryService cityBoundaryService
+            CityBoundaryService cityBoundaryService,
+            GamificationService gamificationService
     ) {
         this.occurrenceRepository = occurrenceRepository;
         this.userRepository = userRepository;
         this.cityBoundaryService = cityBoundaryService;
+        this.gamificationService = gamificationService;
     }
 
     @Transactional
@@ -110,6 +113,7 @@ public class OccurrenceService {
             if (similarCase.isPresent()) {
                 occurrenceRepository.flush();
             }
+            gamificationService.awardReportCreated(savedOccurrence);
             return OccurrenceResponse.from(savedOccurrence);
         } catch (DataIntegrityViolationException exception) {
             if (similarCase.isPresent()) {
@@ -171,8 +175,14 @@ public class OccurrenceService {
         Occurrence occurrence = occurrenceRepository.findByIdAndCityId(id, cityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
         Occurrence caseRoot = occurrence.getCaseRoot();
+        boolean newlyResolved = status == OccurrenceStatus.RESOLVIDA
+                && caseRoot.getStatus() != OccurrenceStatus.RESOLVIDA;
         caseRoot.changeStatus(status);
-        return OccurrenceResponse.from(occurrenceRepository.saveAndFlush(caseRoot));
+        Occurrence saved = occurrenceRepository.saveAndFlush(caseRoot);
+        if (newlyResolved) {
+            gamificationService.awardCaseResolved(saved);
+        }
+        return OccurrenceResponse.from(saved);
     }
 
     public List<OccurrenceResponse> findByUser(String userEmail) {

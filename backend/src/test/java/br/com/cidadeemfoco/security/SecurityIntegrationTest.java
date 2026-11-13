@@ -12,6 +12,7 @@ import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import br.com.cidadeemfoco.service.AdminDashboardService;
 import br.com.cidadeemfoco.service.CityRankingService;
+import br.com.cidadeemfoco.service.GamificationService;
 import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
@@ -87,6 +88,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private CityRankingService cityRankingService;
+
+    @MockitoBean
+    private GamificationService gamificationService;
 
     @MockitoBean
     private OccurrenceAutoResolutionService occurrenceAutoResolutionService;
@@ -246,6 +250,31 @@ class SecurityIntegrationTest {
     void shouldRequireAuthenticationForCityRanking() throws Exception {
         mockMvc.perform(get("/api/rankings/cities"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldProtectGamificationAndRestrictPersonalProgressToCitizens() throws Exception {
+        mockMvc.perform(get("/api/gamification/ranking"))
+                .andExpect(status().isUnauthorized());
+
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String adminToken = jwtService.generateToken(admin);
+        mockMvc.perform(get("/api/gamification/me")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        String citizenToken = jwtService.generateToken(citizen);
+        mockMvc.perform(get("/api/gamification/ranking")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isOk());
+
+        verify(gamificationService).findCitizenRanking(
+                "ana@example.com",
+                br.com.cidadeemfoco.enums.CitizenRankingPeriod.MONTH
+        );
     }
 
     @Test

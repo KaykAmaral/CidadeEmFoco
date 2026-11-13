@@ -57,6 +57,10 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  gamification:
+    report-created-xp: ${GAMIFICATION_REPORT_CREATED_XP:10}
+    case-resolved-xp: ${GAMIFICATION_CASE_RESOLVED_XP:20}
+    xp-per-level: ${GAMIFICATION_XP_PER_LEVEL:100}
   city-boundaries:
     validate-on-start: ${CITY_BOUNDARY_VALIDATION_ENABLED:true}
   admin-bootstrap:

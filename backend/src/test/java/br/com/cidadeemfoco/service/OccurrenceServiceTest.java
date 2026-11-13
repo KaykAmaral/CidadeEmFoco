@@ -55,6 +55,9 @@ class OccurrenceServiceTest {
     @Mock
     private CityBoundaryService cityBoundaryService;
 
+    @Mock
+    private GamificationService gamificationService;
+
     private OccurrenceService occurrenceService;
     private City city;
 
@@ -62,7 +65,12 @@ class OccurrenceServiceTest {
     void setUp() {
         city = new City("Praia Grande", "SP", "3541000");
         ReflectionTestUtils.setField(city, "id", 1L);
-        occurrenceService = new OccurrenceService(occurrenceRepository, userRepository, cityBoundaryService);
+        occurrenceService = new OccurrenceService(
+                occurrenceRepository,
+                userRepository,
+                cityBoundaryService,
+                gamificationService
+        );
     }
 
     @Test
@@ -78,6 +86,7 @@ class OccurrenceServiceTest {
         assertThat(response.type()).isEqualTo(OccurrenceType.ALAGAMENTO);
         assertThat(response.status()).isEqualTo(OccurrenceStatus.REGISTRADA);
         verify(occurrenceRepository).save(any(Occurrence.class));
+        verify(gamificationService).awardReportCreated(any(Occurrence.class));
     }
 
     @Test
@@ -340,6 +349,7 @@ class OccurrenceServiceTest {
             assertThat(report.strength()).isEqualTo(2);
             assertThat(report.resolvedAt()).isNotNull();
         });
+        verify(gamificationService).awardCaseResolved(caseRoot);
     }
 
     @Test

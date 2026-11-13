@@ -370,6 +370,22 @@ frente, seguida pela que possui maior volume de casos confirmados. Somente casos
 principais são contabilizados, evitando contar separadamente os relatos já
 agrupados.
 
+#### Gamificação dos cidadãos
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/gamification/me` | CITIZEN | Consultar XP, nível e progresso pessoal |
+| GET | `/api/gamification/ranking?period=MONTH` | Autenticado | Ranking de cidadãos da mesma cidade |
+
+Por padrão, cada relato aceito concede 10 XP e a resolução do caso concede mais
+20 XP para cada cidadão que contribuiu, inclusive em casos agrupados. Cada bônus
+é registrado uma única vez. Não existem penalidades automáticas. Um novo nível
+é alcançado a cada 100 XP.
+
+O ranking aceita `WEEK`, `MONTH`, `YEAR` e `ALL`, usa o fuso de São Paulo e
+exibe somente nome, XP, nível e posição. CPF, email, telefone e endereço nunca
+são retornados. O ranking é sempre limitado à cidade do usuário autenticado.
+
 #### Preferências de WhatsApp
 
 | Método | Endpoint | Acesso | Objetivo |
@@ -525,7 +541,7 @@ O backend usa MySQL e valida o schema com Hibernate. Mudanças estruturais são 
 backend/src/main/resources/db/migration/
 ```
 
-As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp e fila de notificações.
+As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp, fila de notificações e histórico de XP. A migration de gamificação também atribui retroativamente os pontos padrão aos relatos e resoluções que já existiam.
 
 ### Variáveis do backend
 
@@ -548,6 +564,9 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
 | `OCCURRENCE_CREATION_COOLDOWN` | `15m` | Intervalo mínimo entre relatos do mesmo cidadão |
 | `CITY_BOUNDARY_VALIDATION_ENABLED` | `true` | Valida os limites de todas as cidades ativas ao iniciar |
+| `GAMIFICATION_REPORT_CREATED_XP` | `10` | XP concedido por relato aceito |
+| `GAMIFICATION_CASE_RESOLVED_XP` | `20` | Bônus concedido a cada participante quando o caso é resolvido |
+| `GAMIFICATION_XP_PER_LEVEL` | `100` | Quantidade de XP necessária por nível |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
 | `AUTO_RESOLUTION_TYPES` | `ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO` | Tipos de evento natural elegíveis, separados por vírgula |
@@ -597,7 +616,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 185 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, ranking municipal, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 193 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, rankings municipal e de cidadãos, XP e níveis, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 
