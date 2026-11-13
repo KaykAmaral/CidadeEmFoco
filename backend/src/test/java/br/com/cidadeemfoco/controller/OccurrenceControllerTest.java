@@ -8,6 +8,7 @@ import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
 import br.com.cidadeemfoco.enums.PerceivedRisk;
 import br.com.cidadeemfoco.exception.GlobalExceptionHandler;
+import br.com.cidadeemfoco.exception.OccurrenceCooldownException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,6 +76,38 @@ class OccurrenceControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(15))
                 .andExpect(jsonPath("$.status").value("REGISTRADA"));
+    }
+
+    @Test
+    void shouldReturnStructuredCooldownError() throws Exception {
+        Instant nextAllowedAt = Instant.parse("2026-08-21T18:10:00Z");
+        when(occurrenceService.create(eq("citizen@example.com"), any(CreateOccurrenceRequest.class)))
+                .thenThrow(new OccurrenceCooldownException(
+                        "Aguarde 10 minuto(s) para registrar outra ocorrencia",
+                        600,
+                        nextAllowedAt
+                ));
+
+        mockMvc.perform(post("/api/occurrences")
+                        .principal(authentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "category": "EVENTO_NATURAL",
+                                  "type": "ALAGAMENTO",
+                                  "description": "Via alagada",
+                                  "perceivedRisk": "ALTO",
+                                  "latitude": -24.005000,
+                                  "longitude": -46.402000
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "600"))
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.message")
+                        .value("Aguarde 10 minuto(s) para registrar outra ocorrencia"))
+                .andExpect(jsonPath("$.retryAfterSeconds").value(600))
+                .andExpect(jsonPath("$.nextAllowedAt").value("2026-08-21T18:10:00Z"));
     }
 
     @Test

@@ -12,6 +12,7 @@ import br.com.cidadeemfoco.enums.OccurrenceType;
 import br.com.cidadeemfoco.enums.PerceivedRisk;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
+import br.com.cidadeemfoco.exception.OccurrenceCooldownException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
@@ -243,8 +244,13 @@ class OccurrenceServiceTest {
                 .thenReturn(Optional.of(previousOccurrence));
 
         assertThatThrownBy(() -> occurrenceService.create("ana@example.com", validRequest()))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessage("Aguarde 10 minuto(s) para registrar outra ocorrencia");
+                .isInstanceOf(OccurrenceCooldownException.class)
+                .hasMessage("Aguarde 10 minuto(s) para registrar outra ocorrencia")
+                .satisfies(exception -> {
+                    OccurrenceCooldownException cooldown = (OccurrenceCooldownException) exception;
+                    assertThat(cooldown.getRetryAfterSeconds()).isBetween(599L, 600L);
+                    assertThat(cooldown.getNextAllowedAt()).isAfter(Instant.now());
+                });
         verify(occurrenceRepository, never()).save(any());
     }
 

@@ -297,7 +297,10 @@ GeoJSON for adicionado; sem ele, o backend recusa o cadastro da ocorrência.
 O cidadão também possui um intervalo mínimo entre relatos. Por padrão, ele deve
 aguardar 15 minutos após uma ocorrência antes de registrar outra, inclusive
 quando o novo relato contribuiria para um caso agrupado. O período pode ser
-ajustado pela variável `OCCURRENCE_CREATION_COOLDOWN`.
+ajustado pela variável `OCCURRENCE_CREATION_COOLDOWN`. Durante esse intervalo,
+`POST /api/occurrences` responde com HTTP `429 Too Many Requests`, envia o
+cabeçalho `Retry-After` em segundos e informa `retryAfterSeconds` e
+`nextAllowedAt` no corpo do erro.
 
 Clientes autenticados podem consultar o mesmo limite usado nessa validação em
 `GET /api/cities/{ibgeCode}/boundary`. A resposta utiliza o formato GeoJSON e o
@@ -565,7 +568,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 166 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 173 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 

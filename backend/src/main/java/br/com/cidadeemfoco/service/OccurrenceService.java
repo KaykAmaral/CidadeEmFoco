@@ -12,6 +12,7 @@ import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
+import br.com.cidadeemfoco.exception.OccurrenceCooldownException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
@@ -303,10 +304,13 @@ public class OccurrenceService {
                 .map(createdAt -> createdAt.plus(creationCooldown))
                 .filter(nextAllowedAt -> nextAllowedAt.isAfter(now))
                 .ifPresent(nextAllowedAt -> {
-                    long remainingSeconds = Duration.between(now, nextAllowedAt).getSeconds();
+                    long remainingMillis = Duration.between(now, nextAllowedAt).toMillis();
+                    long remainingSeconds = Math.max(1, (remainingMillis + 999) / 1_000);
                     long remainingMinutes = Math.max(1, (remainingSeconds + 59) / 60);
-                    throw new BusinessRuleException(
-                            "Aguarde " + remainingMinutes + " minuto(s) para registrar outra ocorrencia"
+                    throw new OccurrenceCooldownException(
+                            "Aguarde " + remainingMinutes + " minuto(s) para registrar outra ocorrencia",
+                            remainingSeconds,
+                            nextAllowedAt
                     );
                 });
     }
