@@ -355,6 +355,21 @@ ativa indicada pelo código IBGE.
 | GET | `/api/cities` | Público | Listar cidades ativas para cadastro |
 | GET | `/api/cities/{ibgeCode}/boundary` | Autenticado | Obter o limite municipal em GeoJSON |
 
+#### Ranking de prefeituras
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/rankings/cities?period=MONTH` | Autenticado | Comparar o índice de resolução das cidades |
+
+O período aceita `WEEK`, `MONTH` ou `YEAR` e usa, respectivamente, a semana
+atual iniciada na segunda-feira, o mês atual ou o ano atual no fuso de São
+Paulo. O padrão é `MONTH`. O índice corresponde a casos resolvidos divididos
+pelos casos confirmados; ocorrências `NAO_CONFIRMADA` não entram no denominador.
+Em caso de empate no percentual, a cidade com mais casos resolvidos fica à
+frente, seguida pela que possui maior volume de casos confirmados. Somente casos
+principais são contabilizados, evitando contar separadamente os relatos já
+agrupados.
+
 #### Preferências de WhatsApp
 
 | Método | Endpoint | Acesso | Objetivo |
@@ -582,7 +597,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 179 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 185 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, ranking municipal, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 

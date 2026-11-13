@@ -104,6 +104,44 @@ class OccurrenceRepositoryTest {
                 .doesNotContain(santos.getId());
     }
 
+    @Test
+    void shouldSummarizeRootCasesByCityForRanking() {
+        Occurrence resolved = saveOccurrence("resolved-ranking@example.com");
+        resolved.changeStatus(OccurrenceStatus.RESOLVIDA);
+        occurrenceRepository.saveAndFlush(resolved);
+        Occurrence notConfirmed = saveOccurrence(
+                "not-confirmed-ranking@example.com",
+                "Santos",
+                "3548500"
+        );
+        notConfirmed.changeStatus(OccurrenceStatus.NAO_CONFIRMADA);
+        occurrenceRepository.saveAndFlush(notConfirmed);
+
+        List<CityRankingMetricsProjection> result = occurrenceRepository.summarizeCasesByCity(
+                Instant.now().minus(Duration.ofMinutes(5)),
+                Instant.now().plus(Duration.ofMinutes(5)),
+                OccurrenceStatus.RESOLVIDA,
+                OccurrenceStatus.NAO_CONFIRMADA
+        );
+
+        assertThat(result).hasSize(2);
+        CityRankingMetricsProjection resolvedMetrics = result.stream()
+                .filter(metrics -> metrics.getCityId().equals(resolved.getCity().getId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(resolvedMetrics.getTotalCases()).isEqualTo(1);
+        assertThat(resolvedMetrics.getResolvedCases()).isEqualTo(1);
+        assertThat(resolvedMetrics.getNotConfirmedCases()).isZero();
+
+        CityRankingMetricsProjection notConfirmedMetrics = result.stream()
+                .filter(metrics -> metrics.getCityId().equals(notConfirmed.getCity().getId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(notConfirmedMetrics.getTotalCases()).isEqualTo(1);
+        assertThat(notConfirmedMetrics.getResolvedCases()).isZero();
+        assertThat(notConfirmedMetrics.getNotConfirmedCases()).isEqualTo(1);
+    }
+
     private Occurrence saveOccurrence(String email) {
         return saveOccurrence(email, "Praia Grande", "SP", "3541000");
     }

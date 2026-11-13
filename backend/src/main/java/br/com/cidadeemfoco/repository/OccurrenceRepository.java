@@ -56,4 +56,22 @@ public interface OccurrenceRepository extends JpaRepository<Occurrence, Long>, J
     Optional<Occurrence> findFirstByUserEmailIgnoreCaseOrderByCreatedAtDesc(String userEmail);
 
     boolean existsByGroupRootIdAndUserEmailIgnoreCase(Long groupRootId, String userEmail);
+
+    @Query("""
+            SELECT occurrence.city.id AS cityId,
+                   COUNT(occurrence.id) AS totalCases,
+                   SUM(CASE WHEN occurrence.status = :resolvedStatus THEN 1 ELSE 0 END) AS resolvedCases,
+                   SUM(CASE WHEN occurrence.status = :notConfirmedStatus THEN 1 ELSE 0 END) AS notConfirmedCases
+            FROM Occurrence occurrence
+            WHERE occurrence.groupRoot IS NULL
+              AND occurrence.createdAt >= :periodStart
+              AND occurrence.createdAt < :periodEnd
+            GROUP BY occurrence.city.id
+            """)
+    List<CityRankingMetricsProjection> summarizeCasesByCity(
+            @Param("periodStart") Instant periodStart,
+            @Param("periodEnd") Instant periodEnd,
+            @Param("resolvedStatus") OccurrenceStatus resolvedStatus,
+            @Param("notConfirmedStatus") OccurrenceStatus notConfirmedStatus
+    );
 }

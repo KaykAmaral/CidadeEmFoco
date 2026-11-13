@@ -11,6 +11,7 @@ import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import br.com.cidadeemfoco.service.AdminDashboardService;
+import br.com.cidadeemfoco.service.CityRankingService;
 import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
@@ -83,6 +84,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private AdminDashboardService adminDashboardService;
+
+    @MockitoBean
+    private CityRankingService cityRankingService;
 
     @MockitoBean
     private OccurrenceAutoResolutionService occurrenceAutoResolutionService;
@@ -236,6 +240,12 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/occurrences"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Autenticacao necessaria"));
+    }
+
+    @Test
+    void shouldRequireAuthenticationForCityRanking() throws Exception {
+        mockMvc.perform(get("/api/rankings/cities"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
