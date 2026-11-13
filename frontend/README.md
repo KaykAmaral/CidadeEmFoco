@@ -149,7 +149,12 @@ frontend/
 | `/admin/alertas` | `ADMIN` | Gestão de alertas |
 | Demais caminhos | Qualquer | Página não encontrada |
 
-O cadastro usa `POST /api/auth/register`, solicita nome, e-mail e senha e cria somente cidadãos. Após o cadastro, o frontend chama `POST /api/auth/login`, salva o JWT retornado e direciona o usuário automaticamente para a área cidadã. A senha de cadastro aceita entre 8 e 72 caracteres no formulário.
+O cadastro usa `POST /api/auth/register`, solicita nome, e-mail, senha, CPF,
+WhatsApp com consentimento, endereço, CEP e cidade e cria somente cidadãos. O
+próprio cadastro retorna o JWT; o frontend salva a sessão e direciona o usuário
+automaticamente para a área cidadã sem fazer uma segunda chamada de login. A
+senha aceita entre 8 e 72 caracteres no formulário, e as cidades disponíveis são
+carregadas por `GET /api/cities`.
 
 O login usa `POST /api/auth/login`. O `AuthProvider` guarda JWT, dados públicos do usuário e vencimento no `localStorage`, sob a chave `cidade-em-foco:auth`, para restaurar a sessão após atualizar a página. A senha não é persistida. O logout e o vencimento removem a sessão; as telas que recebem erro 401 também encerram o acesso. Não há fluxo de renovação automática do token.
 
@@ -192,7 +197,7 @@ Se apenas o upload falhar, a ocorrência permanece criada e a tela de detalhes r
 
 `/app/alertas` mostra os alertas ativos e dentro da validade retornados por `GET /api/alerts/active`, incluindo tipo, severidade, descrição, início, fim e aviso demonstrativo. A lista é sincronizada por SSE, com reconexão e limpeza da conexão ao sair da área cidadã. O estado vazio possui ilustrações responsivas de dia, tarde e noite; os efeitos decorativos por tipo respeitam movimento reduzido. Os alertas são cadastrados manualmente, não substituem avisos oficiais e não representam previsão própria.
 
-`/app/perfil` exibe nome, e-mail, perfil de acesso e data de cadastro recebidos no login, além de totais, ocorrências em andamento, resolvidas e até três registros recentes do cidadão. A tela consulta `GET /api/occurrences/mine` e permite consultar, ativar ou remover as preferências de WhatsApp pelos endpoints `/api/users/me/whatsapp`, exigindo consentimento explícito. Nome, CPF, endereço, cidade, UF e senha não são editáveis porque o contrato atual não oferece essa atualização.
+`/app/perfil` exibe nome, e-mail, perfil de acesso e data de cadastro recebidos no login, além de totais, ocorrências em andamento, resolvidas e até três registros recentes do cidadão. A tela consulta `GET /api/occurrences/mine` e permite consultar, ativar ou remover as preferências de WhatsApp pelos endpoints `/api/users/me/whatsapp`, exigindo consentimento explícito. O backend já oferece `GET /api/users/me` e `PUT /api/users/me` para o cadastro completo, mas a edição visual de nome, CPF, endereço e cidade ainda precisa ser integrada nesta tela.
 
 ## Funcionalidades administrativas
 

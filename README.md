@@ -171,9 +171,10 @@ O frontend está em `frontend/` e utiliza React com JavaScript. A aplicação é
 
 ### Autenticação no frontend
 
-Após um cadastro bem-sucedido, o frontend utiliza o endpoint de login para obter
-o JWT e direciona o cidadão automaticamente para a área autenticada. O endpoint
-de cadastro retorna os dados do usuário, não o token.
+Após um cadastro bem-sucedido, o próprio endpoint de cadastro retorna o JWT e os
+dados do cidadão. O frontend salva essa sessão e direciona o usuário
+automaticamente para a área autenticada, sem realizar uma segunda chamada de
+login.
 
 Após o login, o frontend armazena no `localStorage`:
 
@@ -185,12 +186,11 @@ A senha nunca é armazenada. Rotas protegidas verificam a autenticação e o per
 
 ### Perfil e dados do usuário
 
-O contrato atual de autenticação disponibiliza `id`, `name`, `email`, `role` e
-`createdAt`. CPF, endereço, cidade e UF não fazem parte do `UserResponse` desta
-branch e, portanto, não são apresentados como campos editáveis. O painel
-administrativo está preparado para identificar `user.city.name` e
-`user.city.stateCode`; enquanto esses dados não forem fornecidos pela API, ele
-exibe que a cidade gerenciada não foi informada.
+O contrato de autenticação disponibiliza os dados públicos do usuário, incluindo
+cidade, endereço e WhatsApp. O backend também oferece `GET /api/users/me` e
+`PUT /api/users/me` para consultar e atualizar o cadastro completo. A tela atual
+de perfil já gerencia as preferências de WhatsApp; a integração visual da edição
+dos demais dados cadastrais ainda está pendente no frontend.
 
 O frontend não filtra dados por cidade como mecanismo de segurança. O isolamento
 dos registros precisa ser garantido pela autenticação e pelas consultas do
@@ -553,7 +553,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 119 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 166 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 
@@ -589,11 +589,9 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - O estado `SENT` confirma que a Meta aceitou a mensagem; sem o webhook, ele ainda não confirma entrega ou leitura pelo cidadão.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.
-- O contrato atual do usuário não retorna CPF, endereço, cidade ou UF e não
-  oferece endpoint de edição cadastral geral. Apenas as preferências de WhatsApp
-  podem ser atualizadas pelo perfil nesta branch.
-- A identificação da cidade administrada depende de `city` ser incluída pela API
-  na sessão. Sem esse dado, o painel informa a ausência e não presume uma cidade.
+- A API já retorna a cidade na sessão e oferece consulta e atualização do perfil
+  completo; a tela do cidadão ainda precisa conectar a edição de todos esses
+  campos ao endpoint `PUT /api/users/me`.
 - O frontend permite quatro imagens de até 5 MB, mas o backend desta branch limita
   a requisição multipart completa a 5 MB; envios com várias imagens grandes podem
   ser recusados até que esses limites sejam compatibilizados.

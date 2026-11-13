@@ -15,11 +15,7 @@ function registerRequest(citizen) {
 }
 
 async function registerAndLoginRequest(citizen) {
-  await registerRequest(citizen)
-  return loginRequest({
-    email: citizen.email,
-    password: citizen.password,
-  })
+  return registerRequest(citizen)
 }
 
 export { loginRequest, registerAndLoginRequest, registerRequest }
