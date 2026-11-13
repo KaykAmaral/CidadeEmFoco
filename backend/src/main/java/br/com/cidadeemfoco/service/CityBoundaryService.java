@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,14 +23,14 @@ public class CityBoundaryService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ResourceLoader resourceLoader;
-    private final Map<String, List<Polygon>> boundaryCache = new ConcurrentHashMap<>();
+    private final Map<String, BoundaryData> boundaryCache = new ConcurrentHashMap<>();
 
     public CityBoundaryService(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
 
     public void validateCoordinates(City city, BigDecimal latitude, BigDecimal longitude) {
-        List<Polygon> polygons = boundaryCache.computeIfAbsent(city.getIbgeCode(), this::loadBoundary);
+        List<Polygon> polygons = findBoundary(city).polygons();
         Point point = new Point(longitude.doubleValue(), latitude.doubleValue());
         if (polygons.stream().noneMatch(polygon -> contains(polygon, point))) {
             throw new BusinessRuleException(
@@ -38,7 +39,15 @@ public class CityBoundaryService {
         }
     }
 
-    private List<Polygon> loadBoundary(String ibgeCode) {
+    public String getGeoJson(City city) {
+        return findBoundary(city).geoJson();
+    }
+
+    private BoundaryData findBoundary(City city) {
+        return boundaryCache.computeIfAbsent(city.getIbgeCode(), this::loadBoundary);
+    }
+
+    private BoundaryData loadBoundary(String ibgeCode) {
         Resource resource = resourceLoader.getResource(
                 "classpath:city-boundaries/" + ibgeCode + ".geojson"
         );
@@ -47,13 +56,14 @@ public class CityBoundaryService {
         }
 
         try (var inputStream = resource.getInputStream()) {
-            JsonNode root = objectMapper.readTree(inputStream);
+            String geoJson = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            JsonNode root = objectMapper.readTree(geoJson);
             List<Polygon> polygons = new ArrayList<>();
             collectPolygons(root, polygons);
             if (polygons.isEmpty()) {
                 throw new BusinessRuleException("O limite geografico da cidade esta invalido");
             }
-            return List.copyOf(polygons);
+            return new BoundaryData(geoJson, List.copyOf(polygons));
         } catch (IOException | IllegalArgumentException exception) {
             throw new BusinessRuleException("Nao foi possivel carregar o limite geografico da cidade");
         }
@@ -158,5 +168,8 @@ public class CityBoundaryService {
     }
 
     private record Polygon(List<List<Point>> rings) {
+    }
+
+    private record BoundaryData(String geoJson, List<Polygon> polygons) {
     }
 }

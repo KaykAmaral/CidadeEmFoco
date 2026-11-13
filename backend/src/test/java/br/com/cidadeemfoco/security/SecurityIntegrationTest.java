@@ -47,6 +47,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -121,6 +122,25 @@ class SecurityIntegrationTest {
                 .andExpect(jsonPath("$[0].name").value("Praia Grande"))
                 .andExpect(jsonPath("$[0].stateCode").value("SP"))
                 .andExpect(jsonPath("$[0].ibgeCode").value("3541000"));
+    }
+
+    @Test
+    void shouldRequireAuthenticationAndReturnActiveCityBoundary() throws Exception {
+        mockMvc.perform(get("/api/cities/3541000/boundary"))
+                .andExpect(status().isUnauthorized());
+
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(cityRepository.findByIbgeCodeAndActiveTrue("3541000"))
+                .thenReturn(Optional.of(new City("Praia Grande", "SP", "3541000")));
+        String token = jwtService.generateToken(citizen);
+
+        mockMvc.perform(get("/api/cities/3541000/boundary")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/geo+json"))
+                .andExpect(jsonPath("$.type").value("FeatureCollection"))
+                .andExpect(jsonPath("$.features[0].properties.codarea").value("3541000"));
     }
 
     @Test

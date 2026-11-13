@@ -299,6 +299,11 @@ aguardar 15 minutos após uma ocorrência antes de registrar outra, inclusive
 quando o novo relato contribuiria para um caso agrupado. O período pode ser
 ajustado pela variável `OCCURRENCE_CREATION_COOLDOWN`.
 
+Clientes autenticados podem consultar o mesmo limite usado nessa validação em
+`GET /api/cities/{ibgeCode}/boundary`. A resposta utiliza o formato GeoJSON e o
+tipo de conteúdo `application/geo+json`. A cidade precisa estar ativa e possuir
+o arquivo correspondente na pasta de limites municipais.
+
 ### Segurança
 
 - O cadastro público sempre cria um `CITIZEN`.
@@ -328,6 +333,13 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | --- | --- | --- | --- |
 | POST | `/api/auth/register` | Público | Cadastrar cidadão |
 | POST | `/api/auth/login` | Público | Autenticar e gerar JWT |
+
+#### Cidades
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/cities` | Público | Listar cidades ativas para cadastro |
+| GET | `/api/cities/{ibgeCode}/boundary` | Autenticado | Obter o limite municipal em GeoJSON |
 
 #### Preferências de WhatsApp
 

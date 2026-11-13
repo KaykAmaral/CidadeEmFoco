@@ -8,6 +8,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CityBoundaryServiceTest {
@@ -23,6 +24,16 @@ class CityBoundaryServiceTest {
                 new BigDecimal("-24.005000"),
                 new BigDecimal("-46.402000")
         ));
+    }
+
+    @Test
+    void shouldReturnPraiaGrandeGeoJson() throws Exception {
+        var geoJson = service.getGeoJson(praiaGrande());
+        var root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(geoJson);
+
+        assertThat(root.path("type").asText()).isEqualTo("FeatureCollection");
+        assertThat(root.path("features").get(0).path("properties").path("codarea").asText())
+                .isEqualTo("3541000");
     }
 
     @Test
