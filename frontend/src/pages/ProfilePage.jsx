@@ -17,6 +17,8 @@ import {
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
+import ProfileDataEditor from '../components/profile/ProfileDataEditor'
+import GamificationPanel from '../components/profile/GamificationPanel'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import useAuth from '../hooks/useAuth'
@@ -220,6 +222,9 @@ function ProfilePage() {
               <dd>{formatDateTime(user.createdAt)}</dd>
             </div>
           </dl>
+
+          <ProfileDataEditor logout={logout} token={token} />
+          <GamificationPanel logout={logout} token={token} />
 
           <section className="profile-preferences" aria-labelledby="whatsapp-preferences-title">
             <div className="profile-preferences__heading">

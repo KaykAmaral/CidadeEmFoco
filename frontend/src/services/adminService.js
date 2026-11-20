@@ -15,6 +15,10 @@ function getAdminOccurrences(token, filters = {}, signal) {
   return apiRequest(`/api/admin/occurrences${buildQuery(filters)}`, { token, signal })
 }
 
+function getAdminOccurrenceMetrics(token, filters = {}, signal) {
+  return apiRequest(`/api/admin/dashboard/occurrences${buildQuery(filters)}`, { token, signal })
+}
+
 function getAdminOccurrenceById(token, id) {
   return apiRequest(`/api/admin/occurrences/${id}`, { token })
 }
@@ -68,6 +72,7 @@ export {
   deleteAdminAlert,
   getAdminAlerts,
   getAdminOccurrenceById,
+  getAdminOccurrenceMetrics,
   getAdminOccurrenceReports,
   getAdminOccurrences,
   updateAdminOccurrenceStatus,

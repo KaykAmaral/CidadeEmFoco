@@ -4,4 +4,8 @@ function getActiveCities() {
   return apiRequest('/api/cities')
 }
 
-export { getActiveCities }
+function getCityBoundary(token, ibgeCode) {
+  return apiRequest(`/api/cities/${encodeURIComponent(ibgeCode)}/boundary`, { token })
+}
+
+export { getActiveCities, getCityBoundary }
