@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -49,13 +51,14 @@ class ClimateAlertControllerTest {
                         new ClimateAlertController(climateAlertService, climateAlertRealtimeService),
                         new AdminClimateAlertController(climateAlertService)
                 )
+                .defaultRequest(get("/").principal(authentication()))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
 
     @Test
     void shouldCreateAlertInactive() throws Exception {
-        when(climateAlertService.create(any(CreateClimateAlertRequest.class)))
+        when(climateAlertService.create(eq("admin@example.com"), any(CreateClimateAlertRequest.class)))
                 .thenReturn(response(false));
 
         mockMvc.perform(post("/api/admin/alerts")
@@ -82,7 +85,7 @@ class ClimateAlertControllerTest {
 
     @Test
     void shouldListCurrentlyActiveAlerts() throws Exception {
-        when(climateAlertService.findCurrentlyActive()).thenReturn(List.of(response(true)));
+        when(climateAlertService.findCurrentlyActive("admin@example.com")).thenReturn(List.of(response(true)));
 
         mockMvc.perform(get("/api/alerts/active"))
                 .andExpect(status().isOk())
@@ -103,8 +106,8 @@ class ClimateAlertControllerTest {
 
     @Test
     void shouldActivateAndDeactivateAlert() throws Exception {
-        when(climateAlertService.activate(10L)).thenReturn(response(true));
-        when(climateAlertService.deactivate(10L)).thenReturn(response(false));
+        when(climateAlertService.activate("admin@example.com", 10L)).thenReturn(response(true));
+        when(climateAlertService.deactivate("admin@example.com", 10L)).thenReturn(response(false));
 
         mockMvc.perform(patch("/api/admin/alerts/10/activate"))
                 .andExpect(status().isOk())
@@ -113,13 +116,13 @@ class ClimateAlertControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
 
-        verify(climateAlertService).activate(10L);
-        verify(climateAlertService).deactivate(10L);
+        verify(climateAlertService).activate("admin@example.com", 10L);
+        verify(climateAlertService).deactivate("admin@example.com", 10L);
     }
 
     @Test
     void shouldUpdateAlert() throws Exception {
-        when(climateAlertService.update(eq(10L), any(CreateClimateAlertRequest.class)))
+        when(climateAlertService.update(eq("admin@example.com"), eq(10L), any(CreateClimateAlertRequest.class)))
                 .thenReturn(response(false));
 
         mockMvc.perform(patch("/api/admin/alerts/10")
@@ -128,13 +131,13 @@ class ClimateAlertControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10));
 
-        verify(climateAlertService).update(eq(10L), any(CreateClimateAlertRequest.class));
+        verify(climateAlertService).update(eq("admin@example.com"), eq(10L), any(CreateClimateAlertRequest.class));
     }
 
     @Test
     void shouldListAndFindAlertsForAdmin() throws Exception {
-        when(climateAlertService.findAll()).thenReturn(List.of(response(false)));
-        when(climateAlertService.findById(10L)).thenReturn(response(false));
+        when(climateAlertService.findAll("admin@example.com")).thenReturn(List.of(response(false)));
+        when(climateAlertService.findById("admin@example.com", 10L)).thenReturn(response(false));
 
         mockMvc.perform(get("/api/admin/alerts"))
                 .andExpect(status().isOk())
@@ -149,7 +152,7 @@ class ClimateAlertControllerTest {
         mockMvc.perform(delete("/api/admin/alerts/10"))
                 .andExpect(status().isNoContent());
 
-        verify(climateAlertService).delete(10L);
+        verify(climateAlertService).delete("admin@example.com", 10L);
     }
 
     private String validAlertJson() {
@@ -178,5 +181,9 @@ class ClimateAlertControllerTest {
                 Instant.parse("2026-08-21T10:00:00Z"),
                 "Este alerta e demonstrativo e nao substitui informacoes oficiais."
         );
+    }
+
+    private Authentication authentication() {
+        return UsernamePasswordAuthenticationToken.authenticated("admin@example.com", null, List.of());
     }
 }

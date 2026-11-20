@@ -49,15 +49,17 @@ public class WhatsappNotificationService {
         this.userRepository = userRepository;
     }
 
-    public List<WhatsappNotificationResponse> findAll(WhatsappNotificationStatus status) {
+    public List<WhatsappNotificationResponse> findAll(String adminEmail, WhatsappNotificationStatus status) {
+        Long cityId = findUser(adminEmail).getCity().getId();
         List<WhatsappNotification> notifications = status == null
-                ? notificationRepository.findAll(NEWEST_FIRST)
-                : notificationRepository.findByStatus(status, NEWEST_FIRST);
+                ? notificationRepository.findAllByUserCityId(cityId, NEWEST_FIRST)
+                : notificationRepository.findByUserCityIdAndStatus(cityId, status, NEWEST_FIRST);
         return notifications.stream().map(WhatsappNotificationResponse::from).toList();
     }
 
-    public WhatsappNotificationResponse findById(Long id) {
-        return notificationRepository.findById(id)
+    public WhatsappNotificationResponse findById(String adminEmail, Long id) {
+        Long cityId = findUser(adminEmail).getCity().getId();
+        return notificationRepository.findByIdAndUserCityId(id, cityId)
                 .map(WhatsappNotificationResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Notificacao de WhatsApp nao encontrada"));
     }
@@ -96,7 +98,9 @@ public class WhatsappNotificationService {
 
     private int enqueueForAlert(ClimateAlert alert) {
         List<User> recipients = userRepository
-                .findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull();
+                .findByCityIdAndWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull(
+                        alert.getCity().getId()
+                );
         List<WhatsappNotification> newNotifications = recipients.stream()
                 .filter(user -> !notificationRepository.existsByAlertIdAndUserId(
                         alert.getId(), user.getId()
@@ -107,5 +111,11 @@ public class WhatsappNotificationService {
             notificationRepository.saveAll(newNotifications);
         }
         return newNotifications.size();
+    }
+
+    private User findUser(String email) {
+        return userRepository.findByEmailIgnoreCase(email.trim())
+                .filter(user -> user.getCity() != null)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
     }
 }

@@ -11,6 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
@@ -34,12 +36,13 @@ class AdminWhatsappNotificationControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new AdminWhatsappNotificationController(notificationService))
+                .defaultRequest(get("/").principal(authentication()))
                 .build();
     }
 
     @Test
     void shouldListNotificationHistoryByStatus() throws Exception {
-        when(notificationService.findAll(WhatsappNotificationStatus.PENDING))
+        when(notificationService.findAll("admin@example.com", WhatsappNotificationStatus.PENDING))
                 .thenReturn(List.of(response()));
 
         mockMvc.perform(get("/api/admin/whatsapp-notifications")
@@ -48,12 +51,12 @@ class AdminWhatsappNotificationControllerTest {
                 .andExpect(jsonPath("$[0].status").value("PENDING"))
                 .andExpect(jsonPath("$[0].recipientPhoneMasked").value("**********9999"));
 
-        verify(notificationService).findAll(WhatsappNotificationStatus.PENDING);
+        verify(notificationService).findAll("admin@example.com", WhatsappNotificationStatus.PENDING);
     }
 
     @Test
     void shouldFindNotificationById() throws Exception {
-        when(notificationService.findById(30L)).thenReturn(response());
+        when(notificationService.findById("admin@example.com", 30L)).thenReturn(response());
 
         mockMvc.perform(get("/api/admin/whatsapp-notifications/30"))
                 .andExpect(status().isOk())
@@ -77,5 +80,9 @@ class AdminWhatsappNotificationControllerTest {
                 Instant.parse("2026-09-19T12:00:00Z"),
                 null
         );
+    }
+
+    private Authentication authentication() {
+        return UsernamePasswordAuthenticationToken.authenticated("admin@example.com", null, List.of());
     }
 }

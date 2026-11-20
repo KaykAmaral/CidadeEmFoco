@@ -8,6 +8,7 @@ import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
 import br.com.cidadeemfoco.enums.PerceivedRisk;
 import br.com.cidadeemfoco.exception.GlobalExceptionHandler;
+import br.com.cidadeemfoco.exception.OccurrenceCooldownException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +48,7 @@ class OccurrenceControllerTest {
     void setUp() {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new OccurrenceController(occurrenceService))
+                .defaultRequest(get("/").principal(authentication()))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -76,6 +79,38 @@ class OccurrenceControllerTest {
     }
 
     @Test
+    void shouldReturnStructuredCooldownError() throws Exception {
+        Instant nextAllowedAt = Instant.parse("2026-08-21T18:10:00Z");
+        when(occurrenceService.create(eq("citizen@example.com"), any(CreateOccurrenceRequest.class)))
+                .thenThrow(new OccurrenceCooldownException(
+                        "Aguarde 10 minuto(s) para registrar outra ocorrencia",
+                        600,
+                        nextAllowedAt
+                ));
+
+        mockMvc.perform(post("/api/occurrences")
+                        .principal(authentication())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "category": "EVENTO_NATURAL",
+                                  "type": "ALAGAMENTO",
+                                  "description": "Via alagada",
+                                  "perceivedRisk": "ALTO",
+                                  "latitude": -24.005000,
+                                  "longitude": -46.402000
+                                }
+                                """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "600"))
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.message")
+                        .value("Aguarde 10 minuto(s) para registrar outra ocorrencia"))
+                .andExpect(jsonPath("$.retryAfterSeconds").value(600))
+                .andExpect(jsonPath("$.nextAllowedAt").value("2026-08-21T18:10:00Z"));
+    }
+
+    @Test
     void shouldReturnValidationErrors() throws Exception {
         mockMvc.perform(post("/api/occurrences")
                         .principal(authentication())
@@ -98,7 +133,7 @@ class OccurrenceControllerTest {
 
     @Test
     void shouldForwardFiltersToService() throws Exception {
-        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        when(occurrenceService.findAll(eq("citizen@example.com"), any(OccurrenceFilter.class))).thenReturn(List.of());
 
         mockMvc.perform(get("/api/occurrences")
                         .param("category", "INFRAESTRUTURA_URBANA")
@@ -107,7 +142,7 @@ class OccurrenceControllerTest {
                         .param("neighborhood", "Boqueirao"))
                 .andExpect(status().isOk());
 
-        verify(occurrenceService).findAll(new OccurrenceFilter(
+        verify(occurrenceService).findAll("citizen@example.com", new OccurrenceFilter(
                 OccurrenceCategory.INFRAESTRUTURA_URBANA,
                 OccurrenceType.BURACO_RUA,
                 OccurrenceStatus.REGISTRADA,
@@ -119,7 +154,7 @@ class OccurrenceControllerTest {
 
     @Test
     void shouldReturnStructuredNotFoundError() throws Exception {
-        when(occurrenceService.findById(99L))
+        when(occurrenceService.findById("citizen@example.com", 99L))
                 .thenThrow(new ResourceNotFoundException("Ocorrencia nao encontrada"));
 
         mockMvc.perform(get("/api/occurrences/99"))
@@ -141,13 +176,13 @@ class OccurrenceControllerTest {
 
     @Test
     void shouldListOccurrencesVisibleOnMap() throws Exception {
-        when(occurrenceService.findVisibleOnMap()).thenReturn(List.of(response()));
+        when(occurrenceService.findVisibleOnMap("citizen@example.com")).thenReturn(List.of(response()));
 
         mockMvc.perform(get("/api/occurrences/map"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(15));
 
-        verify(occurrenceService).findVisibleOnMap();
+        verify(occurrenceService).findVisibleOnMap("citizen@example.com");
     }
 
     private OccurrenceResponse response() {

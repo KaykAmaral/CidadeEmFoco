@@ -96,6 +96,10 @@ public class Occurrence {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "city_id", nullable = false)
+    private City city;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_root_id")
     private Occurrence groupRoot;
@@ -129,6 +133,7 @@ public class Occurrence {
         this.neighborhood = neighborhood;
         this.address = address;
         this.user = Objects.requireNonNull(user);
+        this.city = user.getCity();
     }
 
     @PrePersist
@@ -251,6 +256,10 @@ public class Occurrence {
 
     public User getUser() {
         return user;
+    }
+
+    public City getCity() {
+        return city;
     }
 
     public Occurrence getGroupRoot() {

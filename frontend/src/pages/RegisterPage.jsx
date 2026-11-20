@@ -10,16 +10,26 @@ import {
   UserRound,
   Users,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Button from '../components/ui/Button'
 import useAuth from '../hooks/useAuth'
+import { getActiveCities } from '../services/cityService'
 import './LoginPage.css'
 
 const initialForm = {
   name: '',
   email: '',
   password: '',
+  cpf: '',
+  whatsappPhone: '',
+  whatsappConsentGiven: false,
+  street: '',
+  addressNumber: '',
+  addressComplement: '',
+  neighborhood: '',
+  postalCode: '',
+  cityIbgeCode: '',
 }
 
 const benefits = [
@@ -38,11 +48,34 @@ function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [cities, setCities] = useState([])
+  const [citiesError, setCitiesError] = useState('')
   const submittingRef = useRef(false)
 
+  useEffect(() => {
+    let isCurrent = true
+    getActiveCities()
+      .then((availableCities) => {
+        if (!isCurrent) return
+        setCities(availableCities)
+        if (availableCities.length === 1) {
+          setForm((current) => ({ ...current, cityIbgeCode: availableCities[0].ibgeCode }))
+        }
+      })
+      .catch((requestError) => {
+        if (isCurrent) setCitiesError(requestError.message)
+      })
+    return () => {
+      isCurrent = false
+    }
+  }, [])
+
   function handleChange(event) {
-    const { name, value } = event.target
-    setForm((currentForm) => ({ ...currentForm, [name]: value }))
+    const { checked, name, type, value } = event.target
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
     setError('')
     setFieldErrors((currentErrors) => ({ ...currentErrors, [name]: undefined }))
   }
@@ -193,6 +226,23 @@ function RegisterPage() {
               )}
             </div>
 
+            <div className="register-grid">
+              <div className="form-field">
+                <label htmlFor="register-cpf">CPF</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.cpf)} autoComplete="off" id="register-cpf" maxLength={14} name="cpf" onChange={handleChange} placeholder="000.000.000-00" required value={form.cpf} />
+                </div>
+                {fieldErrors.cpf && <small className="field-error">{fieldErrors.cpf}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-whatsapp">WhatsApp</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.whatsappPhone)} autoComplete="tel" id="register-whatsapp" maxLength={30} name="whatsappPhone" onChange={handleChange} placeholder="+5513999999999" required type="tel" value={form.whatsappPhone} />
+                </div>
+                {fieldErrors.whatsappPhone && <small className="field-error">{fieldErrors.whatsappPhone}</small>}
+              </div>
+            </div>
+
             <div className="form-field">
               <label htmlFor="register-password">Senha</label>
               <div className="login-input">
@@ -229,6 +279,61 @@ function RegisterPage() {
                 <small id="register-password-help">Use entre 8 e 72 caracteres.</small>
               )}
             </div>
+
+            <div className="register-grid">
+              <div className="form-field form-field--wide">
+                <label htmlFor="register-street">Logradouro</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.street)} autoComplete="street-address" id="register-street" maxLength={150} name="street" onChange={handleChange} placeholder="Rua ou avenida" required value={form.street} />
+                </div>
+                {fieldErrors.street && <small className="field-error">{fieldErrors.street}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-number">Número</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.addressNumber)} id="register-number" maxLength={20} name="addressNumber" onChange={handleChange} placeholder="123" required value={form.addressNumber} />
+                </div>
+                {fieldErrors.addressNumber && <small className="field-error">{fieldErrors.addressNumber}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-complement">Complemento</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.addressComplement)} id="register-complement" maxLength={100} name="addressComplement" onChange={handleChange} placeholder="Opcional" value={form.addressComplement} />
+                </div>
+                {fieldErrors.addressComplement && <small className="field-error">{fieldErrors.addressComplement}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-neighborhood">Bairro</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.neighborhood)} id="register-neighborhood" maxLength={100} name="neighborhood" onChange={handleChange} required value={form.neighborhood} />
+                </div>
+                {fieldErrors.neighborhood && <small className="field-error">{fieldErrors.neighborhood}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-postal-code">CEP</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.postalCode)} autoComplete="postal-code" id="register-postal-code" maxLength={9} name="postalCode" onChange={handleChange} placeholder="00000-000" required value={form.postalCode} />
+                </div>
+                {fieldErrors.postalCode && <small className="field-error">{fieldErrors.postalCode}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-city">Cidade</label>
+                <div className="login-input">
+                  <select aria-invalid={Boolean(fieldErrors.cityIbgeCode)} disabled={cities.length === 0} id="register-city" name="cityIbgeCode" onChange={handleChange} required value={form.cityIbgeCode}>
+                    <option value="">Selecione</option>
+                    {cities.map((city) => <option key={city.ibgeCode} value={city.ibgeCode}>{city.name} — {city.stateCode}</option>)}
+                  </select>
+                </div>
+                {fieldErrors.cityIbgeCode && <small className="field-error">{fieldErrors.cityIbgeCode}</small>}
+                {citiesError && <small className="field-error">{citiesError}</small>}
+              </div>
+            </div>
+
+            <label className="register-consent">
+              <input checked={form.whatsappConsentGiven} name="whatsappConsentGiven" onChange={handleChange} required type="checkbox" />
+              <span>Autorizo o recebimento de alertas climáticos pelo WhatsApp.</span>
+            </label>
+            {fieldErrors.whatsappConsentGiven && <small className="field-error">{fieldErrors.whatsappConsentGiven}</small>}
 
             <Button className="auth-form__submit" disabled={isSubmitting} type="submit">
               {isSubmitting && (

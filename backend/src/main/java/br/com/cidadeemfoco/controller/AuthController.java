@@ -3,7 +3,6 @@ package br.com.cidadeemfoco.controller;
 import br.com.cidadeemfoco.dto.AuthResponse;
 import br.com.cidadeemfoco.dto.LoginRequest;
 import br.com.cidadeemfoco.dto.RegisterRequest;
-import br.com.cidadeemfoco.dto.UserResponse;
 import br.com.cidadeemfoco.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -27,7 +26,7 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Cadastrar um cidadao", security = {})
-    public UserResponse register(@Valid @RequestBody RegisterRequest request) {
+    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 

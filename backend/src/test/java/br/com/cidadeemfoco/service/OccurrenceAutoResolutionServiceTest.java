@@ -35,6 +35,9 @@ class OccurrenceAutoResolutionServiceTest {
     @Mock
     private OccurrenceRepository occurrenceRepository;
 
+    @Mock
+    private GamificationService gamificationService;
+
     @Test
     void shouldResolveExpiredTemporaryNaturalOccurrences() {
         Occurrence occurrence = occurrence();
@@ -47,6 +50,7 @@ class OccurrenceAutoResolutionServiceTest {
         )).thenReturn(expiredOccurrences);
         var service = new OccurrenceAutoResolutionService(
                 occurrenceRepository,
+                gamificationService,
                 Duration.ofHours(6),
                 Set.of(
                         OccurrenceType.ALAGAMENTO,
@@ -72,6 +76,7 @@ class OccurrenceAutoResolutionServiceTest {
                 cutoffCaptor.capture()
         );
         verify(occurrenceRepository).saveAll(expiredOccurrences);
+        verify(gamificationService).awardCaseResolved(occurrence);
 
         assertThat(resolvedCount).isEqualTo(1);
         assertThat(occurrence.getStatus()).isEqualTo(OccurrenceStatus.RESOLVIDA);
@@ -107,6 +112,7 @@ class OccurrenceAutoResolutionServiceTest {
         )).thenReturn(List.of());
         var service = new OccurrenceAutoResolutionService(
                 occurrenceRepository,
+                gamificationService,
                 Duration.ofHours(6),
                 Set.of(OccurrenceType.ALAGAMENTO)
         );
@@ -128,6 +134,7 @@ class OccurrenceAutoResolutionServiceTest {
         )).thenReturn(List.of(occurrence), List.of());
         var service = new OccurrenceAutoResolutionService(
                 occurrenceRepository,
+                gamificationService,
                 Duration.ofHours(6),
                 Set.of(OccurrenceType.ALAGAMENTO)
         );
@@ -144,6 +151,7 @@ class OccurrenceAutoResolutionServiceTest {
     void shouldAllowAutoResolutionToBeDisabledWithAnEmptyTypeSet() {
         var service = new OccurrenceAutoResolutionService(
                 occurrenceRepository,
+                gamificationService,
                 Duration.ofHours(6),
                 Set.of()
         );

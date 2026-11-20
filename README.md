@@ -171,9 +171,10 @@ O frontend está em `frontend/` e utiliza React com JavaScript. A aplicação é
 
 ### Autenticação no frontend
 
-Após um cadastro bem-sucedido, o frontend utiliza o endpoint de login para obter
-o JWT e direciona o cidadão automaticamente para a área autenticada. O endpoint
-de cadastro retorna os dados do usuário, não o token.
+Após um cadastro bem-sucedido, o próprio endpoint de cadastro retorna o JWT e os
+dados do cidadão. O frontend salva essa sessão e direciona o usuário
+automaticamente para a área autenticada, sem realizar uma segunda chamada de
+login.
 
 Após o login, o frontend armazena no `localStorage`:
 
@@ -185,12 +186,11 @@ A senha nunca é armazenada. Rotas protegidas verificam a autenticação e o per
 
 ### Perfil e dados do usuário
 
-O contrato atual de autenticação disponibiliza `id`, `name`, `email`, `role` e
-`createdAt`. CPF, endereço, cidade e UF não fazem parte do `UserResponse` desta
-branch e, portanto, não são apresentados como campos editáveis. O painel
-administrativo está preparado para identificar `user.city.name` e
-`user.city.stateCode`; enquanto esses dados não forem fornecidos pela API, ele
-exibe que a cidade gerenciada não foi informada.
+O contrato de autenticação disponibiliza os dados públicos do usuário, incluindo
+cidade, endereço e WhatsApp. O backend também oferece `GET /api/users/me` e
+`PUT /api/users/me` para consultar e atualizar o cadastro completo. A tela atual
+de perfil já gerencia as preferências de WhatsApp; a integração visual da edição
+dos demais dados cadastrais ainda está pendente no frontend.
 
 O frontend não filtra dados por cidade como mecanismo de segurança. O isolamento
 dos registros precisa ser garantido pela autenticação e pelas consultas do
@@ -285,6 +285,31 @@ backend/src/main/java/br/com/cidadeemfoco/
 - `ClimateAlert`: alerta demonstrativo, tipo, severidade, validade e estado de ativação.
 - `WhatsappNotification`: item persistente da fila, destinatário, cópia dos dados do alerta, estado e tentativas de envio.
 
+### Validação geográfica das ocorrências
+
+Antes de salvar uma ocorrência, o backend verifica se suas coordenadas estão
+dentro do limite da cidade vinculada ao cidadão. Os limites ficam em
+`backend/src/main/resources/city-boundaries/`, em arquivos GeoJSON nomeados com
+o código IBGE de sete dígitos. O arquivo de Praia Grande utiliza a malha oficial
+do IBGE. Uma nova cidade só deve ser habilitada depois que seu respectivo
+GeoJSON for adicionado; sem ele, o backend recusa o cadastro da ocorrência.
+Além disso, todas as cidades ativas são validadas na inicialização. Um GeoJSON
+ausente ou inválido impede que o backend suba, evitando disponibilizar uma cidade
+que ainda não consegue receber relatos corretamente.
+
+O cidadão também possui um intervalo mínimo entre relatos. Por padrão, ele deve
+aguardar 15 minutos após uma ocorrência antes de registrar outra, inclusive
+quando o novo relato contribuiria para um caso agrupado. O período pode ser
+ajustado pela variável `OCCURRENCE_CREATION_COOLDOWN`. Durante esse intervalo,
+`POST /api/occurrences` responde com HTTP `429 Too Many Requests`, envia o
+cabeçalho `Retry-After` em segundos e informa `retryAfterSeconds` e
+`nextAllowedAt` no corpo do erro.
+
+Clientes autenticados podem consultar o mesmo limite usado nessa validação em
+`GET /api/cities/{ibgeCode}/boundary`. A resposta utiliza o formato GeoJSON e o
+tipo de conteúdo `application/geo+json`. A cidade precisa estar ativa e possuir
+o arquivo correspondente na pasta de limites municipais.
+
 ### Segurança
 
 - O cadastro público sempre cria um `CITIZEN`.
@@ -296,15 +321,23 @@ backend/src/main/java/br/com/cidadeemfoco/
 
 ### Administrador inicial
 
-Cadastre o usuário normalmente e promova-o diretamente no banco:
+O cadastro público continua criando exclusivamente cidadãos. Para cadastrar um
+administrador sem manipular diretamente o banco, configure temporariamente:
 
-```sql
-UPDATE users
-SET role = 'ADMIN'
-WHERE email = 'admin@exemplo.com';
+```dotenv
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_NAME=Prefeitura de Praia Grande
+ADMIN_BOOTSTRAP_EMAIL=admin@exemplo.com
+ADMIN_BOOTSTRAP_PASSWORD=uma-senha-segura
+ADMIN_BOOTSTRAP_CITY_IBGE_CODE=3541000
 ```
 
-Faça um novo login após a alteração para gerar um token com o perfil atualizado.
+Inicie a aplicação uma vez e confirme no log que o administrador foi criado.
+Depois, altere obrigatoriamente `ADMIN_BOOTSTRAP_ENABLED` para `false` e remova a
+senha da configuração. A operação é idempotente: reiniciar por engano não duplica
+o administrador nem redefine sua senha. Um email já pertencente a um cidadão não
+é promovido automaticamente. O ADMIN recebe acesso somente aos dados da cidade
+ativa indicada pelo código IBGE.
 
 ### Endpoints principais
 
@@ -314,6 +347,44 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | --- | --- | --- | --- |
 | POST | `/api/auth/register` | Público | Cadastrar cidadão |
 | POST | `/api/auth/login` | Público | Autenticar e gerar JWT |
+
+#### Cidades
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/cities` | Público | Listar cidades ativas para cadastro |
+| GET | `/api/cities/{ibgeCode}/boundary` | Autenticado | Obter o limite municipal em GeoJSON |
+
+#### Ranking de prefeituras
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/rankings/cities?period=MONTH` | Autenticado | Comparar o índice de resolução das cidades |
+
+O período aceita `WEEK`, `MONTH` ou `YEAR` e usa, respectivamente, a semana
+atual iniciada na segunda-feira, o mês atual ou o ano atual no fuso de São
+Paulo. O padrão é `MONTH`. O índice corresponde a casos resolvidos divididos
+pelos casos confirmados; ocorrências `NAO_CONFIRMADA` não entram no denominador.
+Em caso de empate no percentual, a cidade com mais casos resolvidos fica à
+frente, seguida pela que possui maior volume de casos confirmados. Somente casos
+principais são contabilizados, evitando contar separadamente os relatos já
+agrupados.
+
+#### Gamificação dos cidadãos
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/gamification/me` | CITIZEN | Consultar XP, nível e progresso pessoal |
+| GET | `/api/gamification/ranking?period=MONTH` | Autenticado | Ranking de cidadãos da mesma cidade |
+
+Por padrão, cada relato aceito concede 10 XP e a resolução do caso concede mais
+20 XP para cada cidadão que contribuiu, inclusive em casos agrupados. Cada bônus
+é registrado uma única vez. Não existem penalidades automáticas. Um novo nível
+é alcançado a cada 100 XP.
+
+O ranking aceita `WEEK`, `MONTH`, `YEAR` e `ALL`, usa o fuso de São Paulo e
+exibe somente nome, XP, nível e posição. CPF, email, telefone e endereço nunca
+são retornados. O ranking é sempre limitado à cidade do usuário autenticado.
 
 #### Preferências de WhatsApp
 
@@ -345,8 +416,17 @@ cancelar, o número e a data do consentimento são removidos.
 | GET | `/api/admin/occurrences/{id}` | ADMIN | Detalhes administrativos |
 | GET | `/api/admin/occurrences/{id}/reports` | ADMIN | Relatos agrupados no caso |
 | PATCH | `/api/admin/occurrences/{id}/status` | ADMIN | Alterar status |
+| GET | `/api/admin/dashboard/occurrences` | ADMIN | Indicadores e distribuições da cidade administrada |
 
 A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `createdFrom` e `createdTo` como filtros opcionais. As datas usam o formato ISO 8601.
+
+O dashboard aceita os mesmos filtros e considera somente casos principais da
+cidade do ADMIN. A resposta informa totais de casos e relatos, casos abertos,
+resolvidos, não confirmados e resolvidos automaticamente, tempo médio de
+resolução, distribuições por status, categoria, tipo e bairro e a evolução
+diária. O índice de resolução é calculado por
+`casos resolvidos / (total de casos - casos não confirmados) * 100`; quando não
+há casos confirmados, o índice é `0.00`.
 
 Ao receber o status `RESOLVIDA`, a ocorrência passa a registrar `resolvedAt`. O endpoint do mapa continua retornando esse pin durante 24 horas e depois o omite, sem excluir a ocorrência das listagens ou do histórico. O prazo pode ser alterado por `RESOLVED_MAP_VISIBILITY`.
 
@@ -461,7 +541,7 @@ O backend usa MySQL e valida o schema com Hibernate. Mudanças estruturais são 
 backend/src/main/resources/db/migration/
 ```
 
-As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp e fila de notificações.
+As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp, fila de notificações e histórico de XP. A migration de gamificação também atribui retroativamente os pontos padrão aos relatos e resoluções que já existiam.
 
 ### Variáveis do backend
 
@@ -476,10 +556,17 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `SERVER_PORT` | `8080` | Porta da API |
 | `IMAGE_STORAGE_TYPE` | `local` | Armazenamento de imagens: `local` ou `cloudinary` |
 | `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório usado quando o armazenamento é local |
+| `MAX_IMAGE_FILE_SIZE` | `5MB` | Tamanho máximo de cada foto |
+| `MAX_IMAGE_REQUEST_SIZE` | `20MB` | Tamanho máximo da requisição com até quatro fotos |
 | `CLOUDINARY_CLOUD_NAME` | vazio | Identificador da conta Cloudinary |
 | `CLOUDINARY_API_KEY` | vazio | Chave da API Cloudinary |
 | `CLOUDINARY_API_SECRET` | vazio | Segredo da API Cloudinary |
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
+| `OCCURRENCE_CREATION_COOLDOWN` | `15m` | Intervalo mínimo entre relatos do mesmo cidadão |
+| `CITY_BOUNDARY_VALIDATION_ENABLED` | `true` | Valida os limites de todas as cidades ativas ao iniciar |
+| `GAMIFICATION_REPORT_CREATED_XP` | `10` | XP concedido por relato aceito |
+| `GAMIFICATION_CASE_RESOLVED_XP` | `20` | Bônus concedido a cada participante quando o caso é resolvido |
+| `GAMIFICATION_XP_PER_LEVEL` | `100` | Quantidade de XP necessária por nível |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
 | `AUTO_RESOLUTION_TYPES` | `ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO` | Tipos de evento natural elegíveis, separados por vírgula |
@@ -529,7 +616,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 119 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 193 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, rankings municipal e de cidadãos, XP e níveis, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 
@@ -565,14 +652,9 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - O estado `SENT` confirma que a Meta aceitou a mensagem; sem o webhook, ele ainda não confirma entrega ou leitura pelo cidadão.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.
-- O contrato atual do usuário não retorna CPF, endereço, cidade ou UF e não
-  oferece endpoint de edição cadastral geral. Apenas as preferências de WhatsApp
-  podem ser atualizadas pelo perfil nesta branch.
-- A identificação da cidade administrada depende de `city` ser incluída pela API
-  na sessão. Sem esse dado, o painel informa a ausência e não presume uma cidade.
-- O frontend permite quatro imagens de até 5 MB, mas o backend desta branch limita
-  a requisição multipart completa a 5 MB; envios com várias imagens grandes podem
-  ser recusados até que esses limites sejam compatibilizados.
+- A API já retorna a cidade na sessão e oferece consulta e atualização do perfil
+  completo; a tela do cidadão ainda precisa conectar a edição de todos esses
+  campos ao endpoint `PUT /api/users/me`.
 
 ## Aviso
 

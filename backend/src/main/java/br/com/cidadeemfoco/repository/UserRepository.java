@@ -12,7 +12,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByWhatsappPhone(String whatsappPhone);
 
+    Optional<User> findByCpf(String cpf);
+
     boolean existsByEmailIgnoreCase(String email);
 
+    boolean existsByCpf(String cpf);
+
     List<User> findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull();
+
+    List<User> findByCityIdAndWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull(Long cityId);
 }

@@ -6,6 +6,7 @@ import br.com.cidadeemfoco.service.ClimateAlertService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,41 +33,42 @@ public class AdminClimateAlertController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ClimateAlertResponse create(@Valid @RequestBody CreateClimateAlertRequest request) {
-        return climateAlertService.create(request);
+    public ClimateAlertResponse create(Authentication authentication, @Valid @RequestBody CreateClimateAlertRequest request) {
+        return climateAlertService.create(authentication.getName(), request);
     }
 
     @GetMapping
-    public List<ClimateAlertResponse> findAll() {
-        return climateAlertService.findAll();
+    public List<ClimateAlertResponse> findAll(Authentication authentication) {
+        return climateAlertService.findAll(authentication.getName());
     }
 
     @GetMapping("/{id}")
-    public ClimateAlertResponse findById(@PathVariable @Positive Long id) {
-        return climateAlertService.findById(id);
+    public ClimateAlertResponse findById(Authentication authentication, @PathVariable @Positive Long id) {
+        return climateAlertService.findById(authentication.getName(), id);
     }
 
     @PatchMapping("/{id}")
     public ClimateAlertResponse update(
+            Authentication authentication,
             @PathVariable @Positive Long id,
             @Valid @RequestBody CreateClimateAlertRequest request
     ) {
-        return climateAlertService.update(id, request);
+        return climateAlertService.update(authentication.getName(), id, request);
     }
 
     @PatchMapping("/{id}/activate")
-    public ClimateAlertResponse activate(@PathVariable @Positive Long id) {
-        return climateAlertService.activate(id);
+    public ClimateAlertResponse activate(Authentication authentication, @PathVariable @Positive Long id) {
+        return climateAlertService.activate(authentication.getName(), id);
     }
 
     @PatchMapping("/{id}/deactivate")
-    public ClimateAlertResponse deactivate(@PathVariable @Positive Long id) {
-        return climateAlertService.deactivate(id);
+    public ClimateAlertResponse deactivate(Authentication authentication, @PathVariable @Positive Long id) {
+        return climateAlertService.deactivate(authentication.getName(), id);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable @Positive Long id) {
-        climateAlertService.delete(id);
+    public void delete(Authentication authentication, @PathVariable @Positive Long id) {
+        climateAlertService.delete(authentication.getName(), id);
     }
 }
