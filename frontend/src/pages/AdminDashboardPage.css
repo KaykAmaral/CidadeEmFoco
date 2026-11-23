@@ -159,8 +159,10 @@
 }
 
 .admin-dashboard__main-grid {
+  --admin-main-card-height: 557px;
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.7fr);
+  grid-auto-rows: var(--admin-main-card-height);
   align-items: stretch;
   gap: 20px;
 }
@@ -224,9 +226,34 @@
   border-radius: 13px;
 }
 
+.admin-map-card,
+.admin-recent-card {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-recent-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .admin-recent-list {
+  min-height: 0;
   display: grid;
   gap: 10px;
+  padding-right: 6px;
+  overflow-y: auto;
+  scrollbar-color: #b9c9d8 transparent;
+  scrollbar-width: thin;
+}
+
+.admin-recent-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-recent-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #b9c9d8;
 }
 
 .admin-recent-card .occurrence-card {
@@ -393,6 +420,7 @@
   }
 
   .admin-dashboard__main-grid {
+    --admin-main-card-height: 519px;
     grid-template-columns: 1fr;
   }
 
@@ -445,5 +473,9 @@
 
   .admin-map-card .occurrence-map {
     height: 360px;
+  }
+
+  .admin-dashboard__main-grid {
+    --admin-main-card-height: 469px;
   }
 }

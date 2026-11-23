@@ -9,6 +9,7 @@ import {
 } from '../../constants/occurrencePresentation'
 import StatusBadge from '../ui/StatusBadge'
 import OccurrenceStrength from '../occurrences/OccurrenceStrength'
+import { getMapMarkerStrength } from '../../utils/mapMarkerStrength'
 import './Map.css'
 
 const PRAIA_GRANDE_CENTER = [-24.005833, -46.405833]
@@ -16,10 +17,11 @@ const PRAIA_GRANDE_CENTER = [-24.005833, -46.405833]
 function createMarkerIcon(occurrence) {
   const { icon: Icon, color } = getOccurrenceTypePresentation(occurrence.type)
   const iconMarkup = renderToStaticMarkup(<Icon aria-hidden="true" size={19} strokeWidth={2.4} />)
-  const strength = Math.max(1, Number(occurrence.strength) || 1)
+  const { strength, level } = getMapMarkerStrength(occurrence.strength)
+  const reportLabel = strength === 1 ? '1 relato' : `${strength} relatos`
   return divIcon({
     className: 'occurrence-marker-container',
-    html: `<span class="occurrence-marker" style="--marker-color:${color}">${iconMarkup}${strength > 1 ? `<b aria-label="${strength} relatos">${strength}</b>` : ''}</span>`,
+    html: `<span class="occurrence-marker" style="--marker-color:${color}">${iconMarkup}<b class="occurrence-marker__strength occurrence-marker__strength--${level}" aria-label="${reportLabel}">${strength}</b></span>`,
     iconAnchor: [20, 20], iconSize: [40, 40], popupAnchor: [0, -21],
   })
 }

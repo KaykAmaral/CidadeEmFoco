@@ -59,14 +59,64 @@
   background: var(--color-blue);
 }
 
+.occurrence-filter-panel {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 15px;
+  background: white;
+}
+
+.occurrence-filter-toggle {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 18px;
+  border: 0;
+  color: var(--color-navy);
+  background: white;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-align: left;
+}
+
+.occurrence-filter-toggle:hover {
+  background: var(--color-blue-soft);
+}
+
+.occurrence-filter-toggle > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.occurrence-filter-toggle > span:last-child {
+  color: var(--color-blue);
+  font-size: 0.74rem;
+}
+
+.occurrence-filter-toggle strong {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: white;
+  background: var(--color-blue);
+  font-size: 0.68rem;
+}
+
 .occurrence-filters {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   padding: 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 15px;
-  background: white;
+  border-top: 1px solid var(--color-border);
 }
 
 .occurrence-filters__actions {
@@ -111,6 +161,10 @@
   .occurrence-filters {
     grid-template-columns: 1fr;
     padding: 14px;
+  }
+
+  .occurrence-filter-toggle {
+    padding-inline: 14px;
   }
 
   .occurrence-filters__actions {
