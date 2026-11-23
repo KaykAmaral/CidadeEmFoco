@@ -9,6 +9,7 @@ import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.CityRepository;
+import br.com.cidadeemfoco.repository.PasswordResetTokenRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
 import br.com.cidadeemfoco.service.AdminDashboardService;
 import br.com.cidadeemfoco.service.CityRankingService;
@@ -79,6 +80,9 @@ class SecurityIntegrationTest {
 
     @MockitoBean
     private CityRepository cityRepository;
+
+    @MockitoBean
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @MockitoBean
     private OccurrenceService occurrenceService;

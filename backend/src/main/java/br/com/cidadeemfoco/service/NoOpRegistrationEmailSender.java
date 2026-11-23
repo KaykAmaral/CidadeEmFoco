@@ -11,4 +11,9 @@ public class NoOpRegistrationEmailSender implements RegistrationEmailSender {
     public void sendRegistrationCompleted(String recipientEmail, String citizenName) {
         // Envio intencionalmente desativado neste ambiente.
     }
+
+    @Override
+    public void sendPasswordReset(String recipientEmail, String citizenName, String resetUrl, long validMinutes) {
+        // Envio intencionalmente desativado neste ambiente.
+    }
 }

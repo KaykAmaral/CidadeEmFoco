@@ -61,13 +61,12 @@ public class AuthService {
             throw new BusinessRuleException("Ja existe um usuario cadastrado com este CPF");
         }
 
-        String whatsappPhone = UserDataNormalizer.normalizePhone(request.whatsappPhone());
-        userRepository.findByWhatsappPhone(whatsappPhone).ifPresent(existingUser -> {
-            throw new BusinessRuleException("Este numero de WhatsApp ja esta cadastrado");
-        });
-
-        if (!request.whatsappConsentGiven()) {
-            throw new BusinessRuleException("E necessario autorizar o recebimento de alertas pelo WhatsApp");
+        String whatsappPhone = null;
+        if (request.whatsappConsentGiven()) {
+            whatsappPhone = UserDataNormalizer.normalizePhone(request.whatsappPhone());
+            userRepository.findByWhatsappPhone(whatsappPhone).ifPresent(existingUser -> {
+                throw new BusinessRuleException("Este numero de WhatsApp ja esta cadastrado");
+            });
         }
 
         String cityIbgeCode = request.cityIbgeCode().trim();
@@ -87,7 +86,9 @@ public class AuthService {
                 request.neighborhood().trim(),
                 UserDataNormalizer.normalizePostalCode(request.postalCode())
         );
-        user.enableWhatsappNotifications(whatsappPhone, Instant.now());
+        if (whatsappPhone != null) {
+            user.enableWhatsappNotifications(whatsappPhone, Instant.now());
+        }
         User savedUser = userRepository.save(user);
         registrationEmailSender.sendRegistrationCompleted(savedUser.getEmail(), savedUser.getName());
         return createAuthResponse(savedUser);

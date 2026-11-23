@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ApiError } from './api.js'
-import { loginRequest, registerAndLoginRequest, registerRequest } from './authService.js'
+import {
+  forgotPasswordRequest,
+  loginRequest,
+  registerAndLoginRequest,
+  registerRequest,
+  resetPasswordRequest,
+} from './authService.js'
 
 const originalFetch = globalThis.fetch
 
@@ -84,4 +90,28 @@ test('uses the authenticated response returned directly by registration', async 
 
   assert.deepEqual(calls, [{ url: '/api/auth/register', body: citizen }])
   assert.equal(response.token, 'jwt-token')
+})
+
+test('requests a password recovery link without exposing account data', async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, '/api/auth/forgot-password')
+    assert.equal(options.method, 'POST')
+    assert.deepEqual(JSON.parse(options.body), { email: 'ana@example.com' })
+    return jsonResponse({ message: 'Se o email estiver cadastrado, enviaremos as instrucoes' })
+  }
+
+  const response = await forgotPasswordRequest('ana@example.com')
+  assert.match(response.message, /instrucoes/)
+})
+
+test('submits the reset token and new password', async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, '/api/auth/reset-password')
+    assert.equal(options.method, 'POST')
+    assert.deepEqual(JSON.parse(options.body), { token: 'token-seguro', newPassword: 'novaSenha123' })
+    return jsonResponse({ message: 'Senha redefinida com sucesso' })
+  }
+
+  const response = await resetPasswordRequest('token-seguro', 'novaSenha123')
+  assert.equal(response.message, 'Senha redefinida com sucesso')
 })

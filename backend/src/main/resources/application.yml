@@ -57,6 +57,7 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
   gamification:
     report-created-xp: ${GAMIFICATION_REPORT_CREATED_XP:10}
     case-resolved-xp: ${GAMIFICATION_CASE_RESOLVED_XP:20}
@@ -72,7 +73,10 @@ app:
   email:
     enabled: ${EMAIL_ENABLED:false}
     from: ${MAIL_FROM:no-reply@cidadeemfoco.local}
-    registration-subject: ${REGISTRATION_EMAIL_SUBJECT:Teste - inscrição concluída no Cidade em Foco}
+    registration-subject: ${REGISTRATION_EMAIL_SUBJECT:Cadastro concluído — Cidade em Foco}
+    password-reset-subject: ${PASSWORD_RESET_EMAIL_SUBJECT:Redefinição de senha — Cidade em Foco}
+    password-reset-token-lifetime: ${PASSWORD_RESET_TOKEN_LIFETIME:30m}
+    password-reset-request-cooldown: ${PASSWORD_RESET_REQUEST_COOLDOWN:1m}
   public-api:
     rate-limit:
       enabled: ${PUBLIC_API_RATE_LIMIT_ENABLED:true}

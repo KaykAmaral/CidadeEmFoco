@@ -63,15 +63,14 @@ public class UserService {
                     throw new BusinessRuleException("Ja existe um usuario cadastrado com este CPF");
                 });
 
-        String phone = UserDataNormalizer.normalizePhone(request.whatsappPhone());
-        userRepository.findByWhatsappPhone(phone)
-                .filter(existingUser -> !isSameUser(existingUser, user))
-                .ifPresent(existingUser -> {
-                    throw new BusinessRuleException("Este numero de WhatsApp ja esta cadastrado");
-                });
-
-        if (!request.whatsappConsentGiven()) {
-            throw new BusinessRuleException("E necessario autorizar o recebimento de alertas pelo WhatsApp");
+        String phone = null;
+        if (request.whatsappConsentGiven()) {
+            phone = UserDataNormalizer.normalizePhone(request.whatsappPhone());
+            userRepository.findByWhatsappPhone(phone)
+                    .filter(existingUser -> !isSameUser(existingUser, user))
+                    .ifPresent(existingUser -> {
+                        throw new BusinessRuleException("Este numero de WhatsApp ja esta cadastrado");
+                    });
         }
 
         var city = cityRepository.findByIbgeCodeAndActiveTrue(request.cityIbgeCode().trim())
@@ -95,10 +94,15 @@ public class UserService {
                 UserDataNormalizer.normalizePostalCode(request.postalCode()),
                 city
         );
-        user.enableWhatsappNotifications(phone, Instant.now());
+        if (phone == null) {
+            cancelPendingNotifications(user);
+            user.disableWhatsappNotifications();
+        } else {
+            user.enableWhatsappNotifications(phone, Instant.now());
+        }
         User savedUser = userRepository.save(user);
 
-        if (!cityChanged) {
+        if (!cityChanged && phone != null) {
             updatePendingRecipients(savedUser, phone);
         }
         return UserProfileResponse.from(savedUser);

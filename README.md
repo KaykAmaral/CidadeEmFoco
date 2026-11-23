@@ -347,6 +347,18 @@ ativa indicada pelo código IBGE.
 | --- | --- | --- | --- |
 | POST | `/api/auth/register` | Público | Cadastrar cidadão |
 | POST | `/api/auth/login` | Público | Autenticar e gerar JWT |
+| POST | `/api/auth/forgot-password` | Público | Solicitar link de redefinição de senha |
+| POST | `/api/auth/reset-password` | Público | Definir uma nova senha com o token recebido |
+
+O WhatsApp é opcional no cadastro. O cidadão pode informar e autorizar o número
+posteriormente na tela de perfil, sem impedir a criação da conta enquanto a
+integração externa com a Meta estiver indisponível.
+
+A recuperação de senha sempre devolve uma resposta genérica, inclusive quando
+o e-mail não existe, evitando revelar contas cadastradas. Para contas válidas,
+o sistema envia um link de uso único que expira em 30 minutos. Somente o hash do
+token fica armazenado no banco. O link abre a página do frontend indicada por
+`FRONTEND_URL`.
 
 #### Cidades
 
@@ -541,7 +553,7 @@ O backend usa MySQL e valida o schema com Hibernate. Mudanças estruturais são 
 backend/src/main/resources/db/migration/
 ```
 
-As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp, fila de notificações e histórico de XP. A migration de gamificação também atribui retroativamente os pontos padrão aos relatos e resoluções que já existiam.
+As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp, fila de notificações, histórico de XP e tokens seguros de recuperação de senha. A migration de gamificação também atribui retroativamente os pontos padrão aos relatos e resoluções que já existiam.
 
 ### Variáveis do backend
 
@@ -552,6 +564,12 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `DB_PASSWORD` | vazio | Senha do banco |
 | `JWT_SECRET` | sem padrão | Segredo JWT em Base64 |
 | `JWT_EXPIRATION_MINUTES` | `1440` | Validade do token |
+| `EMAIL_ENABLED` | `false` | Habilita os e-mails de cadastro e recuperação de senha |
+| `FRONTEND_URL` | `http://localhost:5173` | Endereço usado no link de recuperação |
+| `REGISTRATION_EMAIL_SUBJECT` | `Cadastro concluído — Cidade em Foco` | Assunto do e-mail de boas-vindas |
+| `PASSWORD_RESET_EMAIL_SUBJECT` | `Redefinição de senha — Cidade em Foco` | Assunto do e-mail de recuperação |
+| `PASSWORD_RESET_TOKEN_LIFETIME` | `30m` | Validade do link de recuperação |
+| `PASSWORD_RESET_REQUEST_COOLDOWN` | `1m` | Intervalo mínimo entre solicitações para a mesma conta |
 | `FLYWAY_REPAIR_ON_START` | `false` | Reparo emergencial e temporário de migration marcada como falha |
 | `SERVER_PORT` | `8080` | Porta da API |
 | `IMAGE_STORAGE_TYPE` | `local` | Armazenamento de imagens: `local` ou `cloudinary` |
@@ -616,7 +634,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 193 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, rankings municipal e de cidadãos, XP e níveis, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 197 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, recuperação de senha, envio de e-mails, rankings municipal e de cidadãos, XP e níveis, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 

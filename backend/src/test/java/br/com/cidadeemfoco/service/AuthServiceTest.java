@@ -102,6 +102,28 @@ class AuthServiceTest {
     }
 
     @Test
+    void shouldAllowRegistrationWithoutWhatsappConsent() {
+        when(userRepository.existsByEmailIgnoreCase("ana@example.com")).thenReturn(false);
+        when(userRepository.existsByCpf("52998224725")).thenReturn(false);
+        when(cityRepository.findByIbgeCodeAndActiveTrue("3541000"))
+                .thenReturn(Optional.of(new City("Praia Grande", "SP", "3541000")));
+        when(passwordEncoder.encode("senha123")).thenReturn("bcrypt-hash");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(jwtService.generateToken(any(User.class))).thenReturn("jwt-token");
+        when(jwtService.getExpirationSeconds()).thenReturn(86400L);
+        RegisterRequest request = new RegisterRequest(
+                "Ana", "ana@example.com", "senha123", "529.982.247-25",
+                "", false, "Avenida Brasil", "100", null,
+                "Boqueirao", "11700-000", "3541000"
+        );
+
+        AuthResponse response = authService.register(request);
+
+        assertThat(response.user().whatsappPhone()).isNull();
+        verify(userRepository, never()).findByWhatsappPhone(any());
+    }
+
+    @Test
     void shouldRejectInvalidCpf() {
         when(userRepository.existsByEmailIgnoreCase("ana@example.com")).thenReturn(false);
 

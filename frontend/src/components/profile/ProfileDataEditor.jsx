@@ -5,7 +5,7 @@ import { getActiveCities } from '../../services/cityService'
 import { getMyProfile, updateMyProfile } from '../../services/userService'
 
 const fields = [
-  ['name', 'Nome', 'text'], ['cpf', 'CPF', 'text'], ['whatsappPhone', 'WhatsApp com DDD', 'tel'],
+  ['name', 'Nome', 'text'], ['cpf', 'CPF', 'text'],
   ['street', 'Rua', 'text'], ['addressNumber', 'Número', 'text'],
   ['addressComplement', 'Complemento', 'text'], ['neighborhood', 'Bairro', 'text'],
   ['postalCode', 'CEP', 'text'],
@@ -70,10 +70,9 @@ function ProfileDataEditor({ logout, token }) {
       {editing ? <form className="profile-data__form" onSubmit={submit}>
         {fields.map(([name, label, type]) => <div className="form-field" key={name}><label htmlFor={`profile-${name}`}>{label}</label><input aria-invalid={Boolean(fieldErrors[name])} className="form-control" id={`profile-${name}`} name={name} onChange={change} required={!['addressComplement'].includes(name)} type={type} value={form[name]} />{fieldErrors[name] && <small className="field-error">{fieldErrors[name]}</small>}</div>)}
         <div className="form-field"><label htmlFor="profile-city">Cidade/UF</label><select className="form-control" id="profile-city" name="cityIbgeCode" onChange={change} required value={form.cityIbgeCode}>{cities.map((city) => <option key={city.ibgeCode} value={city.ibgeCode}>{city.name}/{city.stateCode}</option>)}</select>{fieldErrors.cityIbgeCode && <small className="field-error">{fieldErrors.cityIbgeCode}</small>}</div>
-        <label className="profile-consent"><input checked={form.whatsappConsentGiven} name="whatsappConsentGiven" onChange={change} type="checkbox" /><span>Autorizo notificações pelo WhatsApp.</span></label>
         <div className="profile-preferences__actions"><Button disabled={busy} type="submit"><Save size={16} aria-hidden="true" />{busy ? 'Salvando...' : 'Salvar'}</Button><Button onClick={() => { setEditing(false); setForm(toForm(profile)) }} type="button" variant="outline"><X size={16} aria-hidden="true" />Cancelar</Button></div>
       </form> : <dl className="profile-data__summary">
-        <div><dt>CPF</dt><dd>{profile.cpf}</dd></div><div><dt>WhatsApp</dt><dd>{profile.whatsappPhone}</dd></div>
+        <div><dt>CPF</dt><dd>{profile.cpf}</dd></div>
         <div><dt>Endereço</dt><dd>{profile.address?.street}, {profile.address?.number}{profile.address?.complement ? ` — ${profile.address.complement}` : ''}</dd></div>
         <div><dt>Bairro e CEP</dt><dd>{profile.address?.neighborhood} — {profile.address?.postalCode}</dd></div>
         <div><dt>Cidade</dt><dd>{profile.city?.name}/{profile.city?.stateCode}</dd></div>

@@ -1,6 +1,5 @@
 package br.com.cidadeemfoco.dto;
 
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,11 +12,9 @@ public record UpdateUserProfileRequest(
         @Size(max = 14, message = "O CPF deve ter no maximo 14 caracteres")
         String cpf,
 
-        @NotBlank(message = "O numero do WhatsApp e obrigatorio")
         @Size(max = 30, message = "O numero do WhatsApp deve ter no maximo 30 caracteres")
         String whatsappPhone,
 
-        @AssertTrue(message = "E necessario autorizar o recebimento de alertas pelo WhatsApp")
         boolean whatsappConsentGiven,
 
         @NotBlank(message = "O logradouro e obrigatorio")

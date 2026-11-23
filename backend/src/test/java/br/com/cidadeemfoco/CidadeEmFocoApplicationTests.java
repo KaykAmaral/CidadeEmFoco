@@ -3,6 +3,7 @@ package br.com.cidadeemfoco;
 import br.com.cidadeemfoco.repository.ClimateAlertRepository;
 import br.com.cidadeemfoco.repository.CityRepository;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
+import br.com.cidadeemfoco.repository.PasswordResetTokenRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
 import br.com.cidadeemfoco.repository.CitizenXpEventRepository;
@@ -36,6 +37,9 @@ class CidadeEmFocoApplicationTests {
 
 	@MockitoBean
 	private CitizenXpEventRepository citizenXpEventRepository;
+
+	@MockitoBean
+	private PasswordResetTokenRepository passwordResetTokenRepository;
 
 	@Test
 	void contextLoads() {

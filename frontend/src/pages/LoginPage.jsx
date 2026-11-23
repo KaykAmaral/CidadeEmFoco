@@ -188,6 +188,8 @@ function LoginPage() {
               )}
             </div>
 
+            <Link className="login-forgot-password" to="/esqueci-minha-senha">Esqueci minha senha</Link>
+
             <Button className="auth-form__submit" disabled={isSubmitting} type="submit">
               {isSubmitting && (
                 <LoaderCircle className="button__spinner" size={18} aria-hidden="true" />

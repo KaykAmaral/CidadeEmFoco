@@ -195,6 +195,10 @@ public class User {
         this.whatsappNotificationsEnabled = false;
     }
 
+    public void changePassword(String passwordHash) {
+        this.passwordHash = Objects.requireNonNull(passwordHash);
+    }
+
     public void updateProfile(
             String name,
             String cpf,

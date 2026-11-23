@@ -14,8 +14,28 @@ function registerRequest(citizen) {
   })
 }
 
+function forgotPasswordRequest(email) {
+  return apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+function resetPasswordRequest(token, newPassword) {
+  return apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  })
+}
+
 async function registerAndLoginRequest(citizen) {
   return registerRequest(citizen)
 }
 
-export { loginRequest, registerAndLoginRequest, registerRequest }
+export {
+  forgotPasswordRequest,
+  loginRequest,
+  registerAndLoginRequest,
+  registerRequest,
+  resetPasswordRequest,
+}

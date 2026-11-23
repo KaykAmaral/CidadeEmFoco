@@ -128,6 +128,7 @@ function RegisterPage() {
     setForm((currentForm) => ({
       ...currentForm,
       [name]: type === 'checkbox' ? checked : formattedValue,
+      ...(name === 'whatsappPhone' && !formattedValue ? { whatsappConsentGiven: false } : {}),
     }))
     setError('')
     if (name === 'postalCode') {
@@ -324,10 +325,11 @@ function RegisterPage() {
                 {fieldErrors.cpf && <small className="field-error">{fieldErrors.cpf}</small>}
               </div>
               <div className="form-field">
-                <label htmlFor="register-whatsapp">WhatsApp</label>
+                <label htmlFor="register-whatsapp">WhatsApp <small>(opcional)</small></label>
                 <div className="login-input">
-                  <input aria-invalid={Boolean(fieldErrors.whatsappPhone)} autoComplete="tel" id="register-whatsapp" inputMode="tel" maxLength={15} name="whatsappPhone" onChange={handleChange} placeholder="(00) 00000-0000" required type="tel" value={form.whatsappPhone} />
+                  <input aria-invalid={Boolean(fieldErrors.whatsappPhone)} autoComplete="tel" id="register-whatsapp" inputMode="tel" maxLength={15} name="whatsappPhone" onChange={handleChange} placeholder="(00) 00000-0000" type="tel" value={form.whatsappPhone} />
                 </div>
+                <small>Você poderá configurar as notificações posteriormente.</small>
                 {fieldErrors.whatsappPhone && <small className="field-error">{fieldErrors.whatsappPhone}</small>}
               </div>
             </div>
@@ -454,9 +456,10 @@ function RegisterPage() {
             </div>
 
             <label className="register-consent">
-              <input checked={form.whatsappConsentGiven} name="whatsappConsentGiven" onChange={handleChange} required type="checkbox" />
-              <span>Autorizo o recebimento de alertas climáticos pelo WhatsApp.</span>
+              <input checked={form.whatsappConsentGiven} disabled={!form.whatsappPhone} name="whatsappConsentGiven" onChange={handleChange} type="checkbox" />
+              <span>Autorizo o recebimento de alertas climáticos pelo WhatsApp quando o serviço externo estiver disponível.</span>
             </label>
+            <small className="register-external-service-note">Opcional. Atualmente os alertas continuam disponíveis em tempo real dentro da plataforma.</small>
             {fieldErrors.whatsappConsentGiven && <small className="field-error">{fieldErrors.whatsappConsentGiven}</small>}
 
                 <div className="register-step-actions">
