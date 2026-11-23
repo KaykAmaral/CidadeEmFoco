@@ -154,9 +154,102 @@
 }
 
 .login-page--register .login-form-wrap {
-  width: min(100%, 720px);
+  width: min(100%, 620px);
   margin: auto;
-  padding: 24px 0;
+  padding: 16px 0;
+}
+
+.login-page--register .login-panel {
+  padding-right: clamp(24px, 3vw, 48px);
+  padding-left: clamp(24px, 3vw, 48px);
+}
+
+.login-page--register .auth-card__heading {
+  margin-bottom: 22px;
+}
+
+.login-page--register .auth-card__heading h2 {
+  font-size: clamp(2rem, 2.6vw, 2.7rem);
+}
+
+.login-page--register .auth-form {
+  gap: 16px;
+}
+
+.register-form-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.register-form-section {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid #dce6ef;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.register-form-section[hidden] {
+  display: none;
+}
+
+.register-form-section__heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 2px;
+}
+
+.register-form-section__heading > span {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--color-blue);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.register-form-section__heading h3,
+.register-form-section__heading p {
+  margin: 0;
+}
+
+.register-form-section__heading h3 {
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.register-form-section__heading p {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.login-page--register .login-input {
+  min-height: 48px;
+}
+
+.login-page--register .form-field label {
+  font-size: 0.82rem;
+}
+
+.register-step-button {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.register-step-actions {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.42fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 2px;
 }
 
 .register-grid {
@@ -253,6 +346,20 @@
   background: var(--color-blue-soft);
 }
 
+.login-input__action {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--color-blue);
+  background: var(--color-blue-soft);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.login-input__action:hover {
+  background: #d8edfc;
+}
+
 .login-panel .auth-form__submit {
   min-height: 52px;
   margin-top: 5px;
@@ -291,6 +398,10 @@
   .login-hero__message h1 { font-size: clamp(2.35rem, 4vw, 3.5rem); }
   .login-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 0; }
   .login-benefit:nth-child(3) { padding-left: 0; border-left: 0; }
+
+  .register-form-section {
+    padding: 15px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -313,6 +424,11 @@
   .login-panel .auth-card__heading { margin-bottom: 27px; }
   .login-panel .auth-card__heading h2 { font-size: clamp(2rem, 9vw, 2.55rem); }
   .login-panel__curves, .login-panel__skyline { display: none; }
+
+  .login-page--register .login-panel {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -322,6 +438,10 @@
 
   .register-grid .form-field--wide {
     grid-column: auto;
+  }
+
+  .register-step-actions {
+    grid-template-columns: 1fr;
   }
 }
 

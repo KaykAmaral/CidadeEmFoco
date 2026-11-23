@@ -14,6 +14,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import OccurrenceDetailPage from './pages/OccurrenceDetailPage'
 import OccurrencesPage from './pages/OccurrencesPage'
 import ProfilePage from './pages/ProfilePage'
+import RankingsPage from './pages/RankingsPage'
 import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './routes/ProtectedRoute'
 import PublicOnlyRoute from './routes/PublicOnlyRoute'
@@ -52,6 +53,7 @@ function App() {
             path="perfil"
             element={<ProfilePage />}
           />
+          <Route path="rankings" element={<RankingsPage />} />
         </Route>
       </Route>
 
