@@ -63,15 +63,24 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-sidebar__account">
-          <div className="admin-sidebar__avatar" aria-hidden="true">
-            {user.name?.charAt(0).toUpperCase()}
+          <div className="admin-sidebar__identity">
+            <div className="admin-sidebar__avatar" aria-hidden="true">
+              {user.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="admin-sidebar__account-details">
+              <strong>{user.name}</strong>
+              <span>{user.email}</span>
+            </div>
           </div>
-          <div className="admin-sidebar__account-details">
-            <strong>{user.name}</strong>
-            <span>{user.email}</span>
+
+          <div className="admin-sidebar__city">
+            <span>Cidade gerenciada</span>
+            <strong>{managedCity ?? 'Não informada pela API'}</strong>
           </div>
-          <button onClick={logout} type="button" aria-label="Sair">
+
+          <button onClick={logout} type="button">
             <LogOut size={19} aria-hidden="true" />
+            <span>Sair</span>
           </button>
         </div>
       </aside>
