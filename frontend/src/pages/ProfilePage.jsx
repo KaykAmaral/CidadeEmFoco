@@ -14,7 +14,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import ProfileDataEditor from '../components/profile/ProfileDataEditor'
@@ -56,6 +56,7 @@ function ProfilePage() {
   const [isPreferencesLoading, setIsPreferencesLoading] = useState(true)
   const [isEditingPreferences, setIsEditingPreferences] = useState(false)
   const [isSavingPreferences, setIsSavingPreferences] = useState(false)
+  const profileEditorRef = useRef(null)
 
   useEffect(() => {
     let isCurrent = true
@@ -204,8 +205,12 @@ function ProfilePage() {
             <div>
               <span>Cidadão</span>
               <h2>{user.name}</h2>
-              <p>Morador colaborador da plataforma</p>
+              <p>{user.city?.name ? `${user.city.name}${user.city.state ? `/${user.city.state}` : ''}` : 'Morador colaborador da plataforma'}</p>
             </div>
+            <Button className="profile-hero__edit" onClick={() => profileEditorRef.current?.startEditing()} variant="outline">
+              <Pencil size={16} aria-hidden="true" />
+              Editar perfil
+            </Button>
           </div>
 
           <dl className="profile-details">
@@ -223,7 +228,7 @@ function ProfilePage() {
             </div>
           </dl>
 
-          <ProfileDataEditor logout={logout} token={token} />
+          <ProfileDataEditor logout={logout} ref={profileEditorRef} token={token} />
           <GamificationPanel logout={logout} token={token} />
 
           <section className="profile-preferences" aria-labelledby="whatsapp-preferences-title">

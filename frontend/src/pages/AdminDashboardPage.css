@@ -479,3 +479,75 @@
     --admin-main-card-height: 469px;
   }
 }
+
+/* Compact administrative dashboard */
+.admin-dashboard { gap: 18px; }
+.admin-dashboard__heading { min-height: 74px; }
+.admin-dashboard__heading p strong { color: var(--color-navy); }
+.admin-dashboard__refresh { display: flex; align-items: center; gap: 12px; }
+.admin-dashboard__refresh > span { color: var(--color-muted); font-size: .76rem; white-space: nowrap; }
+
+.admin-dashboard-filters { grid-template-columns: repeat(5, minmax(120px, 1fr)) auto; gap: 10px; padding: 14px 16px; border-radius: 15px; }
+.admin-dashboard-filters__title { gap: 9px; padding-bottom: 9px; }
+.admin-dashboard-filters__title strong { font-size: .86rem; }
+.admin-dashboard-filters__title span { font-size: .76rem; }
+.admin-dashboard-filters .form-field { gap: 5px; }
+.admin-dashboard-filters .form-field label { font-size: .78rem; }
+.admin-dashboard-filters .form-control { min-height: 42px; padding-block: 8px; font-size: .8rem; }
+.admin-dashboard-filters__actions { grid-column: auto; gap: 7px; }
+.admin-dashboard-filters__actions .button { min-height: 42px; padding-inline: 12px; font-size: .78rem; }
+
+.admin-metrics { gap: 12px; }
+.admin-metric { min-height: 96px; gap: 5px 12px; padding: 15px 17px; border-radius: 14px; }
+.admin-metric > div { width: 42px; height: 42px; border-radius: 12px; }
+.admin-metric > span { font-size: .8rem; }
+.admin-metric > strong { font-size: 2.15rem; }
+
+.admin-dashboard__main-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .75fr); grid-auto-rows: auto; align-items: start; gap: 16px; }
+.admin-dashboard__secondary-grid { gap: 16px; }
+.admin-dashboard-card { height: auto; padding: 18px; border-radius: 16px; }
+.admin-card-heading { min-height: 34px; margin-bottom: 14px; padding-bottom: 11px; }
+.admin-card-heading h2 { font-size: 1.08rem; }
+.admin-card-heading > div > span { font-size: .68rem; }
+.admin-map-card .occurrence-map { height: 390px; }
+.admin-map-card, .admin-recent-card { overflow: visible; }
+.admin-recent-list { max-height: 390px; padding-right: 2px; }
+.admin-recent-card .occurrence-card { padding: 14px; }
+.admin-recent-card .occurrence-card__title { font-size: .9rem; }
+.admin-recent-card .occurrence-card__meta, .admin-recent-card .occurrence-card__location { font-size: .76rem; }
+
+.status-distribution { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.status-distribution__item { padding: 10px 11px; border: 1px solid #e4ecf3; border-radius: 11px; background: #fbfdff; }
+.status-distribution__item > div:first-child { margin-bottom: 6px; }
+.status-distribution__item span { font-size: .78rem; }
+.status-distribution__item strong { min-width: 25px; text-align: right; font-size: .9rem; }
+.status-distribution__track { height: 4px; }
+.admin-alert-summary { gap: 9px; }
+.admin-alert-summary__count { padding: 10px 12px; }
+.admin-alert-summary__count strong { font-size: 1.35rem; }
+.admin-alert-summary__count span { font-size: .76rem; }
+.admin-alert-list article { padding: 9px 2px; }
+.admin-alert-list strong { font-size: .82rem; }
+.admin-alert-list span, .admin-alert-list time { font-size: .72rem; }
+
+@media (max-width: 1240px) {
+  .admin-dashboard-filters { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
+  .admin-dashboard-filters__actions { grid-column: auto; }
+  .admin-dashboard__main-grid { grid-template-columns: 1fr; }
+  .admin-recent-card { width: min(100%, 720px); }
+}
+
+@media (max-width: 760px) {
+  .admin-dashboard__heading, .admin-dashboard__refresh { align-items: stretch; flex-direction: column; }
+  .admin-dashboard__refresh > span { white-space: normal; }
+  .admin-dashboard-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-dashboard-filters__actions { grid-column: 1 / -1; }
+  .admin-dashboard__secondary-grid, .status-distribution { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .admin-dashboard-filters { grid-template-columns: 1fr; }
+  .admin-dashboard-filters__actions { grid-column: auto; }
+  .admin-dashboard__main-grid { grid-auto-rows: auto; }
+  .admin-map-card .occurrence-map { height: 330px; }
+}

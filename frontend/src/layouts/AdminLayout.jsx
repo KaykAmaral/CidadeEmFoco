@@ -21,7 +21,7 @@ function AdminLayout() {
       <header className="admin-mobile-header">
         <div className="admin-mobile-header__brand">
           <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco" />
-          <span>{managedCity ?? 'Cidade não informada'}</span>
+          <span>{managedCity ?? 'Não informada pela API'}</span>
         </div>
         <button
           aria-controls="admin-sidebar"
@@ -40,11 +40,6 @@ function AdminLayout() {
       >
         <div className="admin-sidebar__brand">
           <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco — Nossa cidade, nosso olhar" />
-        </div>
-
-        <div className={`admin-managed-city${managedCity ? '' : ' admin-managed-city--missing'}`}>
-          <span>Cidade gerenciada</span>
-          <strong>{managedCity ?? 'Não informada pela API'}</strong>
         </div>
 
         <nav className="admin-navigation" aria-label="Navegação administrativa">

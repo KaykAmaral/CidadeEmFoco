@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import Button from '../ui/Button'
 import { getActiveCities } from '../../services/cityService'
 import { getMyProfile, updateMyProfile } from '../../services/userService'
@@ -20,7 +20,7 @@ function toForm(profile) {
   }
 }
 
-function ProfileDataEditor({ logout, token }) {
+const ProfileDataEditor = forwardRef(function ProfileDataEditor({ logout, token }, ref) {
   const [profile, setProfile] = useState(null)
   const [cities, setCities] = useState([])
   const [form, setForm] = useState(toForm())
@@ -36,6 +36,15 @@ function ProfileDataEditor({ logout, token }) {
       .catch((requestError) => requestError.status === 401 ? logout() : setError(requestError.message))
       .finally(() => setBusy(false))
   }, [logout, token])
+
+  useImperativeHandle(ref, () => ({
+    startEditing() {
+      if (!profile) return
+      setEditing(true)
+      setError('')
+      setSuccess('')
+    },
+  }), [profile])
 
   function change(event) {
     const { checked, name, type, value } = event.target
@@ -59,7 +68,7 @@ function ProfileDataEditor({ logout, token }) {
   if (!profile) return <div className="form-message form-message--error" role="alert">{error}</div>
 
   return (
-    <section className="profile-preferences" aria-labelledby="profile-data-title">
+    <section className="profile-section profile-data" aria-labelledby="profile-data-title">
       <div className="profile-preferences__heading"><div><span>Cadastro</span><h3 id="profile-data-title">Dados pessoais e endereço</h3></div>
         {!editing && <Button onClick={() => { setEditing(true); setError(''); setSuccess('') }} variant="outline">Editar perfil</Button>}
       </div>
@@ -78,6 +87,6 @@ function ProfileDataEditor({ logout, token }) {
       </dl>}
     </section>
   )
-}
+})
 
 export default ProfileDataEditor
