@@ -271,7 +271,7 @@ function AdminAlertsPage() {
         <div>
           <span>Administração</span>
           <h1>Alertas climáticos</h1>
-          <p>Cadastre e controle os alertas demonstrativos exibidos aos cidadãos.</p>
+          <p>Cadastre e controle os alertas publicados aos cidadãos.</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus size={18} aria-hidden="true" />
@@ -364,7 +364,7 @@ function AdminAlertsPage() {
           <Button onClick={retry} variant="outline"><RotateCw aria-hidden="true" size={17} />Tentar novamente</Button>
         </div>
       ) : alerts.length === 0 ? (
-        <FeedbackState type="empty" title="Nenhum alerta cadastrado" message="Crie o primeiro alerta demonstrativo do sistema." />
+        <div className="admin-alerts-empty"><FeedbackState type="empty" title="Nenhum alerta cadastrado" message="Crie o primeiro alerta para comunicar uma condição climática aos cidadãos." /></div>
       ) : (
         <div className="admin-alerts-list">
           {alerts.map((alert) => (
@@ -373,8 +373,8 @@ function AdminAlertsPage() {
                 <div className="admin-alert-card__badges">
                   <span className={`admin-alert-card__state admin-alert-card__state--${alert.active ? 'active' : 'inactive'}`}>{alert.active ? 'Ativo' : 'Inativo'}</span>
                   <span>{getAlertTypeLabel(alert.type)}</span>
-                  <span>Severidade {getAlertSeverityLabel(alert.severity)}</span>
-                  <span>{getPeriodState(alert)}</span>
+                  <span className={`admin-alert-card__severity admin-alert-card__severity--${alert.severity.toLowerCase()}`}>Severidade {getAlertSeverityLabel(alert.severity)}</span>
+                  <span className="admin-alert-card__period-state">{getPeriodState(alert)}</span>
                 </div>
                 <h2>{alert.title}</h2>
                 <p>{alert.description}</p>

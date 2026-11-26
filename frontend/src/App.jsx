@@ -8,14 +8,15 @@ import AdminAlertsPage from './pages/AdminAlertsPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminOccurrenceDetailPage from './pages/AdminOccurrenceDetailPage'
 import AdminOccurrencesPage from './pages/AdminOccurrencesPage'
-import LoginPage from './pages/LoginPage'
+import AdminStatisticsPage from './pages/AdminStatisticsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import LoginPage from './pages/LoginPage'
 import NewOccurrencePage from './pages/NewOccurrencePage'
 import NotFoundPage from './pages/NotFoundPage'
 import OccurrenceDetailPage from './pages/OccurrenceDetailPage'
 import OccurrencesPage from './pages/OccurrencesPage'
 import ProfilePage from './pages/ProfilePage'
-import RankingsPage from './pages/RankingsPage'
+import ParticipationPage from './pages/ParticipationPage'
 import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -57,7 +58,10 @@ function App() {
             path="perfil"
             element={<ProfilePage />}
           />
-          <Route path="rankings" element={<RankingsPage />} />
+          <Route
+            path="participacao"
+            element={<ParticipationPage />}
+          />
         </Route>
       </Route>
 
@@ -70,6 +74,10 @@ function App() {
           <Route
             path="ocorrencias"
             element={<AdminOccurrencesPage />}
+          />
+          <Route
+            path="estatisticas"
+            element={<AdminStatisticsPage />}
           />
           <Route path="ocorrencias/:id" element={<AdminOccurrenceDetailPage />} />
           <Route

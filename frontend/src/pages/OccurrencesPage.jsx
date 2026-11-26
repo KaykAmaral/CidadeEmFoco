@@ -1,4 +1,4 @@
-import { FilterX, Plus, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, FilterX, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
@@ -36,6 +36,10 @@ function OccurrencesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [filtersVisible, setFiltersVisible] = useState(() =>
+    !window.matchMedia('(max-width: 560px)').matches,
+  )
+  const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length
   const availableTypes = filters.category
     ? occurrenceTypesByCategory[filters.category]
     : Object.keys(occurrenceTypeLabels)
@@ -154,7 +158,31 @@ function OccurrencesPage() {
       </div>
 
       {mode === 'all' && (
-        <form className="occurrence-filters" onSubmit={handleFilterSubmit}>
+        <div className="occurrence-filter-panel">
+          <button
+            aria-controls="occurrence-filters-form"
+            aria-expanded={filtersVisible}
+            className="occurrence-filter-toggle"
+            onClick={() => setFiltersVisible((currentValue) => !currentValue)}
+            type="button"
+          >
+            <span>
+              <SlidersHorizontal size={18} aria-hidden="true" />
+              Filtros
+              {activeFilterCount > 0 && (
+                <strong aria-label={`${activeFilterCount} filtros ativos`}>{activeFilterCount}</strong>
+              )}
+            </span>
+            <span>
+              {filtersVisible ? 'Ocultar' : 'Mostrar'}
+              {filtersVisible
+                ? <ChevronUp size={18} aria-hidden="true" />
+                : <ChevronDown size={18} aria-hidden="true" />}
+            </span>
+          </button>
+
+          {filtersVisible && (
+            <form className="occurrence-filters" id="occurrence-filters-form" onSubmit={handleFilterSubmit}>
           <div className="form-field">
             <label htmlFor="filter-category">Categoria</label>
             <select
@@ -226,7 +254,9 @@ function OccurrencesPage() {
               Limpar
             </Button>
           </div>
-        </form>
+            </form>
+          )}
+        </div>
       )}
 
       {isLoading ? (

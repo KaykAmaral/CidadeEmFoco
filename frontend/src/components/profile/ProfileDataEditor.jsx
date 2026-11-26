@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Pencil, Save, X } from 'lucide-react'
 import Button from '../ui/Button'
 import { getActiveCities } from '../../services/cityService'
 import { getMyProfile, updateMyProfile } from '../../services/userService'
+import { formatDateTime } from '../../utils/date'
 
 const fields = [
-  ['name', 'Nome', 'text'], ['cpf', 'CPF', 'text'],
+  ['name', 'Nome', 'text'], ['cpf', 'CPF', 'text'], ['whatsappPhone', 'WhatsApp com DDD', 'tel'],
   ['street', 'Rua', 'text'], ['addressNumber', 'Número', 'text'],
   ['addressComplement', 'Complemento', 'text'], ['neighborhood', 'Bairro', 'text'],
   ['postalCode', 'CEP', 'text'],
@@ -21,7 +21,7 @@ function toForm(profile) {
   }
 }
 
-function ProfileDataEditor({ logout, token }) {
+function ProfileDataEditor({ logout, token, user }) {
   const [profile, setProfile] = useState(null)
   const [cities, setCities] = useState([])
   const [form, setForm] = useState(toForm())
@@ -60,22 +60,29 @@ function ProfileDataEditor({ logout, token }) {
   if (!profile) return <div className="form-message form-message--error" role="alert">{error}</div>
 
   return (
-    <section className="profile-data" aria-labelledby="profile-data-title">
-      <div className="profile-data__heading">
-        <div><span>Cadastro</span><h2 id="profile-data-title">Dados pessoais e endereço</h2></div>
-        {!editing && <Button onClick={() => { setEditing(true); setError(''); setSuccess('') }} variant="outline"><Pencil size={16} aria-hidden="true" />Editar</Button>}
+    <section className="profile-section profile-data" aria-labelledby="profile-data-title">
+      <div className="profile-preferences__heading"><div><span>Cadastro</span><h3 id="profile-data-title">Dados cadastrais</h3></div>
+        {!editing && <Button onClick={() => { setEditing(true); setError(''); setSuccess('') }} variant="outline">Editar perfil</Button>}
       </div>
       {success && <div className="form-message form-message--success" role="status">{success}</div>}
       {error && <div className="form-message form-message--error" role="alert">{error}</div>}
-      {editing ? <form className="profile-data__form" onSubmit={submit}>
-        {fields.map(([name, label, type]) => <div className="form-field" key={name}><label htmlFor={`profile-${name}`}>{label}</label><input aria-invalid={Boolean(fieldErrors[name])} className="form-control" id={`profile-${name}`} name={name} onChange={change} required={!['addressComplement'].includes(name)} type={type} value={form[name]} />{fieldErrors[name] && <small className="field-error">{fieldErrors[name]}</small>}</div>)}
+      {editing ? <form className="profile-preferences__form" onSubmit={submit}>
+        {fields.map(([name, label, type]) => <div className="form-field" key={name}><label htmlFor={`profile-${name}`}>{label}{name === 'whatsappPhone' && ' (opcional)'}</label><input aria-invalid={Boolean(fieldErrors[name])} className="form-control" id={`profile-${name}`} name={name} onChange={change} required={!['addressComplement', 'whatsappPhone'].includes(name)} type={type} value={form[name]} />{fieldErrors[name] && <small className="field-error">{fieldErrors[name]}</small>}</div>)}
         <div className="form-field"><label htmlFor="profile-city">Cidade/UF</label><select className="form-control" id="profile-city" name="cityIbgeCode" onChange={change} required value={form.cityIbgeCode}>{cities.map((city) => <option key={city.ibgeCode} value={city.ibgeCode}>{city.name}/{city.stateCode}</option>)}</select>{fieldErrors.cityIbgeCode && <small className="field-error">{fieldErrors.cityIbgeCode}</small>}</div>
-        <div className="profile-preferences__actions"><Button disabled={busy} type="submit"><Save size={16} aria-hidden="true" />{busy ? 'Salvando...' : 'Salvar'}</Button><Button onClick={() => { setEditing(false); setForm(toForm(profile)) }} type="button" variant="outline"><X size={16} aria-hidden="true" />Cancelar</Button></div>
-      </form> : <dl className="profile-data__summary">
+        <label className="profile-consent"><input checked={form.whatsappConsentGiven} name="whatsappConsentGiven" onChange={change} type="checkbox" /><span>Autorizo notificações pelo WhatsApp.</span></label>
+        <div className="profile-preferences__actions"><Button disabled={busy} type="submit">{busy ? 'Salvando...' : 'Salvar'}</Button><Button onClick={() => { setEditing(false); setForm(toForm(profile)) }} type="button" variant="outline">Cancelar</Button></div>
+      </form> : <dl className="profile-details profile-data__details">
+        <div><dt>Nome completo</dt><dd>{profile.name}</dd></div>
+        <div><dt>E-mail</dt><dd>{profile.email}</dd></div>
         <div><dt>CPF</dt><dd>{profile.cpf}</dd></div>
-        <div><dt>Endereço</dt><dd>{profile.address?.street}, {profile.address?.number}{profile.address?.complement ? ` — ${profile.address.complement}` : ''}</dd></div>
-        <div><dt>Bairro e CEP</dt><dd>{profile.address?.neighborhood} — {profile.address?.postalCode}</dd></div>
-        <div><dt>Cidade</dt><dd>{profile.city?.name}/{profile.city?.stateCode}</dd></div>
+        <div><dt>WhatsApp</dt><dd>{profile.whatsappPhone || 'Não informado'}</dd></div>
+        <div className="profile-data__address"><dt>Endereço</dt><dd>{profile.address?.street}, {profile.address?.number}{profile.address?.complement ? ` — ${profile.address.complement}` : ''}</dd></div>
+        <div><dt>Bairro</dt><dd>{profile.address?.neighborhood}</dd></div>
+        <div><dt>CEP</dt><dd>{profile.address?.postalCode}</dd></div>
+        <div><dt>Cidade</dt><dd>{profile.city?.name}</dd></div>
+        <div><dt>UF</dt><dd>{profile.city?.stateCode}</dd></div>
+        <div><dt>Perfil de acesso</dt><dd>{user?.role === 'ADMIN' ? 'Administrador' : 'Cidadão'}</dd></div>
+        <div><dt>Cadastro realizado em</dt><dd>{formatDateTime(profile.createdAt)}</dd></div>
       </dl>}
     </section>
   )

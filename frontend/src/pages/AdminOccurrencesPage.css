@@ -253,3 +253,32 @@
     border-radius: 9px;
   }
 }
+
+/* Final density and readability overrides */
+.admin-occurrences-page { gap: 18px; }
+.admin-page-heading { min-height: 74px; }
+.admin-page-count { min-height: 36px; padding-inline: 14px; font-size: .8rem; }
+.admin-occurrence-filters { gap: 10px; padding: 14px 16px; border-radius: 15px; }
+.admin-occurrence-filters .form-field { gap: 5px; }
+.admin-occurrence-filters .form-field label { font-size: .78rem; }
+.admin-occurrence-filters .form-control { min-height: 42px; padding-block: 8px; font-size: .82rem; }
+.admin-occurrence-filters__actions .button { min-height: 42px; padding-inline: 12px; font-size: .78rem; }
+.admin-occurrences-table-wrapper { min-height: 220px; border-radius: 15px; }
+.admin-occurrences-table th, .admin-occurrences-table td { padding: 16px 18px; }
+.admin-occurrences-table th { font-size: .72rem; }
+.admin-occurrences-table td { font-size: .84rem; }
+.admin-occurrences-table td:first-child { width: 74px; color: var(--color-navy); font-weight: 800; }
+.admin-occurrences-table td:nth-child(2) strong { font-size: .88rem; }
+.admin-occurrences-table td:nth-child(2) span { font-size: .74rem; }
+.admin-occurrences-table td:nth-child(4) { white-space: nowrap; }
+.admin-occurrences-table td:last-child { width: 118px; }
+.admin-occurrences-table td:last-child a { min-height: 38px; border: 1px solid #cfe2f3; background: #f8fbfe; font-size: .8rem; }
+.admin-occurrences-table td:last-child a:hover { border-color: var(--color-blue); }
+.admin-occurrences-empty .feedback-state { min-height: 220px; align-items: center; justify-content: center; text-align: center; }
+
+@media (max-width: 1180px) { .admin-occurrence-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) {
+  .admin-occurrence-filters { grid-template-columns: 1fr; }
+  .admin-occurrences-table-wrapper { min-height: 0; }
+  .admin-occurrences-table td { font-size: .82rem; }
+}

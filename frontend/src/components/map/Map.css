@@ -20,7 +20,7 @@
   box-shadow: 0 4px 12px rgba(6, 43, 82, 0.3);
 }
 
-.occurrence-marker b {
+.occurrence-marker__strength {
   position: absolute;
   top: -8px;
   right: -8px;
@@ -32,8 +32,21 @@
   border: 2px solid white;
   border-radius: 999px;
   color: white;
-  background: var(--color-navy);
-  font-size: 0.62rem;
+  background: #1677c8;
+  box-shadow: 0 2px 6px rgba(6, 43, 82, 0.28);
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.occurrence-marker__strength--medium {
+  color: #3d2d00;
+  background: #f4b400;
+}
+
+.occurrence-marker__strength--high {
+  color: white;
+  background: #df2f2f;
 }
 
 .selected-location-dot { width: 9px; height: 9px; border-radius: 50%; background: white; }

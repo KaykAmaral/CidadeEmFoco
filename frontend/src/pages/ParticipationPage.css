@@ -1,0 +1,51 @@
+.participation-page { display: grid; gap: 24px; }
+.participation-page__heading > span { display: block; margin-bottom: 6px; color: var(--color-blue); font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.participation-page__heading h1 { margin: 0 0 8px; color: var(--color-navy); font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1; letter-spacing: -.04em; }
+.participation-page__heading p { margin: 0; color: var(--color-muted); }
+.participation-page .gamification-panel { display: grid; gap: 20px; padding: 24px; border: 1px solid var(--color-border); border-radius: 18px; background: white; box-shadow: var(--shadow-card); }
+.participation-page .profile-section__heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.participation-page .profile-section__heading span { display: block; margin-bottom: 6px; color: var(--color-blue); font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.participation-page .profile-section__heading h2 { margin: 0; color: var(--color-navy); font-size: 1.25rem; }
+.participation-page .profile-section__heading > svg { color: var(--color-yellow); }
+
+.participation-page .xp-summary { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 18px; align-items: center; padding: 18px; border: 1px solid #cfe3f4; border-radius: 15px; background: linear-gradient(110deg, var(--color-blue-soft), #fff); }
+.participation-page .xp-summary__badge { min-height: 76px; display: grid; grid-template-columns: auto 1fr; align-content: center; align-items: center; gap: 2px 7px; padding: 12px; border-radius: 12px; color: var(--color-navy); background: var(--color-yellow); box-shadow: 0 8px 18px rgba(154,101,0,.16); }
+.participation-page .xp-summary__badge svg { grid-row: 1 / 3; }
+.participation-page .xp-summary__badge span { font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+.participation-page .xp-summary__badge strong { font-size: 1.5rem; line-height: 1; }
+.participation-page .xp-summary__content { min-width: 0; display: grid; gap: 9px; }
+.participation-page .xp-summary__line, .participation-page .xp-summary__meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.participation-page .xp-summary__line strong { color: var(--color-navy); }
+.participation-page .xp-summary__line span, .participation-page .xp-summary__meta { color: var(--color-muted); font-size: .76rem; }
+.participation-page .xp-summary progress { width: 100%; height: 12px; overflow: hidden; border: 0; border-radius: 999px; background: #d9e5ef; }
+.participation-page .xp-summary progress::-webkit-progress-bar { border-radius: 999px; background: #d9e5ef; }
+.participation-page .xp-summary progress::-webkit-progress-value { border-radius: 999px; background: linear-gradient(90deg, var(--color-blue), #32a0f5); }
+.participation-page .xp-summary progress::-moz-progress-bar { border-radius: 999px; background: linear-gradient(90deg, var(--color-blue), #32a0f5); }
+
+.participation-page .rankings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.participation-page .ranking-card { min-width: 0; display: grid; align-content: start; gap: 16px; padding: 18px; border: 1px solid var(--color-border); border-radius: 15px; background: #fbfdff; }
+.participation-page .ranking-card__heading { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
+.participation-page .ranking-card__heading > div { min-width: 0; display: flex; align-items: center; gap: 9px; color: var(--color-blue); }
+.participation-page .ranking-card__heading h3 { margin: 2px 0 0; color: var(--color-navy); font-size: 1rem; }
+.participation-page .ranking-card__heading span, .participation-page .ranking-card__heading label > span { color: var(--color-muted); font-size: .68rem; font-weight: 750; }
+.participation-page .ranking-card__heading label { flex: 0 0 auto; display: grid; gap: 4px; }
+.participation-page .ranking-select { min-height: 40px; min-width: 126px; padding: 0 34px 0 11px; border: 1px solid #c8d8e7; border-radius: 9px; color: var(--color-navy); background: white; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.participation-page .ranking-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.participation-page .ranking-list li { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: white; }
+.participation-page .ranking-list__position { width: 28px; height: 28px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 9px; color: var(--color-navy); background: var(--color-yellow-soft); font-size: .75rem; font-weight: 850; }
+.participation-page .ranking-list li > div { min-width: 0; display: grid; gap: 3px; }
+.participation-page .ranking-list strong { overflow-wrap: anywhere; color: var(--color-navy); font-size: .82rem; }
+.participation-page .ranking-list li > div > span { color: var(--color-muted); font-size: .72rem; line-height: 1.35; }
+.participation-page .ranking-empty { min-height: 118px; display: grid; place-items: center; align-content: center; gap: 9px; padding: 18px; border: 1px dashed #bfd3e4; border-radius: 12px; color: var(--color-blue); background: white; text-align: center; }
+.participation-page .ranking-empty > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--color-blue-soft); }
+.participation-page .ranking-empty p, .participation-page .ranking-note { margin: 0; color: var(--color-muted); font-size: .78rem; line-height: 1.45; }
+.participation-page .ranking-note { padding-left: 12px; border-left: 3px solid var(--color-yellow); }
+
+@media (max-width: 760px) {
+  .participation-page .gamification-panel { padding: 18px; }
+  .participation-page .rankings-grid { grid-template-columns: 1fr; }
+  .participation-page .xp-summary { grid-template-columns: 1fr; }
+  .participation-page .xp-summary__line, .participation-page .xp-summary__meta { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .participation-page .ranking-card__heading { align-items: stretch; flex-direction: column; }
+  .participation-page .ranking-card__heading label, .participation-page .ranking-select { width: 100%; }
+}

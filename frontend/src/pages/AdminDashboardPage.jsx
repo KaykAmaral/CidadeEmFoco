@@ -81,6 +81,7 @@ function AdminDashboardPage() {
   const [alertsError, setAlertsError] = useState('')
   const [filterError, setFilterError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null)
   const availableTypes = filters.category
     ? occurrenceTypesByCategory[filters.category]
     : Object.keys(occurrenceTypeLabels)
@@ -118,7 +119,10 @@ function AdminDashboardPage() {
       try {
         const alertList = await getAdminAlerts(token)
 
-        if (isCurrent) setAlerts(alertList)
+        if (isCurrent) {
+          setAlerts(alertList)
+          setLastUpdatedAt(new Date())
+        }
       } catch (requestError) {
         if (!isCurrent) return
         if (requestError.status === 401) {
@@ -221,7 +225,6 @@ function AdminDashboardPage() {
     ]),
   )
   const metrics = { ...statusCounts, total: occurrences.length }
-  const maxStatusCount = Math.max(...Object.values(statusCounts), 1)
   const recentOccurrences = occurrences.slice(0, 5)
   const recentAlerts = alerts.slice(0, 3)
   const enabledAlerts = alerts.filter((alert) => alert.active).length
@@ -233,12 +236,15 @@ function AdminDashboardPage() {
         <div>
           <span>Painel administrativo</span>
           <h1>Visão geral</h1>
-          <p>Olá, {firstName}. Acompanhe os registros do Cidade em Foco.</p>
+          <p>Olá, {firstName}. Acompanhe os registros de <strong>{user.city?.name ?? 'sua cidade'}</strong>.</p>
         </div>
-        <Button onClick={retry} variant="outline">
-          <RotateCw size={17} aria-hidden="true" />
-          Atualizar dados
-        </Button>
+        <div className="admin-dashboard__refresh">
+          {lastUpdatedAt && <span>Atualizado em {formatDateTime(lastUpdatedAt.toISOString())}</span>}
+          <Button onClick={retry} variant="outline">
+            <RotateCw size={17} aria-hidden="true" />
+            Atualizar dados
+          </Button>
+        </div>
       </header>
 
       <form className="admin-dashboard-filters" onSubmit={applyFilters}>
@@ -246,7 +252,7 @@ function AdminDashboardPage() {
           <SlidersHorizontal size={20} aria-hidden="true" />
           <div>
             <strong>Personalizar visão</strong>
-            <span>Os indicadores, gráfico, mapa e registros usam os mesmos filtros.</span>
+            <span>Indicadores, mapa e registros seguem os mesmos filtros.</span>
           </div>
         </div>
 
@@ -363,33 +369,7 @@ function AdminDashboardPage() {
       </div>
 
       <div className="admin-dashboard__secondary-grid">
-        <section className="admin-dashboard-card">
-          <div className="admin-card-heading">
-            <div>
-              <span>Acompanhamento</span>
-              <h2>Ocorrências por status</h2>
-            </div>
-          </div>
-
-          <div className="status-distribution">
-            {Object.entries(occurrenceStatusConfig).map(([status, config]) => (
-              <div className="status-distribution__item" key={status}>
-                <div>
-                  <span>{config.label}</span>
-                  <strong>{statusCounts[status]}</strong>
-                </div>
-                <div className="status-distribution__track">
-                  <span
-                    className={`status-distribution__bar status-distribution__bar--${config.tone}`}
-                    style={{ width: `${(statusCounts[status] / maxStatusCount) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="admin-dashboard-card">
+        <section className="admin-dashboard-card admin-alerts-card">
           <div className="admin-card-heading">
             <div>
               <span>Clima</span>

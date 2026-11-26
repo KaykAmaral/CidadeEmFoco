@@ -291,6 +291,45 @@
   line-height: 1.45;
 }
 
+.register-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce8f2;
+}
+
+.register-progress__bar {
+  display: block;
+  width: var(--register-progress);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-blue);
+  transition: width 220ms ease;
+}
+
+.register-step {
+  display: grid;
+  gap: 21px;
+  animation: register-step-enter 180ms ease-out;
+}
+
+.register-actions {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.45fr) minmax(180px, 1fr);
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.register-actions .button {
+  min-height: 52px;
+  border-radius: 10px;
+}
+
+@keyframes register-step-enter {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 .login-panel .auth-card__heading { margin-bottom: 34px; }
 .login-panel .auth-card__heading > span { letter-spacing: 0.18em; }
 .login-panel .auth-card__heading h2 { font-size: clamp(2.25rem, 3.2vw, 3.1rem); }
@@ -450,6 +489,10 @@
   .register-step-actions {
     grid-template-columns: 1fr;
   }
+
+  .register-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-height: 760px) and (min-width: 761px) {
@@ -461,5 +504,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-input { transition: none; }
+  .login-input, .register-progress__bar { transition: none; }
+  .register-step { animation: none; }
 }

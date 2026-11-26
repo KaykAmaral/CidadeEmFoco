@@ -1,23 +1,20 @@
 import {
-  CalendarDays,
   CheckCircle2,
   ClipboardList,
   Clock3,
   LogOut,
-  Mail,
   MessageCircle,
   Pencil,
   Plus,
   RotateCw,
   Save,
-  ShieldCheck,
+  UserRound,
   X,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import ProfileDataEditor from '../components/profile/ProfileDataEditor'
-import GamificationPanel from '../components/profile/GamificationPanel'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import useAuth from '../hooks/useAuth'
@@ -188,108 +185,36 @@ function ProfilePage() {
 
   return (
     <section className="profile-page">
-      <header className="profile-hero">
-        <div className="profile-hero__identity">
-          <div className="profile-avatar" aria-hidden="true">
-            {getInitials(user.name)}
-          </div>
-          <div className="profile-hero__copy">
-            <span className="profile-eyebrow">Minha conta</span>
-            <h1>{user.name}</h1>
-            <div className="profile-hero__meta">
-              <span><Mail size={16} aria-hidden="true" />{user.email}</span>
-              <span><ShieldCheck size={16} aria-hidden="true" />Cidadão</span>
-              <span><CalendarDays size={16} aria-hidden="true" />Desde {formatDateTime(user.createdAt)}</span>
-            </div>
-          </div>
-        </div>
-        <div className="profile-hero__actions">
-          <Link className="button button--primary" to="/app/ocorrencias/nova">
-            <Plus size={17} aria-hidden="true" />
-            Nova ocorrência
-          </Link>
-          <Button onClick={logout} variant="outline">
-            <LogOut size={17} aria-hidden="true" />
-            Sair
-          </Button>
-        </div>
+      <header className="profile-page__heading">
+        <span>Conta</span>
+        <h1>Meu perfil</h1>
+        <p>Consulte seus dados e acompanhe sua participação no Cidade em Foco.</p>
       </header>
 
-      <section className="profile-stats" aria-label="Resumo das ocorrências">
-        <article className="profile-stat profile-stat--blue">
-          <span><ClipboardList size={20} aria-hidden="true" />Total registrado</span>
-          <strong>{isLoading ? '—' : occurrences.length}</strong>
-        </article>
-        <article className="profile-stat profile-stat--orange">
-          <span><Clock3 size={20} aria-hidden="true" />Em andamento</span>
-          <strong>{isLoading ? '—' : inProgressCount}</strong>
-        </article>
-        <article className="profile-stat profile-stat--green">
-          <span><CheckCircle2 size={20} aria-hidden="true" />Resolvidas</span>
-          <strong>{isLoading ? '—' : resolvedCount}</strong>
-        </article>
-      </section>
-
-      <div className="profile-content-grid">
-        <div className="profile-content-column">
-          <article className="profile-section-card profile-activity">
-            <div className="profile-section-heading">
-              <div>
-                <span>Minha participação</span>
-                <h2>Ocorrências recentes</h2>
-              </div>
-              <Link state={{ mode: 'mine' }} to="/app/ocorrencias">Ver todas</Link>
+      <div className="profile-grid">
+        <article className="profile-card">
+          <div className="profile-card__identity">
+            <div className="profile-avatar" aria-hidden="true">
+              {getInitials(user.name)}
             </div>
-
-            {isLoading ? (
-              <FeedbackState type="loading" message="Buscando suas ocorrências..." />
-            ) : error ? (
-              <div className="profile-activity__error">
-                <FeedbackState type="error" message={error} />
-                <Button onClick={retry} variant="outline">
-                  <RotateCw size={17} aria-hidden="true" />
-                  Tentar novamente
-                </Button>
-              </div>
-            ) : recentOccurrences.length === 0 ? (
-              <FeedbackState
-                type="empty"
-                title="Você ainda não registrou ocorrências"
-                message="Registre sua primeira contribuição para ajudar a cidade."
-              />
-            ) : (
-              <div className="profile-recent__list">
-                {recentOccurrences.map((occurrence) => (
-                  <OccurrenceCard
-                    key={occurrence.id}
-                    occurrence={occurrence}
-                    to={`/app/ocorrencias/${occurrence.id}`}
-                  />
-                ))}
-              </div>
-            )}
-          </article>
-
-          <div className="profile-section-card">
-            <ProfileDataEditor logout={logout} token={token} />
-          </div>
-        </div>
-
-        <aside className="profile-content-column">
-          <div className="profile-section-card">
-            <GamificationPanel logout={logout} token={token} />
+            <div>
+              <span>Cidadão</span>
+              <h2>{user.name}</h2>
+              <p>{user.city?.name ? `${user.city.name}${user.city.stateCode ? `/${user.city.stateCode}` : ''}` : 'Morador colaborador da plataforma'}</p>
+            </div>
           </div>
 
-          <section className="profile-section-card profile-whatsapp" aria-labelledby="whatsapp-preferences-title">
-            <div className="profile-section-heading">
+          <ProfileDataEditor logout={logout} token={token} user={user} />
+          <section className="profile-preferences" aria-labelledby="whatsapp-preferences-title">
+            <div className="profile-preferences__heading">
               <div>
                 <span>Comunicação</span>
-                <h2 id="whatsapp-preferences-title">Alertas por WhatsApp</h2>
+                <h3 id="whatsapp-preferences-title">Alertas por WhatsApp</h3>
               </div>
               {!isPreferencesLoading && !isEditingPreferences && (
                 <Button onClick={startEditingPreferences} variant="outline">
                   <Pencil size={16} aria-hidden="true" />
-                  Editar
+                  Editar alertas
                 </Button>
               )}
             </div>
@@ -350,21 +275,102 @@ function ProfilePage() {
             ) : preferenceError ? (
               <div className="form-message form-message--error" role="alert">{preferenceError}</div>
             ) : (
-              <div className="whatsapp-status">
-                <div className={`whatsapp-status__icon${preferences?.notificationsEnabled ? ' whatsapp-status__icon--active' : ''}`}>
-                  <MessageCircle size={22} aria-hidden="true" />
-                </div>
+              <dl className="profile-preferences__summary">
                 <div>
-                  <strong>{preferences?.notificationsEnabled ? 'Notificações autorizadas' : 'Notificações desativadas'}</strong>
-                  <p>{preferences?.phoneNumber || 'Nenhum número configurado'}</p>
-                  <small>{preferences?.deliveryEnabled ? 'Serviço de envio disponível' : 'Envio externo ainda não configurado'}</small>
+                  <dt><MessageCircle size={16} aria-hidden="true" />Recebimento</dt>
+                  <dd>{preferences?.notificationsEnabled ? 'Autorizado' : 'Desativado'}</dd>
                 </div>
-              </div>
+                {preferences?.phoneNumber && <div><dt>Número</dt><dd>{preferences.phoneNumber}</dd></div>}
+                {preferences?.consentAt && <div><dt>Consentimento registrado em</dt><dd>{formatDateTime(preferences.consentAt)}</dd></div>}
+                <div><dt>Serviço de entrega</dt><dd>{preferences?.deliveryEnabled ? 'Disponível' : 'Indisponível no momento'}</dd></div>
+              </dl>
             )}
 
             {preferenceSuccess && <div className="form-message form-message--success" role="status">{preferenceSuccess}</div>}
           </section>
-        </aside>
+
+          <div className="profile-card__notice">
+            <UserRound size={19} aria-hidden="true" />
+            <p>Nome, e-mail e demais dados cadastrais são somente para consulta.</p>
+          </div>
+
+          <Button onClick={logout} variant="outline">
+            <LogOut size={17} aria-hidden="true" />
+            Sair da conta
+          </Button>
+        </article>
+
+        <div className="profile-activity">
+          <div className="profile-activity__heading">
+            <div>
+              <span>Minha participação</span>
+              <h2>Resumo de ocorrências</h2>
+            </div>
+            <Link className="button button--primary" to="/app/ocorrencias/nova">
+              <Plus size={17} aria-hidden="true" />
+              Registrar
+            </Link>
+          </div>
+
+          {isLoading ? (
+            <FeedbackState type="loading" message="Buscando suas ocorrências..." />
+          ) : error ? (
+            <div className="profile-activity__error">
+              <FeedbackState type="error" message={error} />
+              <Button onClick={retry} variant="outline">
+                <RotateCw size={17} aria-hidden="true" />
+                Tentar novamente
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="profile-stats">
+                <div>
+                  <ClipboardList size={21} aria-hidden="true" />
+                  <strong>{occurrences.length}</strong>
+                  <span>Total registrado</span>
+                </div>
+                <div>
+                  <Clock3 size={21} aria-hidden="true" />
+                  <strong>{inProgressCount}</strong>
+                  <span>Em análise ou atendimento</span>
+                </div>
+                <div>
+                  <CheckCircle2 size={21} aria-hidden="true" />
+                  <strong>{resolvedCount}</strong>
+                  <span>Resolvidas</span>
+                </div>
+              </div>
+
+              <div className="profile-recent">
+                <div className="profile-recent__heading">
+                  <h3>Registros recentes</h3>
+                  <Link state={{ mode: 'mine' }} to="/app/ocorrencias">
+                    Ver todas
+                  </Link>
+                </div>
+
+                {recentOccurrences.length === 0 ? (
+                  <FeedbackState
+                    type="empty"
+                    title="Você ainda não registrou ocorrências"
+                    message="Use o botão Registrar para enviar sua primeira contribuição."
+                  />
+                ) : (
+                  <div className="profile-recent__list">
+                    {recentOccurrences.map((occurrence) => (
+                      <OccurrenceCard
+                        key={occurrence.id}
+                        occurrence={occurrence}
+                        to={`/app/ocorrencias/${occurrence.id}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </section>
   )

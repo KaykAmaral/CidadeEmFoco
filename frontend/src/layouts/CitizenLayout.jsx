@@ -17,7 +17,7 @@ const navigationItems = [
   { to: '/app/ocorrencias', label: 'Ocorrências', icon: ClipboardList },
   { to: '/app/ocorrencias/nova', label: 'Registrar', icon: Plus, primary: true },
   { to: '/app/alertas', label: 'Alertas', icon: Bell },
-  { to: '/app/rankings', label: 'Rankings', icon: Trophy },
+  { to: '/app/participacao', label: 'Participação', icon: Trophy },
   { to: '/app/perfil', label: 'Perfil', icon: UserRound },
 ]
 
@@ -31,6 +31,19 @@ function CitizenLayout() {
         <header className="citizen-header">
           <div className="citizen-container">
             <Brand />
+            <nav className="citizen-desktop-navigation" aria-label="Navegação principal do cidadão">
+              {navigationItems.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  className={({ isActive }) => `citizen-desktop-navigation__item${isActive ? ' citizen-desktop-navigation__item--active' : ''}`}
+                  end={end}
+                  key={to}
+                  to={to}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </nav>
             <div className="citizen-header__account">
               <span className="profile-label">Olá, {firstName}</span>
               <button className="logout-button" onClick={logout} type="button">
