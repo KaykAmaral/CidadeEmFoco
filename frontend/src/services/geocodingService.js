@@ -9,6 +9,7 @@ function normalizeLocation(result) {
     longitude: Number(result.lon).toFixed(6),
     address,
     neighborhood: details.suburb || details.neighbourhood || details.city_district || '',
+    city: details.city || details.town || details.municipality || details.village || '',
     displayName: result.display_name,
   }
 }

@@ -1,10 +1,11 @@
-import { Bell, LayoutDashboard, ListChecks, LogOut, Menu, X } from 'lucide-react'
+import { BarChart3, Bell, LayoutDashboard, ListChecks, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import useAuth from '../hooks/useAuth'
 
 const navigationItems = [
   { to: '/admin', label: 'Visão geral', icon: LayoutDashboard, end: true },
+  { to: '/admin/estatisticas', label: 'Estatísticas', icon: BarChart3 },
   { to: '/admin/ocorrencias', label: 'Ocorrências', icon: ListChecks },
   { to: '/admin/alertas', label: 'Alertas climáticos', icon: Bell },
 ]

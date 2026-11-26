@@ -1,24 +1,20 @@
 import {
-  CalendarDays,
   CheckCircle2,
   ClipboardList,
   Clock3,
   LogOut,
-  Mail,
   MessageCircle,
   Pencil,
   Plus,
   RotateCw,
   Save,
-  ShieldCheck,
   UserRound,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import ProfileDataEditor from '../components/profile/ProfileDataEditor'
-import GamificationPanel from '../components/profile/GamificationPanel'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import useAuth from '../hooks/useAuth'
@@ -56,7 +52,6 @@ function ProfilePage() {
   const [isPreferencesLoading, setIsPreferencesLoading] = useState(true)
   const [isEditingPreferences, setIsEditingPreferences] = useState(false)
   const [isSavingPreferences, setIsSavingPreferences] = useState(false)
-  const profileEditorRef = useRef(null)
 
   useEffect(() => {
     let isCurrent = true
@@ -207,30 +202,9 @@ function ProfilePage() {
               <h2>{user.name}</h2>
               <p>{user.city?.name ? `${user.city.name}${user.city.state ? `/${user.city.state}` : ''}` : 'Morador colaborador da plataforma'}</p>
             </div>
-            <Button className="profile-hero__edit" onClick={() => profileEditorRef.current?.startEditing()} variant="outline">
-              <Pencil size={16} aria-hidden="true" />
-              Editar perfil
-            </Button>
           </div>
 
-          <dl className="profile-details">
-            <div>
-              <dt><Mail size={17} aria-hidden="true" />E-mail</dt>
-              <dd>{user.email}</dd>
-            </div>
-            <div>
-              <dt><ShieldCheck size={17} aria-hidden="true" />Perfil de acesso</dt>
-              <dd>Cidadão</dd>
-            </div>
-            <div>
-              <dt><CalendarDays size={17} aria-hidden="true" />Cadastro realizado em</dt>
-              <dd>{formatDateTime(user.createdAt)}</dd>
-            </div>
-          </dl>
-
-          <ProfileDataEditor logout={logout} ref={profileEditorRef} token={token} />
-          <GamificationPanel logout={logout} token={token} />
-
+          <ProfileDataEditor logout={logout} token={token} user={user} />
           <section className="profile-preferences" aria-labelledby="whatsapp-preferences-title">
             <div className="profile-preferences__heading">
               <div>
@@ -240,7 +214,7 @@ function ProfilePage() {
               {!isPreferencesLoading && !isEditingPreferences && (
                 <Button onClick={startEditingPreferences} variant="outline">
                   <Pencil size={16} aria-hidden="true" />
-                  Editar perfil
+                  Editar alertas
                 </Button>
               )}
             </div>

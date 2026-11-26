@@ -8,12 +8,14 @@ import AdminAlertsPage from './pages/AdminAlertsPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminOccurrenceDetailPage from './pages/AdminOccurrenceDetailPage'
 import AdminOccurrencesPage from './pages/AdminOccurrencesPage'
+import AdminStatisticsPage from './pages/AdminStatisticsPage'
 import LoginPage from './pages/LoginPage'
 import NewOccurrencePage from './pages/NewOccurrencePage'
 import NotFoundPage from './pages/NotFoundPage'
 import OccurrenceDetailPage from './pages/OccurrenceDetailPage'
 import OccurrencesPage from './pages/OccurrencesPage'
 import ProfilePage from './pages/ProfilePage'
+import ParticipationPage from './pages/ParticipationPage'
 import RegisterPage from './pages/RegisterPage'
 import ProtectedRoute from './routes/ProtectedRoute'
 import PublicOnlyRoute from './routes/PublicOnlyRoute'
@@ -52,6 +54,10 @@ function App() {
             path="perfil"
             element={<ProfilePage />}
           />
+          <Route
+            path="participacao"
+            element={<ParticipationPage />}
+          />
         </Route>
       </Route>
 
@@ -64,6 +70,10 @@ function App() {
           <Route
             path="ocorrencias"
             element={<AdminOccurrencesPage />}
+          />
+          <Route
+            path="estatisticas"
+            element={<AdminStatisticsPage />}
           />
           <Route path="ocorrencias/:id" element={<AdminOccurrenceDetailPage />} />
           <Route

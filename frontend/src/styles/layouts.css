@@ -111,6 +111,7 @@
 }
 
 .citizen-layout {
+  --citizen-mobile-navigation-clearance: calc(116px + max(8px, env(safe-area-inset-bottom)));
   min-height: 100svh;
   padding-bottom: 0;
   background: var(--color-background);
@@ -210,7 +211,7 @@
   bottom: 0;
   width: min(100%, 640px);
   min-height: 76px;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: end;
   padding: 8px 10px max(8px, env(safe-area-inset-bottom));
   border: 1px solid var(--color-border);
@@ -233,7 +234,22 @@
 
 @media (max-width: 760px) {
   .citizen-layout {
-    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+    height: 100dvh;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  .citizen-main {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+    scroll-padding-block: 24px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .citizen-desktop-navigation {
@@ -241,7 +257,22 @@
   }
 
   .citizen-navigation {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
     display: grid;
+    transform: none;
+  }
+
+  .citizen-navigation__item--primary {
+    align-self: end;
+  }
+
+  .citizen-navigation__item--primary .citizen-navigation__icon {
+    width: 46px;
+    height: 46px;
+    margin-top: 0;
   }
 }
 
@@ -281,6 +312,35 @@
   color: white;
   background: var(--color-blue);
   box-shadow: 0 7px 18px rgba(8, 117, 209, 0.34);
+}
+
+@media (max-width: 760px) and (max-height: 520px) {
+  .citizen-layout {
+    --citizen-mobile-navigation-clearance: calc(82px + max(8px, env(safe-area-inset-bottom)));
+  }
+
+  .citizen-navigation {
+    min-height: 58px;
+    align-items: center;
+    padding-top: 5px;
+  }
+
+  .citizen-navigation__item {
+    gap: 2px;
+    padding-block: 2px;
+    font-size: .58rem;
+  }
+
+  .citizen-navigation__item--primary {
+    align-self: end;
+  }
+
+  .citizen-navigation__item--primary .citizen-navigation__icon {
+    width: 38px;
+    height: 38px;
+    margin-top: 0;
+    border-width: 3px;
+  }
 }
 
 .admin-layout {

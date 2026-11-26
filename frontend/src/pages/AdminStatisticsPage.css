@@ -1,0 +1,46 @@
+.admin-statistics { display: grid; gap: 18px; }
+.admin-statistics__summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.admin-statistics__summary article { min-height: 126px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 5px 13px; padding: 20px; border: 1px solid #cfe0ef; border-radius: 16px; color: var(--color-blue); background: linear-gradient(135deg, #fff, var(--color-blue-soft)); box-shadow: var(--shadow-card); }
+.admin-statistics__summary article > svg { grid-row: 1 / 4; width: 46px; height: 46px; padding: 11px; border-radius: 13px; color: white; background: var(--color-blue); }
+.admin-statistics__summary article > span { color: var(--color-muted); font-size: .78rem; font-weight: 750; }
+.admin-statistics__summary article > strong { color: var(--color-navy); font-size: 2rem; line-height: 1; }
+.admin-statistics__summary article > small { color: var(--color-muted); font-size: .72rem; }
+.admin-statistics__summary .admin-statistics__resolution { border-color: #f1dea7; background: linear-gradient(135deg, #fff, var(--color-yellow-soft)); }
+.admin-statistics__summary .admin-statistics__resolution > svg { color: var(--color-navy); background: var(--color-yellow); }
+
+.admin-statistics__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 16px; }
+.admin-statistics-card { min-width: 0; }
+.admin-statistics-card--wide { grid-column: 1 / -1; }
+.admin-statistics-card--wide .admin-time-chart__plot { height: 250px; }
+
+.admin-neighborhood-chart { max-height: 380px; display: grid; gap: 15px; overflow-y: auto; padding-right: 5px; scrollbar-width: thin; }
+.admin-neighborhood-chart > div { display: grid; gap: 7px; }
+.admin-neighborhood-chart > div > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.admin-neighborhood-chart strong { overflow-wrap: anywhere; color: var(--color-navy); font-size: .8rem; }
+.admin-neighborhood-chart div span { flex: 0 0 auto; color: var(--color-muted); font-size: .72rem; }
+.admin-neighborhood-chart__track { height: 8px; display: block; overflow: hidden; border-radius: 999px; background: #e5edf4; }
+.admin-neighborhood-chart__track > span { height: 100%; display: block; border-radius: inherit; background: linear-gradient(90deg, var(--color-navy), var(--color-blue)); }
+
+.admin-comparison-chart { overflow-x: auto; }
+.admin-comparison-chart__legend { display: flex; justify-content: flex-end; gap: 16px; margin-bottom: 12px; }
+.admin-comparison-chart__legend span { display: flex; align-items: center; gap: 6px; color: var(--color-muted); font-size: .72rem; }
+.admin-comparison-chart__swatch { width: 10px; height: 10px; display: block; border-radius: 3px; }
+.admin-comparison-chart__swatch--registered, .admin-comparison-chart__bar--registered { background: var(--color-blue); }
+.admin-comparison-chart__swatch--resolved, .admin-comparison-chart__bar--resolved { background: var(--color-yellow); }
+.admin-comparison-chart__plot { min-width: 100%; height: 230px; display: grid; grid-template-columns: repeat(var(--chart-columns), minmax(32px, 1fr)); gap: 6px; padding: 0 8px; border-bottom: 1px solid #ccd9e4; background: repeating-linear-gradient(to bottom, transparent 0, transparent 47px, #edf2f6 48px, transparent 49px); }
+.admin-comparison-chart__column { min-width: 0; display: grid; grid-template-rows: 195px 34px; align-items: end; justify-items: center; }
+.admin-comparison-chart__column > div { width: 100%; height: 180px; display: flex; align-items: end; justify-content: center; gap: 3px; }
+.admin-comparison-chart__bar { width: min(15px, 42%); min-height: 3px; border-radius: 5px 5px 1px 1px; }
+.admin-comparison-chart__column > span { align-self: center; color: var(--color-muted); font-size: .65rem; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .admin-statistics__grid { grid-template-columns: 1fr; }
+  .admin-statistics-card--wide { grid-column: auto; }
+}
+
+@media (max-width: 620px) {
+  .admin-statistics__summary { grid-template-columns: 1fr; }
+  .admin-statistics__summary article { min-height: 110px; padding: 16px; }
+  .admin-statistics-card--wide .admin-time-chart__plot { min-width: max(560px, calc(var(--chart-columns) * 23px)); }
+  .admin-comparison-chart__plot { min-width: max(560px, calc(var(--chart-columns) * 40px)); }
+}

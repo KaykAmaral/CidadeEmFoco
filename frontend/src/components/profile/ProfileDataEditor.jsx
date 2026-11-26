@@ -1,7 +1,8 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Button from '../ui/Button'
 import { getActiveCities } from '../../services/cityService'
 import { getMyProfile, updateMyProfile } from '../../services/userService'
+import { formatDateTime } from '../../utils/date'
 
 const fields = [
   ['name', 'Nome', 'text'], ['cpf', 'CPF', 'text'], ['whatsappPhone', 'WhatsApp com DDD', 'tel'],
@@ -20,7 +21,7 @@ function toForm(profile) {
   }
 }
 
-const ProfileDataEditor = forwardRef(function ProfileDataEditor({ logout, token }, ref) {
+function ProfileDataEditor({ logout, token, user }) {
   const [profile, setProfile] = useState(null)
   const [cities, setCities] = useState([])
   const [form, setForm] = useState(toForm())
@@ -36,15 +37,6 @@ const ProfileDataEditor = forwardRef(function ProfileDataEditor({ logout, token 
       .catch((requestError) => requestError.status === 401 ? logout() : setError(requestError.message))
       .finally(() => setBusy(false))
   }, [logout, token])
-
-  useImperativeHandle(ref, () => ({
-    startEditing() {
-      if (!profile) return
-      setEditing(true)
-      setError('')
-      setSuccess('')
-    },
-  }), [profile])
 
   function change(event) {
     const { checked, name, type, value } = event.target
@@ -69,7 +61,7 @@ const ProfileDataEditor = forwardRef(function ProfileDataEditor({ logout, token 
 
   return (
     <section className="profile-section profile-data" aria-labelledby="profile-data-title">
-      <div className="profile-preferences__heading"><div><span>Cadastro</span><h3 id="profile-data-title">Dados pessoais e endereço</h3></div>
+      <div className="profile-preferences__heading"><div><span>Cadastro</span><h3 id="profile-data-title">Dados cadastrais</h3></div>
         {!editing && <Button onClick={() => { setEditing(true); setError(''); setSuccess('') }} variant="outline">Editar perfil</Button>}
       </div>
       {success && <div className="form-message form-message--success" role="status">{success}</div>}
@@ -79,14 +71,21 @@ const ProfileDataEditor = forwardRef(function ProfileDataEditor({ logout, token 
         <div className="form-field"><label htmlFor="profile-city">Cidade/UF</label><select className="form-control" id="profile-city" name="cityIbgeCode" onChange={change} required value={form.cityIbgeCode}>{cities.map((city) => <option key={city.ibgeCode} value={city.ibgeCode}>{city.name}/{city.state}</option>)}</select>{fieldErrors.cityIbgeCode && <small className="field-error">{fieldErrors.cityIbgeCode}</small>}</div>
         <label className="profile-consent"><input checked={form.whatsappConsentGiven} name="whatsappConsentGiven" onChange={change} type="checkbox" /><span>Autorizo notificações pelo WhatsApp.</span></label>
         <div className="profile-preferences__actions"><Button disabled={busy} type="submit">{busy ? 'Salvando...' : 'Salvar'}</Button><Button onClick={() => { setEditing(false); setForm(toForm(profile)) }} type="button" variant="outline">Cancelar</Button></div>
-      </form> : <dl className="profile-preferences__summary">
-        <div><dt>CPF</dt><dd>{profile.cpf}</dd></div><div><dt>WhatsApp</dt><dd>{profile.whatsappPhone}</dd></div>
-        <div><dt>Endereço</dt><dd>{profile.address?.street}, {profile.address?.number}{profile.address?.complement ? ` — ${profile.address.complement}` : ''}</dd></div>
-        <div><dt>Bairro e CEP</dt><dd>{profile.address?.neighborhood} — {profile.address?.postalCode}</dd></div>
-        <div><dt>Cidade</dt><dd>{profile.city?.name}/{profile.city?.state}</dd></div>
+      </form> : <dl className="profile-details profile-data__details">
+        <div><dt>Nome completo</dt><dd>{profile.name}</dd></div>
+        <div><dt>E-mail</dt><dd>{profile.email}</dd></div>
+        <div><dt>CPF</dt><dd>{profile.cpf}</dd></div>
+        <div><dt>WhatsApp</dt><dd>{profile.whatsappPhone}</dd></div>
+        <div className="profile-data__address"><dt>Endereço</dt><dd>{profile.address?.street}, {profile.address?.number}{profile.address?.complement ? ` — ${profile.address.complement}` : ''}</dd></div>
+        <div><dt>Bairro</dt><dd>{profile.address?.neighborhood}</dd></div>
+        <div><dt>CEP</dt><dd>{profile.address?.postalCode}</dd></div>
+        <div><dt>Cidade</dt><dd>{profile.city?.name}</dd></div>
+        <div><dt>UF</dt><dd>{profile.city?.state}</dd></div>
+        <div><dt>Perfil de acesso</dt><dd>{user?.role === 'ADMIN' ? 'Administrador' : 'Cidadão'}</dd></div>
+        <div><dt>Cadastro realizado em</dt><dd>{formatDateTime(profile.createdAt)}</dd></div>
       </dl>}
     </section>
   )
-})
+}
 
 export default ProfileDataEditor

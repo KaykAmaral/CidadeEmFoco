@@ -15,6 +15,12 @@ import { Link, useNavigate } from 'react-router'
 import Button from '../components/ui/Button'
 import useAuth from '../hooks/useAuth'
 import { getActiveCities } from '../services/cityService'
+import {
+  ACCOUNT_FIELDS,
+  normalizeRegistrationErrors,
+  registrationStepForErrors,
+  validateRegistration,
+} from '../utils/registerForm'
 import './LoginPage.css'
 
 const initialForm = {
@@ -50,7 +56,9 @@ function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [cities, setCities] = useState([])
   const [citiesError, setCitiesError] = useState('')
+  const [step, setStep] = useState(1)
   const submittingRef = useRef(false)
+  const formRef = useRef(null)
 
   useEffect(() => {
     let isCurrent = true
@@ -80,9 +88,49 @@ function RegisterPage() {
     setFieldErrors((currentErrors) => ({ ...currentErrors, [name]: undefined }))
   }
 
+  function focusFirstError(errors) {
+    const firstField = Object.keys(errors)[0]
+    if (!firstField) return
+    requestAnimationFrame(() => formRef.current?.elements.namedItem(firstField)?.focus())
+  }
+
+  function handleNext() {
+    const accountErrors = validateRegistration(form, ACCOUNT_FIELDS)
+    setError('')
+    setFieldErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors }
+      ACCOUNT_FIELDS.forEach((field) => delete nextErrors[field])
+      return { ...nextErrors, ...accountErrors }
+    })
+    if (Object.keys(accountErrors).length > 0) {
+      focusFirstError(accountErrors)
+      return
+    }
+    setStep(2)
+  }
+
+  function handleBack() {
+    setError('')
+    setStep(1)
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     if (submittingRef.current) return
+
+    if (step === 1) {
+      handleNext()
+      return
+    }
+
+    const validationErrors = validateRegistration(form)
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors)
+      const errorStep = registrationStepForErrors(validationErrors)
+      setStep(errorStep)
+      focusFirstError(validationErrors)
+      return
+    }
 
     submittingRef.current = true
     setError('')
@@ -98,9 +146,13 @@ function RegisterPage() {
         state: { registered: true },
       })
     } catch (requestError) {
-      const requestFieldErrors = requestError.fieldErrors ?? {}
+      const requestFieldErrors = normalizeRegistrationErrors(requestError.fieldErrors ?? {})
       setFieldErrors(requestFieldErrors)
       setError(Object.keys(requestFieldErrors).length === 0 ? requestError.message : '')
+      if (Object.keys(requestFieldErrors).length > 0) {
+        setStep(registrationStepForErrors(requestFieldErrors))
+        focusFirstError(requestFieldErrors)
+      }
     } finally {
       submittingRef.current = false
       setIsSubmitting(false)
@@ -158,7 +210,7 @@ function RegisterPage() {
 
         <div className="login-form-wrap">
           <div className="auth-card__heading">
-            <span>Cadastro</span>
+            <span>Etapa {step} de 2</span>
             <h2>Crie sua conta</h2>
             <p>O cadastro público cria somente usuários com perfil cidadão.</p>
           </div>
@@ -175,7 +227,13 @@ function RegisterPage() {
             </div>
           )}
 
-          <form className="auth-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
+          <form className="auth-form" onSubmit={handleSubmit} aria-busy={isSubmitting} noValidate ref={formRef}>
+            <div className="register-progress" aria-label={`Etapa ${step} de 2`}>
+              <span className="register-progress__bar" style={{ '--register-progress': `${step * 50}%` }} />
+            </div>
+            <div className="register-step" key={step}>
+            {step === 1 ? (
+              <>
             <div className="form-field">
               <label htmlFor="register-name">Nome</label>
               <div className="login-input">
@@ -234,13 +292,6 @@ function RegisterPage() {
                 </div>
                 {fieldErrors.cpf && <small className="field-error">{fieldErrors.cpf}</small>}
               </div>
-              <div className="form-field">
-                <label htmlFor="register-whatsapp">WhatsApp</label>
-                <div className="login-input">
-                  <input aria-invalid={Boolean(fieldErrors.whatsappPhone)} autoComplete="tel" id="register-whatsapp" maxLength={30} name="whatsappPhone" onChange={handleChange} placeholder="+5513999999999" required type="tel" value={form.whatsappPhone} />
-                </div>
-                {fieldErrors.whatsappPhone && <small className="field-error">{fieldErrors.whatsappPhone}</small>}
-              </div>
             </div>
 
             <div className="form-field">
@@ -280,6 +331,27 @@ function RegisterPage() {
               )}
             </div>
 
+            <Button className="auth-form__submit" type="submit">Próximo</Button>
+              </>
+            ) : (
+              <>
+            <div className="register-grid">
+              <div className="form-field">
+                <label htmlFor="register-whatsapp">WhatsApp</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.whatsappPhone)} autoComplete="tel" id="register-whatsapp" maxLength={30} name="whatsappPhone" onChange={handleChange} placeholder="+5513999999999" required type="tel" value={form.whatsappPhone} />
+                </div>
+                {fieldErrors.whatsappPhone && <small className="field-error">{fieldErrors.whatsappPhone}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-postal-code">CEP</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.postalCode)} autoComplete="postal-code" id="register-postal-code" maxLength={9} name="postalCode" onChange={handleChange} placeholder="00000-000" required value={form.postalCode} />
+                </div>
+                {fieldErrors.postalCode && <small className="field-error">{fieldErrors.postalCode}</small>}
+              </div>
+            </div>
+
             <div className="register-grid">
               <div className="form-field form-field--wide">
                 <label htmlFor="register-street">Logradouro</label>
@@ -310,13 +382,6 @@ function RegisterPage() {
                 {fieldErrors.neighborhood && <small className="field-error">{fieldErrors.neighborhood}</small>}
               </div>
               <div className="form-field">
-                <label htmlFor="register-postal-code">CEP</label>
-                <div className="login-input">
-                  <input aria-invalid={Boolean(fieldErrors.postalCode)} autoComplete="postal-code" id="register-postal-code" maxLength={9} name="postalCode" onChange={handleChange} placeholder="00000-000" required value={form.postalCode} />
-                </div>
-                {fieldErrors.postalCode && <small className="field-error">{fieldErrors.postalCode}</small>}
-              </div>
-              <div className="form-field">
                 <label htmlFor="register-city">Cidade</label>
                 <div className="login-input">
                   <select aria-invalid={Boolean(fieldErrors.cityIbgeCode)} disabled={cities.length === 0} id="register-city" name="cityIbgeCode" onChange={handleChange} required value={form.cityIbgeCode}>
@@ -335,12 +400,20 @@ function RegisterPage() {
             </label>
             {fieldErrors.whatsappConsentGiven && <small className="field-error">{fieldErrors.whatsappConsentGiven}</small>}
 
-            <Button className="auth-form__submit" disabled={isSubmitting} type="submit">
-              {isSubmitting && (
-                <LoaderCircle className="button__spinner" size={18} aria-hidden="true" />
-              )}
-              {isSubmitting ? 'Criando conta...' : 'Criar conta'}
-            </Button>
+            <div className="register-actions">
+              <Button disabled={isSubmitting} onClick={handleBack} type="button" variant="secondary">
+                Voltar
+              </Button>
+              <Button disabled={isSubmitting} type="submit">
+                {isSubmitting && (
+                  <LoaderCircle className="button__spinner" size={18} aria-hidden="true" />
+                )}
+                {isSubmitting ? 'Criando conta...' : 'Criar conta'}
+              </Button>
+            </div>
+              </>
+            )}
+            </div>
           </form>
 
           <p className="auth-card__footer">

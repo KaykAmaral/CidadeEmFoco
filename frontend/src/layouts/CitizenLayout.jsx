@@ -4,6 +4,7 @@
   Home,
   LogOut,
   Plus,
+  Trophy,
   UserRound,
 } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
@@ -16,6 +17,7 @@ const navigationItems = [
   { to: '/app/ocorrencias', label: 'Ocorrências', icon: ClipboardList },
   { to: '/app/ocorrencias/nova', label: 'Registrar', icon: Plus, primary: true },
   { to: '/app/alertas', label: 'Alertas', icon: Bell },
+  { to: '/app/participacao', label: 'Participação', icon: Trophy },
   { to: '/app/perfil', label: 'Perfil', icon: UserRound },
 ]
 
