@@ -4,6 +4,7 @@ import br.com.cidadeemfoco.dto.ClimateAlertResponse;
 import br.com.cidadeemfoco.service.ClimateAlertRealtimeService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,8 +28,8 @@ public class ClimateAlertController {
     }
 
     @GetMapping("/active")
-    public List<ClimateAlertResponse> findCurrentlyActive() {
-        return climateAlertService.findCurrentlyActive();
+    public List<ClimateAlertResponse> findCurrentlyActive(Authentication authentication) {
+        return climateAlertService.findCurrentlyActive(authentication.getName());
     }
 
     @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

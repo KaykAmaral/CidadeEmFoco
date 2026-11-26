@@ -12,16 +12,19 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import br.com.cidadeemfoco.exception.WhatsappDeliveryException;
 
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest;
 
 class WhatsappCloudApiSenderTest {
 
@@ -51,6 +54,26 @@ class WhatsappCloudApiSenderTest {
         String messageId = sender.send(notification());
 
         assertThat(messageId).isEqualTo("wamid.abc123");
+        server.verify();
+    }
+
+    @Test
+    void shouldNotExposeProviderPayloadInFailureMessage() {
+        WhatsappCloudApiProperties properties = new WhatsappCloudApiProperties(
+                true, "https://graph.facebook.com", "v23.0", "123456", "secret-token",
+                "cidade_em_foco_alerta_climatico", "pt_BR", "America/Sao_Paulo", 3, 20
+        );
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        WhatsappCloudApiSender sender = new WhatsappCloudApiSender(properties, builder);
+
+        server.expect(once(), requestTo("https://graph.facebook.com/v23.0/123456/messages"))
+                .andRespond(withBadRequest().body("telefone +5513999999999 token secret-token"));
+
+        assertThatThrownBy(() -> sender.send(notification()))
+                .isInstanceOf(WhatsappDeliveryException.class)
+                .hasMessage("WhatsApp Cloud API respondeu HTTP 400")
+                .message().doesNotContain("5513999999999", "secret-token");
         server.verify();
     }
 

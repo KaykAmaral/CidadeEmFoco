@@ -5,6 +5,7 @@ import br.com.cidadeemfoco.enums.WhatsappNotificationStatus;
 import br.com.cidadeemfoco.service.WhatsappNotificationService;
 import jakarta.validation.constraints.Positive;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,13 +27,14 @@ public class AdminWhatsappNotificationController {
 
     @GetMapping
     public List<WhatsappNotificationResponse> findAll(
+            Authentication authentication,
             @RequestParam(required = false) WhatsappNotificationStatus status
     ) {
-        return notificationService.findAll(status);
+        return notificationService.findAll(authentication.getName(), status);
     }
 
     @GetMapping("/{id}")
-    public WhatsappNotificationResponse findById(@PathVariable @Positive Long id) {
-        return notificationService.findById(id);
+    public WhatsappNotificationResponse findById(Authentication authentication, @PathVariable @Positive Long id) {
+        return notificationService.findById(authentication.getName(), id);
     }
 }

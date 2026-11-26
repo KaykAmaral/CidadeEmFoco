@@ -3,7 +3,7 @@ import { getOccurrenceTypeLabel, perceivedRiskLabels } from '../../constants/occ
 import Button from '../ui/Button'
 import OccurrenceTypeIcon from './OccurrenceTypeIcon'
 
-function OccurrenceReviewModal({ form, imageCount, onBack, onConfirm, submitting }) {
+function OccurrenceReviewModal({ cooldownLabel, form, imageCount, onBack, onConfirm, submitting }) {
   return (
     <div className="review-modal" role="presentation">
       <section aria-labelledby="review-title" aria-modal="true" className="review-modal__dialog" role="dialog">
@@ -16,7 +16,7 @@ function OccurrenceReviewModal({ form, imageCount, onBack, onConfirm, submitting
           <div><dt>Imagens</dt><dd>{imageCount}</dd></div>
           <div className="review-modal__description"><dt>Descrição</dt><dd>{form.description}</dd></div>
         </dl>
-        <footer><Button onClick={onBack} variant="outline">Voltar e editar</Button><Button disabled={submitting} onClick={onConfirm}>{submitting ? 'Enviando...' : 'Confirmar ocorrência'}</Button></footer>
+        <footer><Button onClick={onBack} variant="outline">Voltar e editar</Button><Button disabled={submitting || Boolean(cooldownLabel)} onClick={onConfirm}>{submitting ? 'Enviando...' : cooldownLabel ? `Aguarde ${cooldownLabel}` : 'Confirmar ocorrência'}</Button></footer>
       </section>
     </div>
   )

@@ -1,4 +1,6 @@
 .climate-alert-card {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
@@ -10,6 +12,18 @@
   background: white;
   box-shadow: var(--shadow-card);
 }
+
+.climate-alert-card__effect { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: .12; }
+.climate-alert-card__effect i { position: absolute; display: block; }
+.climate-alert-card--rain .climate-alert-card__effect i { top: -18px; width: 2px; height: 28px; background: var(--color-blue); transform: rotate(14deg); animation: alert-rain 2.4s linear infinite; }
+.climate-alert-card--rain .climate-alert-card__effect i:nth-child(1) { left: 18%; }.climate-alert-card--rain .climate-alert-card__effect i:nth-child(2) { left: 58%; animation-delay: -.8s; }.climate-alert-card--rain .climate-alert-card__effect i:nth-child(3) { left: 86%; animation-delay: -1.6s; }
+.climate-alert-card--wind .climate-alert-card__effect i { right: -70px; width: 100px; height: 2px; border-radius: 50%; background: var(--color-blue); animation: alert-wind 3.5s ease-in-out infinite; }
+.climate-alert-card--wind .climate-alert-card__effect i:nth-child(1) { top: 28%; }.climate-alert-card--wind .climate-alert-card__effect i:nth-child(2) { top: 55%; animation-delay: -1.2s; }.climate-alert-card--wind .climate-alert-card__effect i:nth-child(3) { top: 76%; animation-delay: -2.2s; }
+.climate-alert-card--terrain .climate-alert-card__effect { background: linear-gradient(150deg, transparent 62%, #8b5e3c 63%); }
+.climate-alert-card--attention .climate-alert-card__effect { background: radial-gradient(circle at 92% 18%, var(--color-warning-soft), transparent 28%); opacity: .45; }
+.climate-alert-card__icon, .climate-alert-card__content { position: relative; z-index: 1; }
+@keyframes alert-rain { to { transform: translate(28px, 260px) rotate(14deg); } }
+@keyframes alert-wind { 0%, 20% { transform: translateX(0); opacity: 0; } 45%, 70% { opacity: 1; } 100% { transform: translateX(-900px); opacity: 0; } }
 
 .climate-alert-card--alta {
   border-left-color: var(--color-danger);
@@ -119,4 +133,8 @@
     width: 42px;
     height: 42px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .climate-alert-card__effect i { animation: none !important; }
 }

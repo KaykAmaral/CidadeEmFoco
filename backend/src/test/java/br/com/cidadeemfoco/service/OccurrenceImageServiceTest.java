@@ -3,6 +3,7 @@ package br.com.cidadeemfoco.service;
 import br.com.cidadeemfoco.dto.OccurrenceResponse;
 import br.com.cidadeemfoco.dto.StoredImage;
 import br.com.cidadeemfoco.entity.Occurrence;
+import br.com.cidadeemfoco.entity.City;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
 import br.com.cidadeemfoco.enums.OccurrenceType;
@@ -10,11 +11,13 @@ import br.com.cidadeemfoco.enums.PerceivedRisk;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
+import br.com.cidadeemfoco.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -39,12 +42,15 @@ class OccurrenceImageServiceTest {
     @Mock
     private ImageStorageService imageStorageService;
 
+    @Mock
+    private UserRepository userRepository;
+
 
     private OccurrenceImageService occurrenceImageService;
 
     @BeforeEach
     void setUp() {
-        occurrenceImageService = new OccurrenceImageService(occurrenceRepository, imageStorageService);
+        occurrenceImageService = new OccurrenceImageService(occurrenceRepository, imageStorageService, userRepository);
     }
 
     @Test
@@ -56,7 +62,8 @@ class OccurrenceImageServiceTest {
                 MediaType.IMAGE_JPEG,
                 new ByteArrayResource(new byte[]{1})
         );
-        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(occurrence));
+        when(userRepository.findByEmailIgnoreCase("ANA@example.com")).thenReturn(Optional.of(occurrence.getUser()));
+        when(occurrenceRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(occurrence));
         when(imageStorageService.store(file)).thenReturn(storedImage);
         when(occurrenceRepository.saveAndFlush(occurrence)).thenReturn(occurrence);
 
@@ -70,7 +77,9 @@ class OccurrenceImageServiceTest {
     @Test
     void shouldRejectUploadFromAnotherCitizen() {
         Occurrence occurrence = occurrence();
-        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(occurrence));
+        User another = user("Outra", "outra-pessoa@example.com");
+        when(userRepository.findByEmailIgnoreCase("outra-pessoa@example.com")).thenReturn(Optional.of(another));
+        when(occurrenceRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(occurrence));
 
         assertThatThrownBy(() -> occurrenceImageService.upload(
                 "outra-pessoa@example.com",
@@ -83,15 +92,17 @@ class OccurrenceImageServiceTest {
 
     @Test
     void shouldReturnNotFoundWhenOccurrenceHasNoImage() {
-        when(occurrenceRepository.findById(10L)).thenReturn(Optional.of(occurrence()));
+        Occurrence occurrence = occurrence();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(occurrence.getUser()));
+        when(occurrenceRepository.findByIdAndCityId(10L, 1L)).thenReturn(Optional.of(occurrence));
 
-        assertThatThrownBy(() -> occurrenceImageService.load(10L))
+        assertThatThrownBy(() -> occurrenceImageService.load("ana@example.com", 10L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("A ocorrencia nao possui imagem");
     }
 
     private Occurrence occurrence() {
-        User citizen = new User("Ana", "ana@example.com", "hash", UserRole.CITIZEN);
+        User citizen = user("Ana", "ana@example.com");
         return new Occurrence(
                 OccurrenceCategory.EVENTO_NATURAL,
                 OccurrenceType.ALAGAMENTO,
@@ -103,5 +114,11 @@ class OccurrenceImageServiceTest {
                 null,
                 citizen
         );
+    }
+
+    private User user(String name, String email) {
+        City city = new City("Praia Grande", "SP", "3541000");
+        ReflectionTestUtils.setField(city, "id", 1L);
+        return new User(name, email, "hash", UserRole.CITIZEN, city);
     }
 }

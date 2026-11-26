@@ -9,6 +9,7 @@ public enum OccurrenceType {
     RESSACA_MARITIMA,
     INCENDIO,
     CHUVA_INTENSA,
+    QUEDA_GRANIZO,
     BURACO_RUA,
     BUEIRO_ENTUPIDO,
     POSTE_DANIFICADO,

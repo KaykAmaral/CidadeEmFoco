@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest } from './api.js'
 
 function loginRequest(credentials) {
   return apiRequest('/api/auth/login', {
@@ -14,4 +14,28 @@ function registerRequest(citizen) {
   })
 }
 
-export { loginRequest, registerRequest }
+function forgotPasswordRequest(email) {
+  return apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+function resetPasswordRequest(token, newPassword) {
+  return apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, newPassword }),
+  })
+}
+
+async function registerAndLoginRequest(citizen) {
+  return registerRequest(citizen)
+}
+
+export {
+  forgotPasswordRequest,
+  loginRequest,
+  registerAndLoginRequest,
+  registerRequest,
+  resetPasswordRequest,
+}

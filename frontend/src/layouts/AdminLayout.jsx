@@ -1,10 +1,11 @@
-import { Bell, LayoutDashboard, ListChecks, LogOut, Menu, X } from 'lucide-react'
+import { BarChart3, Bell, LayoutDashboard, ListChecks, LogOut, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import useAuth from '../hooks/useAuth'
 
 const navigationItems = [
   { to: '/admin', label: 'Visão geral', icon: LayoutDashboard, end: true },
+  { to: '/admin/estatisticas', label: 'Estatísticas', icon: BarChart3 },
   { to: '/admin/ocorrencias', label: 'Ocorrências', icon: ListChecks },
   { to: '/admin/alertas', label: 'Alertas climáticos', icon: Bell },
 ]
@@ -12,11 +13,17 @@ const navigationItems = [
 function AdminLayout() {
   const { logout, user } = useAuth()
   const [isNavigationOpen, setIsNavigationOpen] = useState(false)
+  const managedCity = user.city
+    ? `${user.city.name} — ${user.city.stateCode}`
+    : null
 
   return (
     <div className="admin-layout">
       <header className="admin-mobile-header">
-        <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco" />
+        <div className="admin-mobile-header__brand">
+          <img src="/brand/cidade-em-foco-app-icon.png" alt="Cidade em Foco" />
+          <span>{managedCity ?? 'Não informada pela API'}</span>
+        </div>
         <button
           aria-controls="admin-sidebar"
           aria-expanded={isNavigationOpen}
@@ -37,6 +44,7 @@ function AdminLayout() {
         </div>
 
         <nav className="admin-navigation" aria-label="Navegação administrativa">
+          <span className="admin-navigation__label">Navegação</span>
           {navigationItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               className={({ isActive }) =>
@@ -56,15 +64,24 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-sidebar__account">
-          <div className="admin-sidebar__avatar" aria-hidden="true">
-            {user.name?.charAt(0).toUpperCase()}
+          <div className="admin-sidebar__identity">
+            <div className="admin-sidebar__avatar" aria-hidden="true">
+              {user.name?.charAt(0).toUpperCase()}
+            </div>
+            <div className="admin-sidebar__account-details">
+              <strong>{user.name}</strong>
+              <span>{user.email}</span>
+            </div>
           </div>
-          <div className="admin-sidebar__account-details">
-            <strong>{user.name}</strong>
-            <span>{user.email}</span>
+
+          <div className="admin-sidebar__city">
+            <span>Cidade gerenciada</span>
+            <strong>{managedCity ?? 'Não informada pela API'}</strong>
           </div>
-          <button onClick={logout} type="button" aria-label="Sair">
+
+          <button onClick={logout} type="button">
             <LogOut size={19} aria-hidden="true" />
+            <span>Sair</span>
           </button>
         </div>
       </aside>

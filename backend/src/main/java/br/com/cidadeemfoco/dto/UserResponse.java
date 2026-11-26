@@ -10,7 +10,10 @@ public record UserResponse(
         String name,
         String email,
         UserRole role,
-        Instant createdAt
+        Instant createdAt,
+        CityResponse city,
+        String whatsappPhone,
+        AddressResponse address
 ) {
 
     public static UserResponse from(User user) {
@@ -19,7 +22,10 @@ public record UserResponse(
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getCity() == null ? null : CityResponse.from(user.getCity()),
+                user.getWhatsappPhone(),
+                AddressResponse.from(user)
         );
     }
 }

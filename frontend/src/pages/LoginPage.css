@@ -145,6 +145,191 @@
   width: min(100%, 520px);
 }
 
+.login-page--register {
+  overflow: visible;
+}
+
+.login-page--register .login-panel {
+  overflow-y: auto;
+}
+
+.login-page--register .login-form-wrap {
+  width: min(100%, 620px);
+  margin: auto;
+  padding: 16px 0;
+}
+
+.login-page--register .login-panel {
+  padding-right: clamp(24px, 3vw, 48px);
+  padding-left: clamp(24px, 3vw, 48px);
+}
+
+.login-page--register .auth-card__heading {
+  margin-bottom: 22px;
+}
+
+.login-page--register .auth-card__heading h2 {
+  font-size: clamp(2rem, 2.6vw, 2.7rem);
+}
+
+.login-page--register .auth-form {
+  gap: 16px;
+}
+
+.register-form-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.register-form-section {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid #dce6ef;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.register-form-section[hidden] {
+  display: none;
+}
+
+.register-form-section__heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 2px;
+}
+
+.register-form-section__heading > span {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--color-blue);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.register-form-section__heading h3,
+.register-form-section__heading p {
+  margin: 0;
+}
+
+.register-form-section__heading h3 {
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.register-form-section__heading p {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.login-page--register .login-input {
+  min-height: 48px;
+}
+
+.login-page--register .form-field label {
+  font-size: 0.82rem;
+}
+
+.register-step-button {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.register-step-actions {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.42fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.register-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.register-grid .form-field--wide {
+  grid-column: 1 / -1;
+}
+
+.login-input select {
+  min-width: 0;
+  width: 100%;
+  align-self: stretch;
+  border: 0;
+  outline: 0;
+  color: var(--color-text);
+  background: transparent;
+}
+
+.register-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.register-consent input {
+  margin-top: 4px;
+}
+
+.register-external-service-note {
+  margin-top: -8px;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.register-progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce8f2;
+}
+
+.register-progress__bar {
+  display: block;
+  width: var(--register-progress);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-blue);
+  transition: width 220ms ease;
+}
+
+.register-step {
+  display: grid;
+  gap: 21px;
+  animation: register-step-enter 180ms ease-out;
+}
+
+.register-actions {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.45fr) minmax(180px, 1fr);
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.register-actions .button {
+  min-height: 52px;
+  border-radius: 10px;
+}
+
+@keyframes register-step-enter {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 .login-panel .auth-card__heading { margin-bottom: 34px; }
 .login-panel .auth-card__heading > span { letter-spacing: 0.18em; }
 .login-panel .auth-card__heading h2 { font-size: clamp(2.25rem, 3.2vw, 3.1rem); }
@@ -207,6 +392,20 @@
   background: var(--color-blue-soft);
 }
 
+.login-input__action {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--color-blue);
+  background: var(--color-blue-soft);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.login-input__action:hover {
+  background: #d8edfc;
+}
+
 .login-panel .auth-form__submit {
   min-height: 52px;
   margin-top: 5px;
@@ -245,6 +444,10 @@
   .login-hero__message h1 { font-size: clamp(2.35rem, 4vw, 3.5rem); }
   .login-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 0; }
   .login-benefit:nth-child(3) { padding-left: 0; border-left: 0; }
+
+  .register-form-section {
+    padding: 15px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -267,6 +470,29 @@
   .login-panel .auth-card__heading { margin-bottom: 27px; }
   .login-panel .auth-card__heading h2 { font-size: clamp(2rem, 9vw, 2.55rem); }
   .login-panel__curves, .login-panel__skyline { display: none; }
+
+  .login-page--register .login-panel {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+}
+
+@media (max-width: 560px) {
+  .register-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .register-grid .form-field--wide {
+    grid-column: auto;
+  }
+
+  .register-step-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .register-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-height: 760px) and (min-width: 761px) {
@@ -278,5 +504,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-input { transition: none; }
+  .login-input, .register-progress__bar { transition: none; }
+  .register-step { animation: none; }
 }

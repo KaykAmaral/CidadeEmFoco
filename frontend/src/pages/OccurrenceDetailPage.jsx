@@ -1,9 +1,10 @@
 import { ArrowLeft, CalendarDays, MapPin, ShieldAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
-import OccurrenceMap from '../components/map/OccurrenceMap'
+import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
+import OccurrenceStrength from '../components/occurrences/OccurrenceStrength'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
 import {
@@ -95,6 +96,7 @@ function OccurrenceDetailPage() {
           <span>{getOccurrenceCategoryLabel(occurrence.category)}</span>
           <h1>{getOccurrenceTypeLabel(occurrence.type)}</h1>
           <p><MapPin size={16} aria-hidden="true" />{displayedLocation}</p>
+          <OccurrenceStrength strength={occurrence.strength} />
         </div>
         <StatusBadge status={occurrence.status} />
       </header>
@@ -119,8 +121,9 @@ function OccurrenceDetailPage() {
         </section>
 
         <section className="occurrence-detail__card">
+          {occurrence.automaticallyResolved && <p role="status">Encerrada automaticamente por vencimento do prazo em {formatDateTime(occurrence.resolvedAt)}.</p>}
           <h2>Localização</h2>
-          <OccurrenceMap occurrences={[occurrence]} />
+          <LiveOccurrenceMap filters={{ occurrenceId: occurrence.id }} />
           <p className="occurrence-detail__coordinates">
             {occurrence.latitude}, {occurrence.longitude}
           </p>

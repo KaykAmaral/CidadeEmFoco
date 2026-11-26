@@ -1,11 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env?.VITE_API_URL ?? ''
 
 class ApiError extends Error {
-  constructor(message, status = 0, fieldErrors = {}) {
+  constructor(message, status = 0, fieldErrors = {}, retryAfterSeconds = 0, nextAllowedAt = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.fieldErrors = fieldErrors
+    this.retryAfterSeconds = retryAfterSeconds
+    this.nextAllowedAt = nextAllowedAt
   }
 }
 
@@ -50,10 +52,16 @@ async function apiRequest(path, options = {}) {
   }
 
   if (!response.ok) {
+    const retryAfter = Number(response.headers.get('retry-after'))
+    const responseRetryAfter = Number(data?.retryAfterSeconds)
     throw new ApiError(
       data?.message ?? 'Não foi possível concluir a solicitação.',
       response.status,
       data?.fieldErrors ?? {},
+      Number.isFinite(responseRetryAfter) && responseRetryAfter > 0
+        ? responseRetryAfter
+        : (Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : 0),
+      data?.nextAllowedAt ?? null,
     )
   }
 

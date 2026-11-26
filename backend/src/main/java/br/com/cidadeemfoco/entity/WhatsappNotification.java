@@ -120,6 +120,13 @@ public class WhatsappNotification {
         }
     }
 
+    public void updateRecipientPhone(String phone) {
+        if (status == WhatsappNotificationStatus.PENDING
+                || status == WhatsappNotificationStatus.FAILED) {
+            recipientPhone = Objects.requireNonNull(phone);
+        }
+    }
+
     public void registerAttempt() {
         if (status != WhatsappNotificationStatus.PENDING
                 && status != WhatsappNotificationStatus.FAILED) {

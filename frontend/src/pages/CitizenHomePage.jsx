@@ -1,20 +1,19 @@
-import { ArrowRight, MapPinned, RotateCw } from 'lucide-react'
+﻿import { ArrowRight, MapPinned, RotateCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import ActiveAlertBanner from '../components/alerts/ActiveAlertBanner'
-import OccurrenceMap from '../components/map/OccurrenceMap'
-import OccurrenceCategoryFilter from '../components/map/OccurrenceCategoryFilter'
+import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
 import OccurrenceCard from '../components/occurrences/OccurrenceCard'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import useAuth from '../hooks/useAuth'
-import { getActiveAlerts } from '../services/alertService'
+import useAlerts from '../hooks/useAlerts'
 import { getOccurrences } from '../services/occurrenceService'
 import './CitizenHomePage.css'
 
 function CitizenHomePage() {
   const { logout, token, user } = useAuth()
-  const [alerts, setAlerts] = useState([])
+  const { alerts } = useAlerts()
   const [occurrences, setOccurrences] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -29,13 +28,9 @@ function CitizenHomePage() {
 
     async function loadDashboard() {
       try {
-        const [activeAlerts, occurrenceList] = await Promise.all([
-          getActiveAlerts(token),
-          getOccurrences(token),
-        ])
+        const occurrenceList = await getOccurrences(token)
 
         if (isCurrent) {
-          setAlerts(activeAlerts)
           setOccurrences(occurrenceList)
         }
       } catch (requestError) {
@@ -124,14 +119,8 @@ function CitizenHomePage() {
               <MapPinned size={20} aria-hidden="true" />
               <h2 id="map-title">Mapa de ocorrências</h2>
             </div>
-            <OccurrenceCategoryFilter activeCategories={activeMapCategories} occurrences={occurrences} onToggle={toggleMapCategory} />
           </div>
-          <OccurrenceMap activeCategories={activeMapCategories} occurrences={occurrences} />
-          {occurrences.length === 0 && (
-            <p className="map-empty-message">
-              Ainda não há ocorrências para posicionar no mapa.
-            </p>
-          )}
+          <LiveOccurrenceMap activeCategories={activeMapCategories} onToggleCategory={toggleMapCategory} />
         </section>
 
         <section className="recent-occurrences" aria-labelledby="recent-title">
@@ -164,3 +153,4 @@ function CitizenHomePage() {
 }
 
 export default CitizenHomePage
+

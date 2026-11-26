@@ -75,10 +75,13 @@ function AdminDashboardPage() {
   const [appliedFilters, setAppliedFilters] = useState(() => buildApiFilters(emptyFilters))
   const [occurrences, setOccurrences] = useState([])
   const [alerts, setAlerts] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [isOccurrencesLoading, setIsOccurrencesLoading] = useState(true)
+  const [isAlertsLoading, setIsAlertsLoading] = useState(true)
+  const [occurrencesError, setOccurrencesError] = useState('')
+  const [alertsError, setAlertsError] = useState('')
   const [filterError, setFilterError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null)
   const availableTypes = filters.category
     ? occurrenceTypesByCategory[filters.category]
     : Object.keys(occurrenceTypeLabels)
@@ -86,16 +89,39 @@ function AdminDashboardPage() {
   useEffect(() => {
     let isCurrent = true
 
-    async function loadDashboard() {
+    async function loadOccurrences() {
       try {
-        const [occurrenceList, alertList] = await Promise.all([
-          getAdminOccurrences(token, appliedFilters),
-          getAdminAlerts(token),
-        ])
+        const occurrenceList = await getAdminOccurrences(token, appliedFilters)
+
+        if (isCurrent) setOccurrences(occurrenceList)
+      } catch (requestError) {
+        if (!isCurrent) return
+        if (requestError.status === 401) {
+          logout()
+          return
+        }
+        setOccurrencesError(requestError.message)
+      } finally {
+        if (isCurrent) setIsOccurrencesLoading(false)
+      }
+    }
+
+    loadOccurrences()
+    return () => {
+      isCurrent = false
+    }
+  }, [appliedFilters, logout, reloadKey, token])
+
+  useEffect(() => {
+    let isCurrent = true
+
+    async function loadAlerts() {
+      try {
+        const alertList = await getAdminAlerts(token)
 
         if (isCurrent) {
-          setOccurrences(occurrenceList)
           setAlerts(alertList)
+          setLastUpdatedAt(new Date())
         }
       } catch (requestError) {
         if (!isCurrent) return
@@ -103,17 +129,17 @@ function AdminDashboardPage() {
           logout()
           return
         }
-        setError(requestError.message)
+        setAlertsError(requestError.message)
       } finally {
-        if (isCurrent) setIsLoading(false)
+        if (isCurrent) setIsAlertsLoading(false)
       }
     }
 
-    loadDashboard()
+    loadAlerts()
     return () => {
       isCurrent = false
     }
-  }, [appliedFilters, logout, reloadKey, token])
+  }, [logout, reloadKey, token])
 
   function handleFilterChange(event) {
     const { name, value } = event.target
@@ -145,9 +171,9 @@ function AdminDashboardPage() {
       return
     }
 
-    setError('')
+    setOccurrencesError('')
     setFilterError('')
-    setIsLoading(true)
+    setIsOccurrencesLoading(true)
     setAppliedFilters(buildApiFilters(filters))
   }
 
@@ -156,17 +182,19 @@ function AdminDashboardPage() {
     setFilters(clearedFilters)
     setAppliedFilters(buildApiFilters(clearedFilters))
     setFilterError('')
-    setError('')
-    setIsLoading(true)
+    setOccurrencesError('')
+    setIsOccurrencesLoading(true)
   }
 
   function retry() {
-    setError('')
-    setIsLoading(true)
+    setOccurrencesError('')
+    setAlertsError('')
+    setIsOccurrencesLoading(true)
+    setIsAlertsLoading(true)
     setReloadKey((currentKey) => currentKey + 1)
   }
 
-  if (isLoading) {
+  if (isOccurrencesLoading || isAlertsLoading) {
     return (
       <FeedbackState
         type="loading"
@@ -175,6 +203,8 @@ function AdminDashboardPage() {
       />
     )
   }
+
+  const error = occurrencesError || alertsError
 
   if (error) {
     return (
@@ -195,7 +225,6 @@ function AdminDashboardPage() {
     ]),
   )
   const metrics = { ...statusCounts, total: occurrences.length }
-  const maxStatusCount = Math.max(...Object.values(statusCounts), 1)
   const recentOccurrences = occurrences.slice(0, 5)
   const recentAlerts = alerts.slice(0, 3)
   const enabledAlerts = alerts.filter((alert) => alert.active).length
@@ -207,12 +236,15 @@ function AdminDashboardPage() {
         <div>
           <span>Painel administrativo</span>
           <h1>Visão geral</h1>
-          <p>Olá, {firstName}. Acompanhe os registros do Cidade em Foco.</p>
+          <p>Olá, {firstName}. Acompanhe os registros de <strong>{user.city?.name ?? 'sua cidade'}</strong>.</p>
         </div>
-        <Button onClick={retry} variant="outline">
-          <RotateCw size={17} aria-hidden="true" />
-          Atualizar dados
-        </Button>
+        <div className="admin-dashboard__refresh">
+          {lastUpdatedAt && <span>Atualizado em {formatDateTime(lastUpdatedAt.toISOString())}</span>}
+          <Button onClick={retry} variant="outline">
+            <RotateCw size={17} aria-hidden="true" />
+            Atualizar dados
+          </Button>
+        </div>
       </header>
 
       <form className="admin-dashboard-filters" onSubmit={applyFilters}>
@@ -220,7 +252,7 @@ function AdminDashboardPage() {
           <SlidersHorizontal size={20} aria-hidden="true" />
           <div>
             <strong>Personalizar visão</strong>
-            <span>Os indicadores, gráfico, mapa e registros usam os mesmos filtros.</span>
+            <span>Indicadores, mapa e registros seguem os mesmos filtros.</span>
           </div>
         </div>
 
@@ -327,39 +359,17 @@ function AdminDashboardPage() {
               ))}
             </div>
           ) : (
-            <FeedbackState type="empty" title="Nenhuma ocorrência cadastrada" />
+            <FeedbackState
+              type="empty"
+              title="Nenhuma ocorrência encontrada"
+              message="Ajuste ou limpe os filtros para consultar outros registros."
+            />
           )}
         </section>
       </div>
 
       <div className="admin-dashboard__secondary-grid">
-        <section className="admin-dashboard-card">
-          <div className="admin-card-heading">
-            <div>
-              <span>Acompanhamento</span>
-              <h2>Ocorrências por status</h2>
-            </div>
-          </div>
-
-          <div className="status-distribution">
-            {Object.entries(occurrenceStatusConfig).map(([status, config]) => (
-              <div className="status-distribution__item" key={status}>
-                <div>
-                  <span>{config.label}</span>
-                  <strong>{statusCounts[status]}</strong>
-                </div>
-                <div className="status-distribution__track">
-                  <span
-                    className={`status-distribution__bar status-distribution__bar--${config.tone}`}
-                    style={{ width: `${(statusCounts[status] / maxStatusCount) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="admin-dashboard-card">
+        <section className="admin-dashboard-card admin-alerts-card">
           <div className="admin-card-heading">
             <div>
               <span>Clima</span>

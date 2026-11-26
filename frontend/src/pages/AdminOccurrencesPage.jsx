@@ -153,7 +153,9 @@ function AdminOccurrencesPage() {
           <Button onClick={retry} variant="outline">Tentar novamente</Button>
         </div>
       ) : occurrences.length === 0 ? (
-        <FeedbackState type="empty" title="Nenhuma ocorrência encontrada" />
+        <div className="admin-occurrences-empty">
+          <FeedbackState type="empty" title="Nenhuma ocorrência encontrada" message="Ajuste ou limpe os filtros para consultar outros registros." />
+        </div>
       ) : (
         <div className="admin-occurrences-table-wrapper">
           <table className="admin-occurrences-table">

@@ -20,14 +20,28 @@ spring:
     validate-migration-naming: true
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: ${MAX_IMAGE_FILE_SIZE:5MB}
+      max-request-size: ${MAX_IMAGE_REQUEST_SIZE:20MB}
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
 
 server:
   port: ${SERVER_PORT:${PORT:8080}}
   forward-headers-strategy: framework
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -43,6 +57,30 @@ springdoc:
     path: /swagger-ui.html
 
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  gamification:
+    report-created-xp: ${GAMIFICATION_REPORT_CREATED_XP:10}
+    case-resolved-xp: ${GAMIFICATION_CASE_RESOLVED_XP:20}
+    xp-per-level: ${GAMIFICATION_XP_PER_LEVEL:100}
+  city-boundaries:
+    validate-on-start: ${CITY_BOUNDARY_VALIDATION_ENABLED:true}
+  admin-bootstrap:
+    enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+    name: ${ADMIN_BOOTSTRAP_NAME:}
+    email: ${ADMIN_BOOTSTRAP_EMAIL:}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+    city-ibge-code: ${ADMIN_BOOTSTRAP_CITY_IBGE_CODE:}
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@cidadeemfoco.local}
+    registration-subject: ${REGISTRATION_EMAIL_SUBJECT:Cadastro concluído — Cidade em Foco}
+    password-reset-subject: ${PASSWORD_RESET_EMAIL_SUBJECT:Redefinição de senha — Cidade em Foco}
+    password-reset-token-lifetime: ${PASSWORD_RESET_TOKEN_LIFETIME:30m}
+    password-reset-request-cooldown: ${PASSWORD_RESET_REQUEST_COOLDOWN:1m}
+  public-api:
+    rate-limit:
+      enabled: ${PUBLIC_API_RATE_LIMIT_ENABLED:true}
+      requests-per-minute: ${PUBLIC_API_RATE_LIMIT_PER_MINUTE:60}
   database:
     flyway-repair-on-start: ${FLYWAY_REPAIR_ON_START:false}
   alerts:
@@ -67,8 +105,10 @@ app:
       max-attempts: ${WHATSAPP_MAX_ATTEMPTS:3}
       batch-size: ${WHATSAPP_BATCH_SIZE:20}
   occurrences:
+    creation-cooldown: ${OCCURRENCE_CREATION_COOLDOWN:15m}
     resolved-map-visibility: ${RESOLVED_MAP_VISIBILITY:24h}
     temporary-event-lifetime: ${TEMPORARY_EVENT_LIFETIME:2d}
+    auto-resolution-types: ${AUTO_RESOLUTION_TYPES:ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO}
     auto-resolution-interval: ${AUTO_RESOLUTION_INTERVAL:5m}
     auto-resolution-initial-delay: ${AUTO_RESOLUTION_INITIAL_DELAY:5m}
     grouping-window-natural: ${OCCURRENCE_GROUPING_WINDOW_NATURAL:${OCCURRENCE_GROUPING_WINDOW:2d}}

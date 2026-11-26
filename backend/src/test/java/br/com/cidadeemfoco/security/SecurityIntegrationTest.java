@@ -4,10 +4,16 @@ import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.CreateClimateAlertRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.entity.User;
+import br.com.cidadeemfoco.entity.City;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.CityRepository;
+import br.com.cidadeemfoco.repository.PasswordResetTokenRepository;
 import br.com.cidadeemfoco.service.OccurrenceService;
+import br.com.cidadeemfoco.service.AdminDashboardService;
+import br.com.cidadeemfoco.service.CityRankingService;
+import br.com.cidadeemfoco.service.GamificationService;
 import br.com.cidadeemfoco.service.OccurrenceAutoResolutionService;
 import br.com.cidadeemfoco.service.ClimateAlertService;
 import br.com.cidadeemfoco.service.ClimateAlertCleanupService;
@@ -44,6 +50,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -72,7 +79,22 @@ class SecurityIntegrationTest {
     private UserRepository userRepository;
 
     @MockitoBean
+    private CityRepository cityRepository;
+
+    @MockitoBean
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @MockitoBean
     private OccurrenceService occurrenceService;
+
+    @MockitoBean
+    private AdminDashboardService adminDashboardService;
+
+    @MockitoBean
+    private CityRankingService cityRankingService;
+
+    @MockitoBean
+    private GamificationService gamificationService;
 
     @MockitoBean
     private OccurrenceAutoResolutionService occurrenceAutoResolutionService;
@@ -103,8 +125,53 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldExposeActiveCitiesWithoutAuthentication() throws Exception {
+        when(cityRepository.findAllByActiveTrueOrderByStateCodeAscNameAsc())
+                .thenReturn(List.of(new City("Praia Grande", "SP", "3541000")));
+
+        mockMvc.perform(get("/api/cities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Praia Grande"))
+                .andExpect(jsonPath("$[0].stateCode").value("SP"))
+                .andExpect(jsonPath("$[0].ibgeCode").value("3541000"));
+    }
+
+    @Test
+    void shouldRequireAuthenticationAndReturnActiveCityBoundary() throws Exception {
+        mockMvc.perform(get("/api/cities/3541000/boundary"))
+                .andExpect(status().isUnauthorized());
+
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(cityRepository.findByIbgeCodeAndActiveTrue("3541000"))
+                .thenReturn(Optional.of(new City("Praia Grande", "SP", "3541000")));
+        String token = jwtService.generateToken(citizen);
+
+        mockMvc.perform(get("/api/cities/3541000/boundary")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/geo+json"))
+                .andExpect(jsonPath("$.type").value("FeatureCollection"))
+                .andExpect(jsonPath("$.features[0].properties.codarea").value("3541000"));
+    }
+
+    @Test
+    void shouldExposeOnlyVersionedPublicReadEndpointsWithoutAuthentication() throws Exception {
+        when(climateAlertService.findCurrentlyActive()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/public/alerts/active"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists("X-RateLimit-Limit"));
+
+        mockMvc.perform(get("/api/admin/alerts"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void shouldAllowPublicCitizenRegistrationAndEncodePassword() throws Exception {
         when(userRepository.existsByEmailIgnoreCase("ana@example.com")).thenReturn(false);
+        when(cityRepository.findByIbgeCodeAndActiveTrue("3541000"))
+                .thenReturn(Optional.of(new City("Praia Grande", "SP", "3541000")));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         mockMvc.perform(post("/api/auth/register")
@@ -114,13 +181,24 @@ class SecurityIntegrationTest {
                                   "name": "Ana",
                                   "email": "ANA@example.com",
                                   "password": "senha123",
+                                  "cpf": "529.982.247-25",
+                                  "whatsappPhone": "(13) 99999-9999",
+                                  "whatsappConsentGiven": true,
+                                  "street": "Avenida Brasil",
+                                  "addressNumber": "100",
+                                  "addressComplement": "Apto 12",
+                                  "neighborhood": "Boqueirao",
+                                  "postalCode": "11700-000",
+                                  "cityIbgeCode": "3541000",
                                   "role": "ADMIN"
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("ana@example.com"))
-                .andExpect(jsonPath("$.role").value("CITIZEN"))
-                .andExpect(jsonPath("$.password").doesNotExist());
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.user.email").value("ana@example.com"))
+                .andExpect(jsonPath("$.user.role").value("CITIZEN"))
+                .andExpect(jsonPath("$.user.password").doesNotExist());
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
@@ -173,12 +251,47 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldRequireAuthenticationForCityRanking() throws Exception {
+        mockMvc.perform(get("/api/rankings/cities"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldProtectGamificationAndRestrictPersonalProgressToCitizens() throws Exception {
+        mockMvc.perform(get("/api/gamification/ranking"))
+                .andExpect(status().isUnauthorized());
+
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String adminToken = jwtService.generateToken(admin);
+        mockMvc.perform(get("/api/gamification/me")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        User citizen = citizen();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        String citizenToken = jwtService.generateToken(citizen);
+        mockMvc.perform(get("/api/gamification/ranking")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isOk());
+
+        verify(gamificationService).findCitizenRanking(
+                "ana@example.com",
+                br.com.cidadeemfoco.enums.CitizenRankingPeriod.MONTH
+        );
+    }
+
+    @Test
     void shouldAllowCorsPreflightFromConfiguredFrontend() throws Exception {
         mockMvc.perform(options("/api/occurrences")
                         .header("Origin", "http://localhost:5173")
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+                .andExpect(header().string(
+                        "Access-Control-Expose-Headers",
+                        org.hamcrest.Matchers.containsString("Retry-After")
+                ));
     }
 
     @Test
@@ -208,7 +321,7 @@ class SecurityIntegrationTest {
     void shouldForbidAdminFromCreatingOccurrenceButAllowReading() throws Exception {
         User admin = admin();
         when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
-        when(occurrenceService.findAll(any(OccurrenceFilter.class))).thenReturn(List.of());
+        when(occurrenceService.findAll(eq("admin@example.com"), any(OccurrenceFilter.class))).thenReturn(List.of());
         String token = jwtService.generateToken(admin);
 
         mockMvc.perform(post("/api/occurrences")
@@ -253,7 +366,7 @@ class SecurityIntegrationTest {
                                 """))
                 .andExpect(status().isOk());
 
-        verify(occurrenceService).updateStatus(10L, OccurrenceStatus.RESOLVIDA);
+        verify(occurrenceService).updateStatus("admin@example.com", 10L, OccurrenceStatus.RESOLVIDA);
     }
 
     @Test
@@ -294,7 +407,7 @@ class SecurityIntegrationTest {
     void shouldAllowCitizenToReadActiveAlertsButNotManageThem() throws Exception {
         User citizen = citizen();
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
-        when(climateAlertService.findCurrentlyActive()).thenReturn(List.of());
+        when(climateAlertService.findCurrentlyActive("ana@example.com")).thenReturn(List.of());
         String token = jwtService.generateToken(citizen);
 
         mockMvc.perform(get("/api/alerts/active")
@@ -321,7 +434,7 @@ class SecurityIntegrationTest {
                         .content(validAlertJson()))
                 .andExpect(status().isCreated());
 
-        verify(climateAlertService).create(any(CreateClimateAlertRequest.class));
+        verify(climateAlertService).create(eq("admin@example.com"), any(CreateClimateAlertRequest.class));
     }
 
     @Test
@@ -341,7 +454,7 @@ class SecurityIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isNoContent());
 
-        verify(climateAlertService).delete(10L);
+        verify(climateAlertService).delete("admin@example.com", 10L);
     }
 
     @Test
@@ -351,7 +464,7 @@ class SecurityIntegrationTest {
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
         when(userService.findWhatsappPreferences("ana@example.com"))
-                .thenReturn(new WhatsappPreferencesResponse(null, false, null));
+                .thenReturn(new WhatsappPreferencesResponse(null, false, null, false));
         String citizenToken = jwtService.generateToken(citizen);
         String adminToken = jwtService.generateToken(admin);
 
@@ -367,12 +480,35 @@ class SecurityIntegrationTest {
     }
 
     @Test
+    void shouldAllowOnlyCitizenToReadOwnProfile() throws Exception {
+        User citizen = citizen();
+        User admin = admin();
+        when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
+        String citizenToken = jwtService.generateToken(citizen);
+        String adminToken = jwtService.generateToken(admin);
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + citizenToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService).findProfile("ana@example.com");
+    }
+
+    @Test
     void shouldAllowOnlyAdminToReadWhatsappNotificationHistory() throws Exception {
         User citizen = citizen();
         User admin = admin();
         when(userRepository.findByEmailIgnoreCase("ana@example.com")).thenReturn(Optional.of(citizen));
         when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.of(admin));
-        when(whatsappNotificationService.findAll(null)).thenReturn(List.of());
+        when(whatsappNotificationService.findAll("admin@example.com", null)).thenReturn(List.of());
         String citizenToken = jwtService.generateToken(citizen);
         String adminToken = jwtService.generateToken(admin);
 
@@ -384,7 +520,7 @@ class SecurityIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        verify(whatsappNotificationService).findAll(null);
+        verify(whatsappNotificationService).findAll("admin@example.com", null);
     }
 
     @Test

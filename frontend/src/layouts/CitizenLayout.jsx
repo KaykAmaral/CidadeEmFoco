@@ -1,75 +1,88 @@
-import {
+﻿import {
   Bell,
   ClipboardList,
   Home,
   LogOut,
   Plus,
+  Trophy,
   UserRound,
 } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
+import AlertProvider from '../contexts/AlertProvider'
 import Brand from '../components/ui/Brand'
 import useAuth from '../hooks/useAuth'
 
 const navigationItems = [
   { to: '/app', label: 'Início', icon: Home, end: true },
   { to: '/app/ocorrencias', label: 'Ocorrências', icon: ClipboardList },
-  {
-    to: '/app/ocorrencias/nova',
-    label: 'Registrar',
-    icon: Plus,
-    primary: true,
-  },
+  { to: '/app/ocorrencias/nova', label: 'Registrar', icon: Plus, primary: true },
   { to: '/app/alertas', label: 'Alertas', icon: Bell },
+  { to: '/app/participacao', label: 'Participação', icon: Trophy },
   { to: '/app/perfil', label: 'Perfil', icon: UserRound },
 ]
 
 function CitizenLayout() {
-  const { logout, user } = useAuth()
+  const { logout, token, user } = useAuth()
   const firstName = user.name.split(' ')[0]
 
   return (
-    <div className="citizen-layout">
-      <header className="citizen-header">
-        <div className="citizen-container">
-          <Brand />
-          <div className="citizen-header__account">
-            <span className="profile-label">Olá, {firstName}</span>
-            <button className="logout-button" onClick={logout} type="button">
-              <LogOut size={18} aria-hidden="true" />
-              <span>Sair</span>
-            </button>
+    <AlertProvider logout={logout} token={token}>
+      <div className="citizen-layout">
+        <header className="citizen-header">
+          <div className="citizen-container">
+            <Brand />
+            <nav className="citizen-desktop-navigation" aria-label="Navegação principal do cidadão">
+              {navigationItems.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  className={({ isActive }) => `citizen-desktop-navigation__item${isActive ? ' citizen-desktop-navigation__item--active' : ''}`}
+                  end={end}
+                  key={to}
+                  to={to}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </nav>
+            <div className="citizen-header__account">
+              <span className="profile-label">Olá, {firstName}</span>
+              <button className="logout-button" onClick={logout} type="button">
+                <LogOut size={18} aria-hidden="true" />
+                <span>Sair</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="citizen-main citizen-container">
-        <Outlet />
-      </main>
+        <main className="citizen-main citizen-container">
+          <Outlet />
+        </main>
 
-      <nav className="citizen-navigation" aria-label="Navegação do cidadão">
-        {navigationItems.map(({ to, label, icon: Icon, end, primary }) => (
-          <NavLink
-            className={({ isActive }) =>
-              [
-                'citizen-navigation__item',
-                isActive && 'citizen-navigation__item--active',
-                primary && 'citizen-navigation__item--primary',
-              ]
-                .filter(Boolean)
-                .join(' ')
-            }
-            end={end}
-            key={to}
-            to={to}
-          >
-            <span className="citizen-navigation__icon">
-              <Icon size={21} aria-hidden="true" />
-            </span>
-            <span>{label}</span>
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+        <nav className="citizen-navigation" aria-label="Navegação do cidadão">
+          {navigationItems.map(({ to, label, icon: Icon, end, primary }) => (
+            <NavLink
+              className={({ isActive }) =>
+                [
+                  'citizen-navigation__item',
+                  isActive && 'citizen-navigation__item--active',
+                  primary && 'citizen-navigation__item--primary',
+                ]
+                  .filter(Boolean)
+                  .join(' ')
+              }
+              end={end}
+              key={to}
+              to={to}
+            >
+              <span className="citizen-navigation__icon">
+                <Icon size={21} aria-hidden="true" />
+              </span>
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </AlertProvider>
   )
 }
 

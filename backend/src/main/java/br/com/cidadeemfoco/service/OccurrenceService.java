@@ -3,6 +3,8 @@ package br.com.cidadeemfoco.service;
 import br.com.cidadeemfoco.dto.CreateOccurrenceRequest;
 import br.com.cidadeemfoco.dto.OccurrenceFilter;
 import br.com.cidadeemfoco.dto.OccurrenceResponse;
+import br.com.cidadeemfoco.dto.PageResponse;
+import br.com.cidadeemfoco.dto.PublicOccurrenceResponse;
 import br.com.cidadeemfoco.entity.Occurrence;
 import br.com.cidadeemfoco.entity.User;
 import br.com.cidadeemfoco.enums.OccurrenceCategory;
@@ -10,6 +12,7 @@ import br.com.cidadeemfoco.enums.OccurrenceStatus;
 import br.com.cidadeemfoco.enums.OccurrenceType;
 import br.com.cidadeemfoco.enums.UserRole;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
+import br.com.cidadeemfoco.exception.OccurrenceCooldownException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.OccurrenceRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
@@ -17,6 +20,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +48,8 @@ public class OccurrenceService {
 
     private final OccurrenceRepository occurrenceRepository;
     private final UserRepository userRepository;
+    private final CityBoundaryService cityBoundaryService;
+    private final GamificationService gamificationService;
 
     @Value("${app.occurrences.resolved-map-visibility:24h}")
     private Duration resolvedMapVisibility = Duration.ofHours(24);
@@ -57,20 +63,31 @@ public class OccurrenceService {
     @Value("${app.occurrences.grouping-radius-meters:500}")
     private double groupingRadiusMeters = 500;
 
-    public OccurrenceService(OccurrenceRepository occurrenceRepository, UserRepository userRepository) {
+    @Value("${app.occurrences.creation-cooldown:15m}")
+    private Duration creationCooldown = Duration.ofMinutes(15);
+
+    public OccurrenceService(
+            OccurrenceRepository occurrenceRepository,
+            UserRepository userRepository,
+            CityBoundaryService cityBoundaryService,
+            GamificationService gamificationService
+    ) {
         this.occurrenceRepository = occurrenceRepository;
         this.userRepository = userRepository;
+        this.cityBoundaryService = cityBoundaryService;
+        this.gamificationService = gamificationService;
     }
 
     @Transactional
     public OccurrenceResponse create(String userEmail, CreateOccurrenceRequest request) {
-        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(userEmail))
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
+        User user = findUser(userEmail);
 
         if (user.getRole() != UserRole.CITIZEN) {
             throw new BusinessRuleException("Somente cidadaos podem registrar ocorrencias");
         }
         validateCategoryAndType(request.category(), request.type());
+        cityBoundaryService.validateCoordinates(user.getCity(), request.latitude(), request.longitude());
+        validateCreationCooldown(user);
 
         Occurrence occurrence = new Occurrence(
                 request.category(),
@@ -84,7 +101,7 @@ public class OccurrenceService {
                 user
         );
 
-        Optional<Occurrence> similarCase = findSimilarCase(request);
+        Optional<Occurrence> similarCase = findSimilarCase(user.getCity().getId(), request);
         similarCase.ifPresent(caseRoot -> {
             validateCitizenHasNotContributed(caseRoot, user);
             occurrence.joinCase(caseRoot);
@@ -96,6 +113,7 @@ public class OccurrenceService {
             if (similarCase.isPresent()) {
                 occurrenceRepository.flush();
             }
+            gamificationService.awardReportCreated(savedOccurrence);
             return OccurrenceResponse.from(savedOccurrence);
         } catch (DataIntegrityViolationException exception) {
             if (similarCase.isPresent()) {
@@ -105,59 +123,84 @@ public class OccurrenceService {
         }
     }
 
-    public List<OccurrenceResponse> findAll(OccurrenceFilter filter) {
+    public List<OccurrenceResponse> findAll(String userEmail, OccurrenceFilter filter) {
+        Long cityId = findUser(userEmail).getCity().getId();
         validateCategoryAndType(filter.category(), filter.type());
         validatePeriod(filter.createdFrom(), filter.createdTo());
-        return occurrenceRepository.findAll(toSpecification(filter, null), NEWEST_FIRST)
+        return occurrenceRepository.findAll(toSpecification(filter, null, cityId), NEWEST_FIRST)
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
     }
 
-    public OccurrenceResponse findById(Long id) {
-        return occurrenceRepository.findById(id)
+    public OccurrenceResponse findById(String userEmail, Long id) {
+        Long cityId = findUser(userEmail).getCity().getId();
+        return occurrenceRepository.findByIdAndCityId(id, cityId)
                 .map(OccurrenceResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
     }
 
-    public List<OccurrenceResponse> findCaseReports(Long id) {
-        Occurrence occurrence = occurrenceRepository.findById(id)
+    public List<OccurrenceResponse> findCaseReports(String userEmail, Long id) {
+        Long cityId = findUser(userEmail).getCity().getId();
+        Occurrence occurrence = occurrenceRepository.findByIdAndCityId(id, cityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
         Occurrence caseRoot = occurrence.getCaseRoot();
         List<Occurrence> reports = new ArrayList<>();
         reports.add(caseRoot);
-        reports.addAll(occurrenceRepository.findByGroupRootIdOrderByCreatedAtAsc(caseRoot.getId()));
+        reports.addAll(occurrenceRepository.findByGroupRootIdAndCityIdOrderByCreatedAtAsc(caseRoot.getId(), cityId));
         return reports.stream().map(OccurrenceResponse::from).toList();
     }
 
-    public List<OccurrenceResponse> findVisibleOnMap() {
+    public List<OccurrenceResponse> findVisibleOnMap(String userEmail) {
+        Long cityId = findUser(userEmail).getCity().getId();
         Instant resolvedSince = Instant.now().minus(resolvedMapVisibility);
-        return occurrenceRepository.findVisibleOnMap(OccurrenceStatus.RESOLVIDA, resolvedSince)
+        return occurrenceRepository.findVisibleOnMap(cityId, OccurrenceStatus.RESOLVIDA, resolvedSince)
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
+    }
+
+    public PageResponse<PublicOccurrenceResponse> findPublic(Pageable pageable) {
+        Specification<Occurrence> rootCases = (root, query, criteriaBuilder) ->
+                criteriaBuilder.isNull(root.get("groupRoot"));
+        return PageResponse.from(
+                occurrenceRepository.findAll(rootCases, pageable),
+                PublicOccurrenceResponse::from
+        );
     }
 
     @Transactional
-    public OccurrenceResponse updateStatus(Long id, OccurrenceStatus status) {
-        Occurrence occurrence = occurrenceRepository.findById(id)
+    public OccurrenceResponse updateStatus(String userEmail, Long id, OccurrenceStatus status) {
+        Long cityId = findUser(userEmail).getCity().getId();
+        Occurrence occurrence = occurrenceRepository.findByIdAndCityId(id, cityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ocorrencia nao encontrada"));
         Occurrence caseRoot = occurrence.getCaseRoot();
+        boolean newlyResolved = status == OccurrenceStatus.RESOLVIDA
+                && caseRoot.getStatus() != OccurrenceStatus.RESOLVIDA;
         caseRoot.changeStatus(status);
-        return OccurrenceResponse.from(occurrenceRepository.saveAndFlush(caseRoot));
+        Occurrence saved = occurrenceRepository.saveAndFlush(caseRoot);
+        if (newlyResolved) {
+            gamificationService.awardCaseResolved(saved);
+        }
+        return OccurrenceResponse.from(saved);
     }
 
     public List<OccurrenceResponse> findByUser(String userEmail) {
+        User user = findUser(userEmail);
         OccurrenceFilter emptyFilter = new OccurrenceFilter(null, null, null, null, null, null);
-        return occurrenceRepository.findAll(toSpecification(emptyFilter, normalizeEmail(userEmail)), NEWEST_FIRST)
+        return occurrenceRepository.findAll(
+                        toSpecification(emptyFilter, normalizeEmail(userEmail), user.getCity().getId()),
+                        NEWEST_FIRST
+                )
                 .stream()
                 .map(OccurrenceResponse::from)
                 .toList();
     }
 
-    private Specification<Occurrence> toSpecification(OccurrenceFilter filter, String userEmail) {
+    private Specification<Occurrence> toSpecification(OccurrenceFilter filter, String userEmail, Long cityId) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("city").get("id"), cityId));
             if (userEmail == null) {
                 predicates.add(criteriaBuilder.isNull(root.get("groupRoot")));
             }
@@ -211,10 +254,11 @@ public class OccurrenceService {
         }
     }
 
-    private Optional<Occurrence> findSimilarCase(CreateOccurrenceRequest request) {
+    private Optional<Occurrence> findSimilarCase(Long cityId, CreateOccurrenceRequest request) {
         Instant createdAfter = Instant.now().minus(groupingWindowFor(request.category()));
         List<Occurrence> candidates = occurrenceRepository
-                .findByGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                .findByCityIdAndGroupRootIsNullAndCategoryAndTypeAndStatusInAndCreatedAtGreaterThanEqual(
+                        cityId,
                         request.category(),
                         request.type(),
                         GROUPABLE_STATUSES,
@@ -258,6 +302,29 @@ public class OccurrenceService {
         }
     }
 
+    private void validateCreationCooldown(User user) {
+        if (creationCooldown.isZero() || creationCooldown.isNegative()) {
+            return;
+        }
+
+        Instant now = Instant.now();
+        occurrenceRepository.findFirstByUserEmailIgnoreCaseOrderByCreatedAtDesc(user.getEmail())
+                .map(Occurrence::getCreatedAt)
+                .filter(createdAt -> createdAt != null)
+                .map(createdAt -> createdAt.plus(creationCooldown))
+                .filter(nextAllowedAt -> nextAllowedAt.isAfter(now))
+                .ifPresent(nextAllowedAt -> {
+                    long remainingMillis = Duration.between(now, nextAllowedAt).toMillis();
+                    long remainingSeconds = Math.max(1, (remainingMillis + 999) / 1_000);
+                    long remainingMinutes = Math.max(1, (remainingSeconds + 59) / 60);
+                    throw new OccurrenceCooldownException(
+                            "Aguarde " + remainingMinutes + " minuto(s) para registrar outra ocorrencia",
+                            remainingSeconds,
+                            nextAllowedAt
+                    );
+                });
+    }
+
     private double distanceInMeters(
             double latitudeA,
             double longitudeA,
@@ -278,6 +345,15 @@ public class OccurrenceService {
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private User findUser(String email) {
+        User user = userRepository.findByEmailIgnoreCase(normalizeEmail(email))
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
+        if (user.getCity() == null) {
+            throw new BusinessRuleException("O usuario nao possui uma cidade vinculada");
+        }
+        return user;
     }
 
     private record CaseDistance(Occurrence occurrence, double distance) {

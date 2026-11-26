@@ -30,15 +30,19 @@ O projeto possui dois perfis:
 
 ### Funcionalidades implementadas
 
-- Cadastro público de cidadãos e autenticação com JWT.
+- Cadastro público de cidadãos, login automático após o cadastro e autenticação com JWT.
 - Separação de acesso entre cidadão e administrador.
 - Cadastro, consulta, filtros e detalhes de ocorrências.
 - Localização por latitude, longitude, endereço e bairro.
 - Mapa interativo de Praia Grande.
-- Até quatro imagens por ocorrência, armazenadas localmente.
+- Até quatro imagens por ocorrência, com armazenamento local ou Cloudinary.
 - Consulta das ocorrências do usuário autenticado.
+- Agrupamento de relatos semelhantes no backend, com exibição de força e relatos associados no frontend.
+- Sincronização dos pins do mapa com a lista e os status retornados pela API.
 - Gestão administrativa dos status das ocorrências.
-- Criação, ativação e desativação de alertas demonstrativos.
+- Criação, edição, ativação, desativação e exclusão de alertas demonstrativos.
+- Atualização de alertas em tempo real por SSE, com reconexão automática.
+- Preferências e consentimento para recebimento de alertas pelo WhatsApp.
 - Dashboard para cidadão e dashboard administrativo.
 - Tratamento padronizado de erros e validações.
 - Documentação da API com Swagger/OpenAPI.
@@ -52,7 +56,7 @@ O projeto possui dois perfis:
 | Banco | MySQL 8 e Flyway |
 | Autenticação | JWT e BCrypt |
 | Documentação | Swagger/OpenAPI |
-| Infraestrutura | Docker e Docker Compose |
+| Infraestrutura | Docker, Docker Compose, Render, Aiven, Cloudinary e Cloudflare Workers |
 
 ## Estrutura do repositório
 
@@ -60,6 +64,7 @@ O projeto possui dois perfis:
 CidadeEmFoco/
 ├── backend/                 API Spring Boot e Dockerfile
 ├── frontend/                aplicação React
+├── docs/                    documentação da API pública
 ├── infra/                   Docker Compose e modelo de variáveis
 │   ├── docker-compose.yml
 │   └── .env.example
@@ -111,6 +116,8 @@ Endereços padrão:
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- OpenAPI da API pública v1: `http://localhost:8080/v3/api-docs/public-v1`
+- Guia para integrações externas: [`docs/API_PUBLICA.md`](docs/API_PUBLICA.md)
 
 ### Alternativa com Docker
 
@@ -164,6 +171,11 @@ O frontend está em `frontend/` e utiliza React com JavaScript. A aplicação é
 
 ### Autenticação no frontend
 
+Após um cadastro bem-sucedido, o próprio endpoint de cadastro retorna o JWT e os
+dados do cidadão. O frontend salva essa sessão e direciona o usuário
+automaticamente para a área autenticada, sem realizar uma segunda chamada de
+login.
+
 Após o login, o frontend armazena no `localStorage`:
 
 - token JWT;
@@ -171,6 +183,18 @@ Após o login, o frontend armazena no `localStorage`:
 - informações públicas do usuário.
 
 A senha nunca é armazenada. Rotas protegidas verificam a autenticação e o perfil, mas a autorização definitiva sempre é realizada pelo backend.
+
+### Perfil e dados do usuário
+
+O contrato de autenticação disponibiliza os dados públicos do usuário, incluindo
+cidade, endereço e WhatsApp. O backend também oferece `GET /api/users/me` e
+`PUT /api/users/me` para consultar e atualizar o cadastro completo. A tela atual
+de perfil já gerencia as preferências de WhatsApp; a integração visual da edição
+dos demais dados cadastrais ainda está pendente no frontend.
+
+O frontend não filtra dados por cidade como mecanismo de segurança. O isolamento
+dos registros precisa ser garantido pela autenticação e pelas consultas do
+backend; ocultar registros recebidos incorretamente não substituiria essa regra.
 
 ### Mapas e localização
 
@@ -184,6 +208,15 @@ O cadastro de ocorrência permite:
 - informar coordenadas manualmente.
 
 Esses recursos dependem de conexão com a internet e enviam a pesquisa ou as coordenadas ao serviço externo Nominatim.
+
+Os pins são atualizados periodicamente a partir de `/api/occurrences/map`. O
+frontend substitui a coleção anterior pela resposta atual da API; portanto, a
+decisão de manter ou remover uma ocorrência do mapa pertence ao backend. O
+frontend não remove pins apenas pela passagem do tempo.
+
+Ocorrências agrupadas exibem a quantidade de relatos nos cards, detalhes,
+popups e pins. Os detalhes dos relatos associados ficam disponíveis somente na
+área administrativa e não expõem a identidade dos autores.
 
 ### Imagens
 
@@ -211,12 +244,17 @@ Essa variável é pública e incorporada ao build. Senhas e segredos nunca devem
 ```powershell
 cd frontend
 npm.cmd run dev
+npm.cmd test
 npm.cmd run lint
 npm.cmd run build
 npm.cmd run preview
 ```
 
-O frontend ainda não possui suíte automatizada de testes. As verificações disponíveis são lint, build e testes manuais dos fluxos.
+Os testes usam o test runner nativo do Node.js e cobrem utilitários e contratos
+de serviços, incluindo autenticação, preferências de WhatsApp, registro de
+ocorrências, cooldown, agrupamento, polling do mapa, sincronização SSE, alertas
+e regressões de layout e acessibilidade. Eles não substituem testes completos em
+navegador nem testes de integração com o backend publicado.
 
 Mais detalhes estão disponíveis em [frontend/README.md](frontend/README.md).
 
@@ -247,6 +285,31 @@ backend/src/main/java/br/com/cidadeemfoco/
 - `ClimateAlert`: alerta demonstrativo, tipo, severidade, validade e estado de ativação.
 - `WhatsappNotification`: item persistente da fila, destinatário, cópia dos dados do alerta, estado e tentativas de envio.
 
+### Validação geográfica das ocorrências
+
+Antes de salvar uma ocorrência, o backend verifica se suas coordenadas estão
+dentro do limite da cidade vinculada ao cidadão. Os limites ficam em
+`backend/src/main/resources/city-boundaries/`, em arquivos GeoJSON nomeados com
+o código IBGE de sete dígitos. O arquivo de Praia Grande utiliza a malha oficial
+do IBGE. Uma nova cidade só deve ser habilitada depois que seu respectivo
+GeoJSON for adicionado; sem ele, o backend recusa o cadastro da ocorrência.
+Além disso, todas as cidades ativas são validadas na inicialização. Um GeoJSON
+ausente ou inválido impede que o backend suba, evitando disponibilizar uma cidade
+que ainda não consegue receber relatos corretamente.
+
+O cidadão também possui um intervalo mínimo entre relatos. Por padrão, ele deve
+aguardar 15 minutos após uma ocorrência antes de registrar outra, inclusive
+quando o novo relato contribuiria para um caso agrupado. O período pode ser
+ajustado pela variável `OCCURRENCE_CREATION_COOLDOWN`. Durante esse intervalo,
+`POST /api/occurrences` responde com HTTP `429 Too Many Requests`, envia o
+cabeçalho `Retry-After` em segundos e informa `retryAfterSeconds` e
+`nextAllowedAt` no corpo do erro.
+
+Clientes autenticados podem consultar o mesmo limite usado nessa validação em
+`GET /api/cities/{ibgeCode}/boundary`. A resposta utiliza o formato GeoJSON e o
+tipo de conteúdo `application/geo+json`. A cidade precisa estar ativa e possuir
+o arquivo correspondente na pasta de limites municipais.
+
 ### Segurança
 
 - O cadastro público sempre cria um `CITIZEN`.
@@ -258,15 +321,23 @@ backend/src/main/java/br/com/cidadeemfoco/
 
 ### Administrador inicial
 
-Cadastre o usuário normalmente e promova-o diretamente no banco:
+O cadastro público continua criando exclusivamente cidadãos. Para cadastrar um
+administrador sem manipular diretamente o banco, configure temporariamente:
 
-```sql
-UPDATE users
-SET role = 'ADMIN'
-WHERE email = 'admin@exemplo.com';
+```dotenv
+ADMIN_BOOTSTRAP_ENABLED=true
+ADMIN_BOOTSTRAP_NAME=Prefeitura de Praia Grande
+ADMIN_BOOTSTRAP_EMAIL=admin@exemplo.com
+ADMIN_BOOTSTRAP_PASSWORD=uma-senha-segura
+ADMIN_BOOTSTRAP_CITY_IBGE_CODE=3541000
 ```
 
-Faça um novo login após a alteração para gerar um token com o perfil atualizado.
+Inicie a aplicação uma vez e confirme no log que o administrador foi criado.
+Depois, altere obrigatoriamente `ADMIN_BOOTSTRAP_ENABLED` para `false` e remova a
+senha da configuração. A operação é idempotente: reiniciar por engano não duplica
+o administrador nem redefine sua senha. Um email já pertencente a um cidadão não
+é promovido automaticamente. O ADMIN recebe acesso somente aos dados da cidade
+ativa indicada pelo código IBGE.
 
 ### Endpoints principais
 
@@ -276,6 +347,56 @@ Faça um novo login após a alteração para gerar um token com o perfil atualiz
 | --- | --- | --- | --- |
 | POST | `/api/auth/register` | Público | Cadastrar cidadão |
 | POST | `/api/auth/login` | Público | Autenticar e gerar JWT |
+| POST | `/api/auth/forgot-password` | Público | Solicitar link de redefinição de senha |
+| POST | `/api/auth/reset-password` | Público | Definir uma nova senha com o token recebido |
+
+O WhatsApp é opcional no cadastro. O cidadão pode informar e autorizar o número
+posteriormente na tela de perfil, sem impedir a criação da conta enquanto a
+integração externa com a Meta estiver indisponível.
+
+A recuperação de senha sempre devolve uma resposta genérica, inclusive quando
+o e-mail não existe, evitando revelar contas cadastradas. Para contas válidas,
+o sistema envia um link de uso único que expira em 30 minutos. Somente o hash do
+token fica armazenado no banco. O link abre a página do frontend indicada por
+`FRONTEND_URL`.
+
+#### Cidades
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/cities` | Público | Listar cidades ativas para cadastro |
+| GET | `/api/cities/{ibgeCode}/boundary` | Autenticado | Obter o limite municipal em GeoJSON |
+
+#### Ranking de prefeituras
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/rankings/cities?period=MONTH` | Autenticado | Comparar o índice de resolução das cidades |
+
+O período aceita `WEEK`, `MONTH` ou `YEAR` e usa, respectivamente, a semana
+atual iniciada na segunda-feira, o mês atual ou o ano atual no fuso de São
+Paulo. O padrão é `MONTH`. O índice corresponde a casos resolvidos divididos
+pelos casos confirmados; ocorrências `NAO_CONFIRMADA` não entram no denominador.
+Em caso de empate no percentual, a cidade com mais casos resolvidos fica à
+frente, seguida pela que possui maior volume de casos confirmados. Somente casos
+principais são contabilizados, evitando contar separadamente os relatos já
+agrupados.
+
+#### Gamificação dos cidadãos
+
+| Método | Endpoint | Acesso | Objetivo |
+| --- | --- | --- | --- |
+| GET | `/api/gamification/me` | CITIZEN | Consultar XP, nível e progresso pessoal |
+| GET | `/api/gamification/ranking?period=MONTH` | Autenticado | Ranking de cidadãos da mesma cidade |
+
+Por padrão, cada relato aceito concede 10 XP e a resolução do caso concede mais
+20 XP para cada cidadão que contribuiu, inclusive em casos agrupados. Cada bônus
+é registrado uma única vez. Não existem penalidades automáticas. Um novo nível
+é alcançado a cada 100 XP.
+
+O ranking aceita `WEEK`, `MONTH`, `YEAR` e `ALL`, usa o fuso de São Paulo e
+exibe somente nome, XP, nível e posição. CPF, email, telefone e endereço nunca
+são retornados. O ranking é sempre limitado à cidade do usuário autenticado.
 
 #### Preferências de WhatsApp
 
@@ -307,12 +428,21 @@ cancelar, o número e a data do consentimento são removidos.
 | GET | `/api/admin/occurrences/{id}` | ADMIN | Detalhes administrativos |
 | GET | `/api/admin/occurrences/{id}/reports` | ADMIN | Relatos agrupados no caso |
 | PATCH | `/api/admin/occurrences/{id}/status` | ADMIN | Alterar status |
+| GET | `/api/admin/dashboard/occurrences` | ADMIN | Indicadores e distribuições da cidade administrada |
 
 A listagem administrativa aceita `category`, `type`, `status`, `neighborhood`, `createdFrom` e `createdTo` como filtros opcionais. As datas usam o formato ISO 8601.
 
+O dashboard aceita os mesmos filtros e considera somente casos principais da
+cidade do ADMIN. A resposta informa totais de casos e relatos, casos abertos,
+resolvidos, não confirmados e resolvidos automaticamente, tempo médio de
+resolução, distribuições por status, categoria, tipo e bairro e a evolução
+diária. O índice de resolução é calculado por
+`casos resolvidos / (total de casos - casos não confirmados) * 100`; quando não
+há casos confirmados, o índice é `0.00`.
+
 Ao receber o status `RESOLVIDA`, a ocorrência passa a registrar `resolvedAt`. O endpoint do mapa continua retornando esse pin durante 24 horas e depois o omite, sem excluir a ocorrência das listagens ou do histórico. O prazo pode ser alterado por `RESOLVED_MAP_VISIBILITY`.
 
-O backend encerra automaticamente ocorrências temporárias dos tipos `ALAGAMENTO`, `ENCHENTE`, `VENTOS_FORTES`, `RESSACA_MARITIMA` e `CHUVA_INTENSA`. Por padrão, registros ainda abertos recebem o status `RESOLVIDA` seis horas após a criação. A verificação ocorre a cada cinco minutos e não inclui queda de árvore, deslizamento, incêndio, infraestrutura ou o tipo genérico `OUTRO`.
+O backend encerra automaticamente ocorrências temporárias configuradas em `AUTO_RESOLUTION_TYPES`. Por padrão, a lista inclui `ALAGAMENTO`, `ENCHENTE`, `VENTOS_FORTES`, `RESSACA_MARITIMA`, `CHUVA_INTENSA`, `QUEDA_GRANIZO` e `OUTRO`, sempre restritos à categoria `EVENTO_NATURAL`. Registros ainda abertos recebem o status `RESOLVIDA` após `TEMPORARY_EVENT_LIFETIME`; a resolução preenche `resolvedAt` e marca `automaticallyResolved=true`. A verificação ocorre a cada cinco minutos por padrão e não inclui problemas permanentes de infraestrutura.
 
 ### Agrupamento e força
 
@@ -331,14 +461,18 @@ As listagens gerais, administrativas e do mapa retornam apenas os casos principa
 | POST | `/api/admin/alerts` | ADMIN | Criar alerta inicialmente inativo |
 | GET | `/api/admin/alerts` | ADMIN | Listar todos os alertas |
 | GET | `/api/admin/alerts/{id}` | ADMIN | Consultar alerta |
+| PATCH | `/api/admin/alerts/{id}` | ADMIN | Editar alerta |
 | PATCH | `/api/admin/alerts/{id}/activate` | ADMIN | Ativar alerta |
 | PATCH | `/api/admin/alerts/{id}/deactivate` | ADMIN | Desativar alerta |
 | DELETE | `/api/admin/alerts/{id}` | ADMIN | Excluir qualquer alerta |
 
 O endpoint `/api/alerts/stream` mantém uma conexão SSE e envia o evento
-`alerts-updated` quando um alerta é criado, ativado ou desativado. O evento também
-é enviado periodicamente para cobrir o início e o término da vigência. Ao
-recebê-lo, o frontend deve consultar novamente `/api/alerts/active`.
+`alerts-updated` quando um alerta é criado, editado, ativado, desativado ou
+excluído. O evento também é enviado periodicamente para cobrir o início e o
+término da vigência. Ao recebê-lo, o frontend consulta novamente a lista
+correspondente. A conexão usa reconexão progressiva, é encerrada ao sair da tela
+e a interface ignora respostas antigas que poderiam restaurar um alerta já
+excluído.
 
 O ADMIN pode excluir manualmente qualquer alerta. Além disso, alertas cuja
 `endAt` for igual ou anterior ao momento da verificação são excluídos
@@ -348,6 +482,11 @@ notifica os clientes conectados ao stream.
 A conexão é protegida por JWT. Como o `EventSource` nativo do navegador não
 permite adicionar o cabeçalho `Authorization`, o frontend deve consumir o stream
 com uma requisição SSE baseada em `fetch` que envie `Authorization: Bearer <token>`.
+
+Na área do cidadão, os cards variam visualmente conforme o tipo e a severidade
+recebidos da API. O estado sem alertas apresenta uma ilustração leve com versões
+de dia, tarde e noite. Efeitos decorativos de chuva e vento respeitam
+`prefers-reduced-motion` e não alteram o significado nem a prioridade dos dados.
 
 #### Fila de WhatsApp
 
@@ -414,7 +553,7 @@ O backend usa MySQL e valida o schema com Hibernate. Mudanças estruturais são 
 backend/src/main/resources/db/migration/
 ```
 
-As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp e fila de notificações.
+As migrations existentes criam as tabelas principais e adicionam múltiplas imagens, controle de resolução, agrupamento de relatos, preferências de WhatsApp, fila de notificações, histórico de XP e tokens seguros de recuperação de senha. A migration de gamificação também atribui retroativamente os pontos padrão aos relatos e resoluções que já existiam.
 
 ### Variáveis do backend
 
@@ -425,16 +564,30 @@ As migrations existentes criam as tabelas principais e adicionam múltiplas imag
 | `DB_PASSWORD` | vazio | Senha do banco |
 | `JWT_SECRET` | sem padrão | Segredo JWT em Base64 |
 | `JWT_EXPIRATION_MINUTES` | `1440` | Validade do token |
+| `EMAIL_ENABLED` | `false` | Habilita os e-mails de cadastro e recuperação de senha |
+| `FRONTEND_URL` | `http://localhost:5173` | Endereço usado no link de recuperação |
+| `REGISTRATION_EMAIL_SUBJECT` | `Cadastro concluído — Cidade em Foco` | Assunto do e-mail de boas-vindas |
+| `PASSWORD_RESET_EMAIL_SUBJECT` | `Redefinição de senha — Cidade em Foco` | Assunto do e-mail de recuperação |
+| `PASSWORD_RESET_TOKEN_LIFETIME` | `30m` | Validade do link de recuperação |
+| `PASSWORD_RESET_REQUEST_COOLDOWN` | `1m` | Intervalo mínimo entre solicitações para a mesma conta |
 | `FLYWAY_REPAIR_ON_START` | `false` | Reparo emergencial e temporário de migration marcada como falha |
 | `SERVER_PORT` | `8080` | Porta da API |
 | `IMAGE_STORAGE_TYPE` | `local` | Armazenamento de imagens: `local` ou `cloudinary` |
 | `OCCURRENCE_IMAGE_DIR` | `uploads/occurrences` | Diretório usado quando o armazenamento é local |
+| `MAX_IMAGE_FILE_SIZE` | `5MB` | Tamanho máximo de cada foto |
+| `MAX_IMAGE_REQUEST_SIZE` | `20MB` | Tamanho máximo da requisição com até quatro fotos |
 | `CLOUDINARY_CLOUD_NAME` | vazio | Identificador da conta Cloudinary |
 | `CLOUDINARY_API_KEY` | vazio | Chave da API Cloudinary |
 | `CLOUDINARY_API_SECRET` | vazio | Segredo da API Cloudinary |
 | `CLOUDINARY_FOLDER` | `cidade-em-foco/occurrences` | Pasta remota das fotos |
+| `OCCURRENCE_CREATION_COOLDOWN` | `15m` | Intervalo mínimo entre relatos do mesmo cidadão |
+| `CITY_BOUNDARY_VALIDATION_ENABLED` | `true` | Valida os limites de todas as cidades ativas ao iniciar |
+| `GAMIFICATION_REPORT_CREATED_XP` | `10` | XP concedido por relato aceito |
+| `GAMIFICATION_CASE_RESOLVED_XP` | `20` | Bônus concedido a cada participante quando o caso é resolvido |
+| `GAMIFICATION_XP_PER_LEVEL` | `100` | Quantidade de XP necessária por nível |
 | `RESOLVED_MAP_VISIBILITY` | `24h` | Tempo que um pin resolvido permanece no mapa |
 | `TEMPORARY_EVENT_LIFETIME` | `2d` | Tempo até o encerramento de um evento natural temporário |
+| `AUTO_RESOLUTION_TYPES` | `ALAGAMENTO,ENCHENTE,VENTOS_FORTES,RESSACA_MARITIMA,CHUVA_INTENSA,QUEDA_GRANIZO,OUTRO` | Tipos de evento natural elegíveis, separados por vírgula |
 | `AUTO_RESOLUTION_INTERVAL` | `5m` | Intervalo entre verificações automáticas |
 | `AUTO_RESOLUTION_INITIAL_DELAY` | `5m` | Espera inicial antes da primeira verificação |
 | `OCCURRENCE_GROUPING_WINDOW_NATURAL` | `2d` | Janela para agrupar relatos de eventos naturais |
@@ -481,7 +634,7 @@ cd backend
 .\mvnw.cmd test
 ```
 
-A suíte atual possui 119 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, health check, recuperação controlada do Flyway, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real (inclusive a redistribuição assíncrona da conexão SSE), limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento (inclusive concorrência e contribuição única por cidadão) e armazenamento local/Cloudinary de imagens.
+A suíte atual possui 197 testes cobrindo domínio, serviços, controllers, JWT, permissões administrativas, provisionamento controlado de administradores, recuperação de senha, envio de e-mails, rankings municipal e de cidadãos, XP e níveis, health check, recuperação controlada do Flyway, cadastro e perfil completos, isolamento por cidade, validação preventiva dos limites geográficos, cooldown, indicadores administrativos, preferências, fila e integração da WhatsApp Cloud API, alertas em tempo real, limpeza de alertas expirados, filtros, visibilidade no mapa, encerramento automático, agrupamento e armazenamento local/Cloudinary de imagens.
 
 ### Publicação do backend
 
@@ -517,6 +670,9 @@ Os itens abaixo estão planejados, mas ainda não devem ser considerados impleme
 - O estado `SENT` confirma que a Meta aceitou a mensagem; sem o webhook, ele ainda não confirma entrega ou leitura pelo cidadão.
 - Não existe previsão meteorológica própria, IA, SMS, IoT ou aplicativo nativo.
 - O frontend depende de serviços externos do OpenStreetMap para mapas e geocodificação.
+- A API já retorna a cidade na sessão e oferece consulta e atualização do perfil
+  completo; a tela do cidadão ainda precisa conectar a edição de todos esses
+  campos ao endpoint `PUT /api/users/me`.
 
 ## Aviso
 

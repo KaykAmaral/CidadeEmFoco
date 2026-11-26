@@ -1,0 +1,20 @@
+.calm-city { overflow: hidden; border: 1px solid #b9d9f2; border-radius: 18px; background: white; box-shadow: var(--shadow-card); }
+.calm-city__sky { position: relative; height: 190px; overflow: hidden; color: white; background: linear-gradient(180deg, #65baf0, #d9f1ff); }
+.calm-city--afternoon .calm-city__sky { background: linear-gradient(180deg, #f59f72, #ffe3b2 72%, #d9eff7); }
+.calm-city--night .calm-city__sky { background: linear-gradient(180deg, #102d52, #315b81 72%, #99b6c9); }
+.calm-city__sun { position: absolute; top: 24px; right: 12%; color: #fff2a8; }
+.calm-city--afternoon .calm-city__sun { color: #fff0c9; transform: translateY(38px); }
+.calm-city--night .calm-city__sun { color: #e6efff; }
+.calm-city__cloud { position: absolute; width: 90px; height: 22px; border-radius: 999px; background: rgba(255,255,255,.72); }
+.calm-city__cloud::before, .calm-city__cloud::after { position: absolute; bottom: 0; content: ''; border-radius: 50%; background: inherit; }
+.calm-city__cloud::before { left: 14px; width: 34px; height: 34px; }.calm-city__cloud::after { right: 12px; width: 42px; height: 42px; }
+.calm-city__cloud--one { top: 45px; left: 12%; }.calm-city__cloud--two { top: 86px; left: 43%; transform: scale(.72); opacity: .7; }
+.calm-city__buildings { position: absolute; right: 0; bottom: 23px; left: 0; height: 92px; display: flex; align-items: end; justify-content: center; gap: 8px; }
+.calm-city__buildings span { width: 15%; max-width: 92px; height: 55%; border-radius: 5px 5px 0 0; background: #315d78; box-shadow: inset 0 0 0 2px rgba(255,255,255,.08); }
+.calm-city__buildings span:nth-child(2) { height: 88%; }.calm-city__buildings span:nth-child(3) { height: 70%; }.calm-city__buildings span:nth-child(4) { height: 100%; }.calm-city__buildings span:nth-child(5) { height: 62%; }
+.calm-city--night .calm-city__buildings span { background: #142d45; }
+.calm-city__ground { position: absolute; right: 0; bottom: 0; left: 0; height: 24px; background: #4d9370; }
+.calm-city__content { display: flex; align-items: flex-start; gap: 12px; padding: 18px 20px; color: var(--color-success); }
+.calm-city__content div { display: grid; gap: 4px; }.calm-city__content strong { color: var(--color-navy); }.calm-city__content p { margin: 0; color: var(--color-muted); font-size: .8rem; line-height: 1.5; }
+@media (max-width: 560px) { .calm-city__sky { height: 150px; }.calm-city__content { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { .calm-city *, .climate-alert-card * { animation: none !important; transition: none !important; } }

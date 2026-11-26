@@ -12,10 +12,14 @@ import br.com.cidadeemfoco.repository.ClimateAlertRepository;
 import br.com.cidadeemfoco.repository.UserRepository;
 import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.Instant;
 import java.util.List;
@@ -45,21 +49,24 @@ public class WhatsappNotificationService {
         this.userRepository = userRepository;
     }
 
-    public List<WhatsappNotificationResponse> findAll(WhatsappNotificationStatus status) {
+    public List<WhatsappNotificationResponse> findAll(String adminEmail, WhatsappNotificationStatus status) {
+        Long cityId = findUser(adminEmail).getCity().getId();
         List<WhatsappNotification> notifications = status == null
-                ? notificationRepository.findAll(NEWEST_FIRST)
-                : notificationRepository.findByStatus(status, NEWEST_FIRST);
+                ? notificationRepository.findAllByUserCityId(cityId, NEWEST_FIRST)
+                : notificationRepository.findByUserCityIdAndStatus(cityId, status, NEWEST_FIRST);
         return notifications.stream().map(WhatsappNotificationResponse::from).toList();
     }
 
-    public WhatsappNotificationResponse findById(Long id) {
-        return notificationRepository.findById(id)
+    public WhatsappNotificationResponse findById(String adminEmail, Long id) {
+        Long cityId = findUser(adminEmail).getCity().getId();
+        return notificationRepository.findByIdAndUserCityId(id, cityId)
                 .map(WhatsappNotificationResponse::from)
                 .orElseThrow(() -> new ResourceNotFoundException("Notificacao de WhatsApp nao encontrada"));
     }
 
-    @EventListener
-    @Transactional
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleActivatedAlert(ClimateAlertActivatedEvent event) {
         climateAlertRepository.findById(event.alertId())
                 .filter(alert -> alert.isCurrentlyActive(Instant.now()))
@@ -91,7 +98,9 @@ public class WhatsappNotificationService {
 
     private int enqueueForAlert(ClimateAlert alert) {
         List<User> recipients = userRepository
-                .findByWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull();
+                .findByCityIdAndWhatsappNotificationsEnabledTrueAndWhatsappPhoneIsNotNull(
+                        alert.getCity().getId()
+                );
         List<WhatsappNotification> newNotifications = recipients.stream()
                 .filter(user -> !notificationRepository.existsByAlertIdAndUserId(
                         alert.getId(), user.getId()
@@ -102,5 +111,11 @@ public class WhatsappNotificationService {
             notificationRepository.saveAll(newNotifications);
         }
         return newNotifications.size();
+    }
+
+    private User findUser(String email) {
+        return userRepository.findByEmailIgnoreCase(email.trim())
+                .filter(user -> user.getCity() != null)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
     }
 }

@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+import { apiRequest } from './api.js'
 
 function buildQuery(filters = {}) {
   const params = new URLSearchParams()
@@ -15,6 +15,10 @@ function buildQuery(filters = {}) {
 
 function getOccurrences(token, filters = {}) {
   return apiRequest(`/api/occurrences${buildQuery(filters)}`, { token })
+}
+
+function getMapOccurrences(token) {
+  return apiRequest('/api/occurrences/map', { token })
 }
 
 function getMyOccurrences(token) {
@@ -59,6 +63,7 @@ function getOccurrenceImage(token, id, imageUrl) {
 
 export {
   createOccurrence,
+  getMapOccurrences,
   getMyOccurrences,
   getOccurrenceById,
   getOccurrenceImage,

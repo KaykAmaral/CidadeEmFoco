@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +35,9 @@ class OccurrenceAutoResolutionServiceTest {
     @Mock
     private OccurrenceRepository occurrenceRepository;
 
+    @Mock
+    private GamificationService gamificationService;
+
     @Test
     void shouldResolveExpiredTemporaryNaturalOccurrences() {
         Occurrence occurrence = occurrence();
@@ -46,7 +50,16 @@ class OccurrenceAutoResolutionServiceTest {
         )).thenReturn(expiredOccurrences);
         var service = new OccurrenceAutoResolutionService(
                 occurrenceRepository,
-                Duration.ofHours(6)
+                gamificationService,
+                Duration.ofHours(6),
+                Set.of(
+                        OccurrenceType.ALAGAMENTO,
+                        OccurrenceType.ENCHENTE,
+                        OccurrenceType.VENTOS_FORTES,
+                        OccurrenceType.CHUVA_INTENSA,
+                        OccurrenceType.QUEDA_GRANIZO,
+                        OccurrenceType.OUTRO
+                )
         );
         Instant earliestCutoff = Instant.now().minus(Duration.ofHours(6));
 
@@ -63,16 +76,23 @@ class OccurrenceAutoResolutionServiceTest {
                 cutoffCaptor.capture()
         );
         verify(occurrenceRepository).saveAll(expiredOccurrences);
+        verify(gamificationService).awardCaseResolved(occurrence);
 
         assertThat(resolvedCount).isEqualTo(1);
         assertThat(occurrence.getStatus()).isEqualTo(OccurrenceStatus.RESOLVIDA);
         assertThat(occurrence.getResolvedAt()).isNotNull();
+        assertThat(occurrence.isAutomaticallyResolved()).isTrue();
         assertThat(typesCaptor.getValue()).containsExactlyInAnyOrder(
                 OccurrenceType.ALAGAMENTO,
                 OccurrenceType.ENCHENTE,
                 OccurrenceType.VENTOS_FORTES,
-                OccurrenceType.RESSACA_MARITIMA,
-                OccurrenceType.CHUVA_INTENSA
+                OccurrenceType.CHUVA_INTENSA,
+                OccurrenceType.QUEDA_GRANIZO,
+                OccurrenceType.OUTRO
+        );
+        assertThat(typesCaptor.getValue()).doesNotContain(
+                OccurrenceType.BURACO_RUA,
+                OccurrenceType.FALTA_ILUMINACAO
         );
         assertThat(statusesCaptor.getValue()).containsExactlyInAnyOrder(
                 OccurrenceStatus.REGISTRADA,
@@ -92,13 +112,56 @@ class OccurrenceAutoResolutionServiceTest {
         )).thenReturn(List.of());
         var service = new OccurrenceAutoResolutionService(
                 occurrenceRepository,
-                Duration.ofHours(6)
+                gamificationService,
+                Duration.ofHours(6),
+                Set.of(OccurrenceType.ALAGAMENTO)
         );
 
         int resolvedCount = service.resolveExpiredTemporaryOccurrences();
 
         assertThat(resolvedCount).isZero();
         verify(occurrenceRepository, never()).saveAll(anyCollection());
+    }
+
+    @Test
+    void shouldBeIdempotentAfterOccurrenceHasAlreadyBeenResolved() {
+        Occurrence occurrence = occurrence();
+        when(occurrenceRepository.findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+                eq(OccurrenceCategory.EVENTO_NATURAL),
+                anyCollection(),
+                anyCollection(),
+                any(Instant.class)
+        )).thenReturn(List.of(occurrence), List.of());
+        var service = new OccurrenceAutoResolutionService(
+                occurrenceRepository,
+                gamificationService,
+                Duration.ofHours(6),
+                Set.of(OccurrenceType.ALAGAMENTO)
+        );
+
+        assertThat(service.resolveExpiredTemporaryOccurrences()).isEqualTo(1);
+        Instant resolvedAt = occurrence.getResolvedAt();
+        assertThat(service.resolveExpiredTemporaryOccurrences()).isZero();
+
+        assertThat(occurrence.getResolvedAt()).isEqualTo(resolvedAt);
+        verify(occurrenceRepository).saveAll(List.of(occurrence));
+    }
+
+    @Test
+    void shouldAllowAutoResolutionToBeDisabledWithAnEmptyTypeSet() {
+        var service = new OccurrenceAutoResolutionService(
+                occurrenceRepository,
+                gamificationService,
+                Duration.ofHours(6),
+                Set.of()
+        );
+
+        assertThat(service.resolveExpiredTemporaryOccurrences()).isZero();
+
+        verify(occurrenceRepository, never())
+                .findByGroupRootIsNullAndCategoryAndTypeInAndStatusInAndCreatedAtLessThanEqual(
+                        any(), anyCollection(), anyCollection(), any(Instant.class)
+                );
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

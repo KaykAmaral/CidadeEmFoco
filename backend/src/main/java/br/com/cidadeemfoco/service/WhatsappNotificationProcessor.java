@@ -55,6 +55,11 @@ public class WhatsappNotificationProcessor {
     }
 
     private void send(WhatsappNotification notification) {
+        if (!notification.getUser().isWhatsappNotificationsEnabled()
+                || !notification.getRecipientPhone().equals(notification.getUser().getWhatsappPhone())) {
+            notification.cancel();
+            return;
+        }
         notification.registerAttempt();
         try {
             String providerMessageId = messageSender.send(notification);

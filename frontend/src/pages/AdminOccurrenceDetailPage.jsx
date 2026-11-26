@@ -8,9 +8,11 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import OccurrenceMap from '../components/map/OccurrenceMap'
+import LiveOccurrenceMap from '../components/map/LiveOccurrenceMap'
+import AssociatedOccurrenceReports from '../components/occurrences/AssociatedOccurrenceReports'
 import OccurrenceTypeIcon from '../components/occurrences/OccurrenceTypeIcon'
 import OccurrenceImageGallery from '../components/occurrences/OccurrenceImageGallery'
+import OccurrenceStrength from '../components/occurrences/OccurrenceStrength'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import StatusBadge from '../components/ui/StatusBadge'
@@ -123,6 +125,7 @@ function AdminOccurrenceDetailPage() {
           <span>{getOccurrenceCategoryLabel(occurrence.category)} · #{occurrence.id}</span>
           <h1>{getOccurrenceTypeLabel(occurrence.type)}</h1>
           <p><MapPin size={16} aria-hidden="true" />{displayedLocation}</p>
+          <OccurrenceStrength strength={occurrence.strength} />
         </div>
         <StatusBadge status={occurrence.status} />
       </header>
@@ -154,6 +157,7 @@ function AdminOccurrenceDetailPage() {
         <section className="occurrence-detail__card occurrence-detail__description">
           <h2>Descrição do cidadão</h2>
           <p>{occurrence.description}</p>
+          {occurrence.automaticallyResolved && <p role="status">Encerrada automaticamente por vencimento do prazo em {formatDateTime(occurrence.resolvedAt)}.</p>}
           <div className="occurrence-detail__metadata">
             <div><ShieldAlert size={19} aria-hidden="true" /><span>Risco percebido</span><strong>{perceivedRiskLabels[occurrence.perceivedRisk]}</strong></div>
             <div><CalendarDays size={19} aria-hidden="true" /><span>Registrada em</span><strong>{formatDateTime(occurrence.createdAt)}</strong></div>
@@ -163,7 +167,7 @@ function AdminOccurrenceDetailPage() {
 
         <section className="occurrence-detail__card">
           <h2>Localização</h2>
-          <OccurrenceMap occurrences={[occurrence]} />
+          <LiveOccurrenceMap filters={{ occurrenceId: occurrence.id }} refreshKey={occurrence.status} />
           <p className="occurrence-detail__coordinates">{occurrence.latitude}, {occurrence.longitude}</p>
         </section>
 
@@ -173,6 +177,11 @@ function AdminOccurrenceDetailPage() {
             <OccurrenceImageGallery occurrence={occurrence} onUnauthorized={logout} token={token} />
           </section>
         )}
+
+        <section className="occurrence-detail__card associated-reports">
+          <h2>Relatos que compõem esta ocorrência</h2>
+          <AssociatedOccurrenceReports occurrence={occurrence} onUnauthorized={logout} token={token} />
+        </section>
       </div>
     </article>
   )

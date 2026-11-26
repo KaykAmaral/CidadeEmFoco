@@ -63,10 +63,14 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login",
+                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/cities").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/gamification/me").hasRole("CITIZEN")
                         .requestMatchers("/api/users/me/**").hasRole("CITIZEN")
                         .requestMatchers(HttpMethod.POST, "/api/occurrences/*/image").hasRole("CITIZEN")
                         .requestMatchers(HttpMethod.POST, "/api/occurrences/*/images").hasRole("CITIZEN")
@@ -94,9 +98,12 @@ public class SecurityConfig {
                 .map(String::trim)
                 .filter(origin -> !origin.isBlank())
                 .toList());
-        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        configuration.setExposedHeaders(List.of(HttpHeaders.CONTENT_DISPOSITION));
+        configuration.setExposedHeaders(List.of(
+                HttpHeaders.CONTENT_DISPOSITION,
+                HttpHeaders.RETRY_AFTER
+        ));
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

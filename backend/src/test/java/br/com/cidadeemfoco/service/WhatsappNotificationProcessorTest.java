@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,5 +85,19 @@ class WhatsappNotificationProcessorTest {
         assertThat(notification.getStatus()).isEqualTo(WhatsappNotificationStatus.FAILED);
         assertThat(notification.getAttemptCount()).isEqualTo(1);
         assertThat(notification.getLastError()).isEqualTo("Meta indisponivel");
+    }
+
+    @Test
+    void shouldCancelPendingNotificationWhenConsentWasRevoked() {
+        notification.getUser().disableWhatsappNotifications();
+        when(notificationRepository.findByStatusInAndAttemptCountLessThanOrderByCreatedAtAsc(
+                any(), eq(3), any(Pageable.class)
+        )).thenReturn(List.of(notification));
+
+        processor.processQueue();
+
+        assertThat(notification.getStatus()).isEqualTo(WhatsappNotificationStatus.CANCELLED);
+        assertThat(notification.getAttemptCount()).isZero();
+        verify(messageSender, never()).send(any());
     }
 }

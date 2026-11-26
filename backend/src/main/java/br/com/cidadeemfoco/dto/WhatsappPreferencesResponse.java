@@ -7,14 +7,16 @@ import java.time.Instant;
 public record WhatsappPreferencesResponse(
         String phoneNumber,
         boolean notificationsEnabled,
-        Instant consentAt
+        Instant consentAt,
+        boolean deliveryEnabled
 ) {
 
-    public static WhatsappPreferencesResponse from(User user) {
+    public static WhatsappPreferencesResponse from(User user, boolean deliveryEnabled) {
         return new WhatsappPreferencesResponse(
                 user.getWhatsappPhone(),
                 user.isWhatsappNotificationsEnabled(),
-                user.getWhatsappConsentAt()
+                user.getWhatsappConsentAt(),
+                deliveryEnabled
         );
     }
 }

@@ -56,8 +56,7 @@ public class WhatsappCloudApiSender implements WhatsappMessageSender {
             return response.messages().getFirst().id();
         } catch (RestClientResponseException exception) {
             throw new WhatsappDeliveryException(
-                    "WhatsApp Cloud API respondeu HTTP " + exception.getStatusCode().value()
-                            + ": " + limit(exception.getResponseBodyAsString(), 700),
+                    "WhatsApp Cloud API respondeu HTTP " + exception.getStatusCode().value(),
                     exception
             );
         } catch (RestClientException exception) {
@@ -112,13 +111,6 @@ public class WhatsappCloudApiSender implements WhatsappMessageSender {
 
     private static String readable(String value) {
         return value.replace('_', ' ');
-    }
-
-    private static String limit(String value, int maxLength) {
-        if (value == null || value.isBlank()) {
-            return "resposta sem detalhes";
-        }
-        return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 
     private record CloudApiRequest(

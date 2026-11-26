@@ -50,8 +50,8 @@ public class OccurrenceImageController {
     }
 
     @GetMapping("/{id}/image")
-    public ResponseEntity<Resource> download(@PathVariable @Positive Long id) {
-        StoredImage image = occurrenceImageService.load(id);
+    public ResponseEntity<Resource> download(Authentication authentication, @PathVariable @Positive Long id) {
+        StoredImage image = occurrenceImageService.load(authentication.getName(), id);
         String contentDisposition = ContentDisposition.inline()
                 .filename(image.filename())
                 .build()
@@ -65,10 +65,11 @@ public class OccurrenceImageController {
 
     @GetMapping("/{id}/images/{imageId}")
     public ResponseEntity<Resource> download(
+            Authentication authentication,
             @PathVariable @Positive Long id,
             @PathVariable @Positive Long imageId
     ) {
-        StoredImage image = occurrenceImageService.load(id, imageId);
+        StoredImage image = occurrenceImageService.load(authentication.getName(), id, imageId);
         return ResponseEntity.ok()
                 .contentType(image.mediaType())
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename(image.filename()).build().toString())

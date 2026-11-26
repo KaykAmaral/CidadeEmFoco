@@ -10,16 +10,28 @@ import {
   UserRound,
   Users,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Button from '../components/ui/Button'
 import useAuth from '../hooks/useAuth'
+import { getActiveCities } from '../services/cityService'
+import { lookupPostalCode } from '../services/postalCodeService'
+import { formatCpf, formatPostalCode, formatWhatsapp } from '../utils/inputMasks'
 import './LoginPage.css'
 
 const initialForm = {
   name: '',
   email: '',
   password: '',
+  cpf: '',
+  whatsappPhone: '',
+  whatsappConsentGiven: false,
+  street: '',
+  addressNumber: '',
+  addressComplement: '',
+  neighborhood: '',
+  postalCode: '',
+  cityIbgeCode: '',
 }
 
 const benefits = [
@@ -36,31 +48,136 @@ function RegisterPage() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [cities, setCities] = useState([])
+  const [citiesError, setCitiesError] = useState('')
+  const [postalCodeError, setPostalCodeError] = useState('')
+  const [isPostalCodeLoading, setIsPostalCodeLoading] = useState(false)
+  const personalSectionRef = useRef(null)
+  const postalCodeRequestRef = useRef(0)
+  const submittingRef = useRef(false)
+
+  useEffect(() => {
+    let isCurrent = true
+    getActiveCities()
+      .then((availableCities) => {
+        if (!isCurrent) return
+        setCities(availableCities)
+        if (availableCities.length === 1) {
+          setForm((current) => ({ ...current, cityIbgeCode: availableCities[0].ibgeCode }))
+        }
+      })
+      .catch((requestError) => {
+        if (isCurrent) setCitiesError(requestError.message)
+      })
+    return () => {
+      isCurrent = false
+    }
+  }, [])
+
+  async function fillAddressFromPostalCode(postalCode) {
+    const requestId = postalCodeRequestRef.current + 1
+    postalCodeRequestRef.current = requestId
+    setIsPostalCodeLoading(true)
+    setPostalCodeError('')
+
+    try {
+      const address = await lookupPostalCode(postalCode)
+      if (requestId !== postalCodeRequestRef.current) return
+
+      const addressIbgeCode = String(address.cityIbgeCode ?? '').replace(/\D/g, '')
+      const city = cities.find((item) => {
+        const cityIbgeCode = String(item.ibgeCode ?? '').replace(/\D/g, '')
+        const sameCode = cityIbgeCode && cityIbgeCode === addressIbgeCode
+        const sameNameAndState = item.name?.trim().toLocaleLowerCase('pt-BR') === address.cityName?.trim().toLocaleLowerCase('pt-BR')
+          && item.stateCode?.trim().toUpperCase() === address.stateCode?.trim().toUpperCase()
+
+        return sameCode || sameNameAndState
+      })
+      if (!city) {
+        setPostalCodeError(`O CEP informado pertence a ${address.cityName}/${address.stateCode}, cidade ainda não atendida.`)
+        setForm((current) => ({ ...current, cityIbgeCode: '' }))
+        return
+      }
+
+      setForm((current) => ({
+        ...current,
+        cityIbgeCode: city.ibgeCode,
+        neighborhood: address.neighborhood || current.neighborhood,
+        street: address.street || current.street,
+      }))
+    } catch (requestError) {
+      if (requestId === postalCodeRequestRef.current) setPostalCodeError(requestError.message)
+    } finally {
+      if (requestId === postalCodeRequestRef.current) setIsPostalCodeLoading(false)
+    }
+  }
 
   function handleChange(event) {
-    const { name, value } = event.target
-    setForm((currentForm) => ({ ...currentForm, [name]: value }))
+    const { checked, name, type, value } = event.target
+    const formattedValue = name === 'cpf'
+      ? formatCpf(value)
+      : name === 'whatsappPhone'
+        ? formatWhatsapp(value)
+        : name === 'postalCode'
+          ? formatPostalCode(value)
+          : value
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]: type === 'checkbox' ? checked : formattedValue,
+      ...(name === 'whatsappPhone' && !formattedValue ? { whatsappConsentGiven: false } : {}),
+    }))
     setError('')
-    setFieldErrors({})
+    if (name === 'postalCode') {
+      setPostalCodeError('')
+      if (formattedValue.replace(/\D/g, '').length === 8) {
+        fillAddressFromPostalCode(formattedValue)
+      }
+    }
+    setFieldErrors((currentErrors) => ({ ...currentErrors, [name]: undefined }))
+  }
+
+  function continueToAddress() {
+    const fields = [...personalSectionRef.current.querySelectorAll('input')]
+    const invalidField = fields.find((field) => !field.checkValidity())
+
+    if (invalidField) {
+      invalidField.reportValidity()
+      return
+    }
+
+    setCurrentStep(2)
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (submittingRef.current || isPostalCodeLoading || postalCodeError) return
+
+    submittingRef.current = true
     setError('')
     setFieldErrors({})
     setIsSubmitting(true)
+    setIsSuccess(false)
 
     try {
-      await register(form)
-      navigate('/login', {
+      const user = await register(form)
+      setIsSuccess(true)
+      navigate(user.role === 'ADMIN' ? '/admin' : '/app', {
         replace: true,
-        state: { registered: true, email: form.email },
+        state: { registered: true },
       })
     } catch (requestError) {
-      setError(requestError.message)
-      setFieldErrors(requestError.fieldErrors ?? {})
+      const requestFieldErrors = requestError.fieldErrors ?? {}
+      setFieldErrors(requestFieldErrors)
+      setError(Object.keys(requestFieldErrors).length === 0 ? requestError.message : '')
+      if (['name', 'email', 'cpf', 'whatsappPhone', 'password'].some((field) => requestFieldErrors[field])) {
+        setCurrentStep(1)
+      }
     } finally {
+      submittingRef.current = false
       setIsSubmitting(false)
     }
   }
@@ -127,7 +244,28 @@ function RegisterPage() {
             </div>
           )}
 
-          <form className="auth-form" onSubmit={handleSubmit}>
+          {isSuccess && (
+            <div className="form-message form-message--success" role="status">
+              Cadastro concluído. Entrando na sua conta...
+            </div>
+          )}
+
+          <form className="auth-form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
+            <div className="register-form-columns">
+              <section
+                aria-labelledby="register-personal-title"
+                className="register-form-section"
+                hidden={currentStep !== 1}
+                ref={personalSectionRef}
+              >
+                <div className="register-form-section__heading">
+                  <span>1</span>
+                  <div>
+                    <h3 id="register-personal-title">Dados pessoais</h3>
+                    <p>Informe seus dados de acesso e contato.</p>
+                  </div>
+                </div>
+
             <div className="form-field">
               <label htmlFor="register-name">Nome</label>
               <div className="login-input">
@@ -178,6 +316,24 @@ function RegisterPage() {
               )}
             </div>
 
+            <div className="register-grid">
+              <div className="form-field">
+                <label htmlFor="register-cpf">CPF</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.cpf)} autoComplete="off" id="register-cpf" inputMode="numeric" maxLength={14} name="cpf" onChange={handleChange} placeholder="000.000.000.00" required value={form.cpf} />
+                </div>
+                {fieldErrors.cpf && <small className="field-error">{fieldErrors.cpf}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-whatsapp">WhatsApp <small>(opcional)</small></label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.whatsappPhone)} autoComplete="tel" id="register-whatsapp" inputMode="tel" maxLength={15} name="whatsappPhone" onChange={handleChange} placeholder="(00) 00000-0000" type="tel" value={form.whatsappPhone} />
+                </div>
+                <small>Você poderá configurar as notificações posteriormente.</small>
+                {fieldErrors.whatsappPhone && <small className="field-error">{fieldErrors.whatsappPhone}</small>}
+              </div>
+            </div>
+
             <div className="form-field">
               <label htmlFor="register-password">Senha</label>
               <div className="login-input">
@@ -215,12 +371,110 @@ function RegisterPage() {
               )}
             </div>
 
-            <Button className="auth-form__submit" disabled={isSubmitting} type="submit">
-              {isSubmitting && (
-                <LoaderCircle className="button__spinner" size={18} aria-hidden="true" />
-              )}
-              {isSubmitting ? 'Criando conta...' : 'Criar conta'}
-            </Button>
+                <Button className="register-step-button" onClick={continueToAddress}>
+                  Continuar
+                </Button>
+              </section>
+
+              <section
+                aria-labelledby="register-address-title"
+                className="register-form-section"
+                hidden={currentStep !== 2}
+              >
+                <div className="register-form-section__heading">
+                  <span>2</span>
+                  <div>
+                    <h3 id="register-address-title">Endereço</h3>
+                    <p>Esses dados definem sua cidade de participação.</p>
+                  </div>
+                </div>
+
+            <div className="register-grid">
+              <div className="form-field form-field--wide">
+                <label htmlFor="register-postal-code">CEP</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.postalCode || postalCodeError)} autoComplete="postal-code" id="register-postal-code" inputMode="numeric" maxLength={9} name="postalCode" onChange={handleChange} placeholder="00000-000" required value={form.postalCode} />
+                  {isPostalCodeLoading && <LoaderCircle className="button__spinner" size={18} aria-label="Consultando CEP" />}
+                  {!isPostalCodeLoading && (
+                    <button className="login-input__action" onClick={() => fillAddressFromPostalCode(form.postalCode)} type="button">
+                      Buscar
+                    </button>
+                  )}
+                </div>
+                {isPostalCodeLoading && <small>Preenchendo endereço...</small>}
+                {postalCodeError && <small className="field-error">{postalCodeError}</small>}
+                {fieldErrors.postalCode && <small className="field-error">{fieldErrors.postalCode}</small>}
+              </div>
+              <div className="form-field form-field--wide">
+                <label htmlFor="register-street">Logradouro</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.street)} autoComplete="street-address" id="register-street" maxLength={150} name="street" onChange={handleChange} placeholder="Rua ou avenida" required value={form.street} />
+                </div>
+                {fieldErrors.street && <small className="field-error">{fieldErrors.street}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-number">Número</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.addressNumber)} id="register-number" maxLength={20} name="addressNumber" onChange={handleChange} placeholder="123" required value={form.addressNumber} />
+                </div>
+                {fieldErrors.addressNumber && <small className="field-error">{fieldErrors.addressNumber}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-complement">Complemento</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.addressComplement)} id="register-complement" maxLength={100} name="addressComplement" onChange={handleChange} placeholder="Opcional" value={form.addressComplement} />
+                </div>
+                {fieldErrors.addressComplement && <small className="field-error">{fieldErrors.addressComplement}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-neighborhood">Bairro</label>
+                <div className="login-input">
+                  <input aria-invalid={Boolean(fieldErrors.neighborhood)} id="register-neighborhood" maxLength={100} name="neighborhood" onChange={handleChange} required value={form.neighborhood} />
+                </div>
+                {fieldErrors.neighborhood && <small className="field-error">{fieldErrors.neighborhood}</small>}
+              </div>
+              <div className="form-field">
+                <label htmlFor="register-city">Cidade</label>
+                <div className="login-input">
+                  {cities.length === 1 ? (
+                    <input
+                      id="register-city"
+                      readOnly
+                      value={`${cities[0].name} — ${cities[0].stateCode}`}
+                    />
+                  ) : (
+                    <select aria-invalid={Boolean(fieldErrors.cityIbgeCode)} disabled={cities.length === 0} id="register-city" name="cityIbgeCode" onChange={handleChange} required value={form.cityIbgeCode}>
+                      <option value="">Selecione</option>
+                      {cities.map((city) => <option key={city.ibgeCode} value={city.ibgeCode}>{city.name} — {city.stateCode}</option>)}
+                    </select>
+                  )}
+                </div>
+                {cities.length === 1 && <small>Única cidade disponível no momento.</small>}
+                {fieldErrors.cityIbgeCode && <small className="field-error">{fieldErrors.cityIbgeCode}</small>}
+                {citiesError && <small className="field-error">{citiesError}</small>}
+              </div>
+            </div>
+
+            <label className="register-consent">
+              <input checked={form.whatsappConsentGiven} disabled={!form.whatsappPhone} name="whatsappConsentGiven" onChange={handleChange} type="checkbox" />
+              <span>Autorizo o recebimento de alertas climáticos pelo WhatsApp quando o serviço externo estiver disponível.</span>
+            </label>
+            <small className="register-external-service-note">Opcional. Atualmente os alertas continuam disponíveis em tempo real dentro da plataforma.</small>
+            {fieldErrors.whatsappConsentGiven && <small className="field-error">{fieldErrors.whatsappConsentGiven}</small>}
+
+                <div className="register-step-actions">
+                  <Button disabled={isSubmitting} onClick={() => setCurrentStep(1)} variant="outline">
+                    Voltar
+                  </Button>
+                  <Button disabled={isSubmitting || isPostalCodeLoading || Boolean(postalCodeError)} type="submit">
+                    {isSubmitting && (
+                      <LoaderCircle className="button__spinner" size={18} aria-hidden="true" />
+                    )}
+                    {isSubmitting ? 'Criando conta...' : 'Criar conta'}
+                  </Button>
+                </div>
+              </section>
+            </div>
           </form>
 
           <p className="auth-card__footer">

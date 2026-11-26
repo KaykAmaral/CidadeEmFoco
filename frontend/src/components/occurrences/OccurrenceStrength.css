@@ -1,0 +1,25 @@
+.occurrence-strength {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  background: var(--color-background);
+  font-size: 0.7rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.occurrence-strength--grouped {
+  border-color: #9fc9ec;
+  color: var(--color-blue);
+  background: #edf7ff;
+}
+
+.occurrence-strength--compact {
+  padding: 4px 7px;
+  font-size: 0.65rem;
+}

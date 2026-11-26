@@ -8,13 +8,17 @@ import AdminAlertsPage from './pages/AdminAlertsPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import AdminOccurrenceDetailPage from './pages/AdminOccurrenceDetailPage'
 import AdminOccurrencesPage from './pages/AdminOccurrencesPage'
+import AdminStatisticsPage from './pages/AdminStatisticsPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LoginPage from './pages/LoginPage'
 import NewOccurrencePage from './pages/NewOccurrencePage'
 import NotFoundPage from './pages/NotFoundPage'
 import OccurrenceDetailPage from './pages/OccurrenceDetailPage'
 import OccurrencesPage from './pages/OccurrencesPage'
 import ProfilePage from './pages/ProfilePage'
+import ParticipationPage from './pages/ParticipationPage'
 import RegisterPage from './pages/RegisterPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import ProtectedRoute from './routes/ProtectedRoute'
 import PublicOnlyRoute from './routes/PublicOnlyRoute'
 import './styles/layouts.css'
@@ -26,6 +30,8 @@ function App() {
         <Route element={<PublicLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cadastro" element={<RegisterPage />} />
+          <Route path="/esqueci-minha-senha" element={<ForgotPasswordPage />} />
+          <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
         </Route>
       </Route>
 
@@ -52,6 +58,10 @@ function App() {
             path="perfil"
             element={<ProfilePage />}
           />
+          <Route
+            path="participacao"
+            element={<ParticipationPage />}
+          />
         </Route>
       </Route>
 
@@ -64,6 +74,10 @@ function App() {
           <Route
             path="ocorrencias"
             element={<AdminOccurrencesPage />}
+          />
+          <Route
+            path="estatisticas"
+            element={<AdminStatisticsPage />}
           />
           <Route path="ocorrencias/:id" element={<AdminOccurrenceDetailPage />} />
           <Route

@@ -1,4 +1,4 @@
-import { apiRequest } from './api'
+﻿import { apiRequest } from './api'
 
 function buildQuery(filters = {}) {
   const params = new URLSearchParams()
@@ -11,12 +11,20 @@ function buildQuery(filters = {}) {
   return query ? `?${query}` : ''
 }
 
-function getAdminOccurrences(token, filters = {}) {
-  return apiRequest(`/api/admin/occurrences${buildQuery(filters)}`, { token })
+function getAdminOccurrences(token, filters = {}, signal) {
+  return apiRequest(`/api/admin/occurrences${buildQuery(filters)}`, { token, signal })
+}
+
+function getAdminOccurrenceMetrics(token, filters = {}, signal) {
+  return apiRequest(`/api/admin/dashboard/occurrences${buildQuery(filters)}`, { token, signal })
 }
 
 function getAdminOccurrenceById(token, id) {
   return apiRequest(`/api/admin/occurrences/${id}`, { token })
+}
+
+function getAdminOccurrenceReports(token, id) {
+  return apiRequest(`/api/admin/occurrences/${id}/reports`, { token })
 }
 
 function updateAdminOccurrenceStatus(token, id, status) {
@@ -27,8 +35,12 @@ function updateAdminOccurrenceStatus(token, id, status) {
   })
 }
 
-function getAdminAlerts(token) {
-  return apiRequest('/api/admin/alerts', { token })
+function getAdminAlerts(token, signal) {
+  return apiRequest('/api/admin/alerts', { token, signal })
+}
+
+function deleteAdminAlert(token, id) {
+  return apiRequest(`/api/admin/alerts/${id}`, { method: 'DELETE', token })
 }
 
 function createAdminAlert(token, alert) {
@@ -57,8 +69,11 @@ export {
   activateAdminAlert,
   createAdminAlert,
   deactivateAdminAlert,
+  deleteAdminAlert,
   getAdminAlerts,
   getAdminOccurrenceById,
+  getAdminOccurrenceMetrics,
+  getAdminOccurrenceReports,
   getAdminOccurrences,
   updateAdminOccurrenceStatus,
 }

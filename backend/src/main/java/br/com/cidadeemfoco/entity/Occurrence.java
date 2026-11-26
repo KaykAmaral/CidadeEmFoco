@@ -89,9 +89,16 @@ public class Occurrence {
     @Column(name = "resolved_at")
     private Instant resolvedAt;
 
+    @Column(name = "automatically_resolved", nullable = false)
+    private boolean automaticallyResolved;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "city_id", nullable = false)
+    private City city;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_root_id")
@@ -126,6 +133,7 @@ public class Occurrence {
         this.neighborhood = neighborhood;
         this.address = address;
         this.user = Objects.requireNonNull(user);
+        this.city = user.getCity();
     }
 
     @PrePersist
@@ -142,11 +150,21 @@ public class Occurrence {
     }
 
     public void changeStatus(OccurrenceStatus status) {
+        changeStatus(status, false);
+    }
+
+    public void resolveAutomatically() {
+        changeStatus(OccurrenceStatus.RESOLVIDA, true);
+    }
+
+    private void changeStatus(OccurrenceStatus status, boolean automaticResolution) {
         OccurrenceStatus newStatus = Objects.requireNonNull(status);
         if (newStatus == OccurrenceStatus.RESOLVIDA && this.status != OccurrenceStatus.RESOLVIDA) {
             resolvedAt = Instant.now();
+            automaticallyResolved = automaticResolution;
         } else if (newStatus != OccurrenceStatus.RESOLVIDA) {
             resolvedAt = null;
+            automaticallyResolved = false;
         }
         this.status = newStatus;
     }
@@ -232,8 +250,16 @@ public class Occurrence {
         return resolvedAt;
     }
 
+    public boolean isAutomaticallyResolved() {
+        return automaticallyResolved;
+    }
+
     public User getUser() {
         return user;
+    }
+
+    public City getCity() {
+        return city;
     }
 
     public Occurrence getGroupRoot() {

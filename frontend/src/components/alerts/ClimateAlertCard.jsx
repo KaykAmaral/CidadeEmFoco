@@ -11,6 +11,7 @@ import {
   getAlertTypeLabel,
 } from '../../constants/alertPresentation'
 import { formatDateTime } from '../../utils/date'
+import { getAlertEffect } from '../../utils/alertVisuals'
 import './ClimateAlertCard.css'
 
 const alertIcons = {
@@ -25,9 +26,11 @@ const alertIcons = {
 function ClimateAlertCard({ alert }) {
   const Icon = alertIcons[alert.type] ?? AlertCircle
   const severityClass = alert.severity.toLowerCase()
+  const effect = getAlertEffect(alert.type)
 
   return (
-    <article className={`climate-alert-card climate-alert-card--${severityClass}`}>
+    <article className={`climate-alert-card climate-alert-card--${severityClass} climate-alert-card--${effect}`}>
+      <div className="climate-alert-card__effect" aria-hidden="true"><i /><i /><i /></div>
       <div className="climate-alert-card__icon">
         <Icon size={26} aria-hidden="true" />
       </div>

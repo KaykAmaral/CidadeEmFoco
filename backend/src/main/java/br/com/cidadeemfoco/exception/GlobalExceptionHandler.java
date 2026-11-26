@@ -3,6 +3,7 @@ package br.com.cidadeemfoco.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
@@ -19,6 +21,28 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(OccurrenceCooldownException.class)
+    public ResponseEntity<OccurrenceCooldownErrorResponse> handleOccurrenceCooldown(
+            OccurrenceCooldownException exception,
+            HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.TOO_MANY_REQUESTS;
+        OccurrenceCooldownErrorResponse response = new OccurrenceCooldownErrorResponse(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of(),
+                exception.getRetryAfterSeconds(),
+                exception.getNextAllowedAt()
+        );
+
+        return ResponseEntity.status(status)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(exception.getRetryAfterSeconds()))
+                .body(response);
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(
@@ -87,6 +111,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             ConstraintViolationException.class,
+            HandlerMethodValidationException.class,
+            IllegalArgumentException.class,
             MethodArgumentTypeMismatchException.class,
             MissingRequestHeaderException.class,
             HttpMessageNotReadableException.class
@@ -96,6 +122,19 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return build(HttpStatus.BAD_REQUEST, "Requisicao invalida", request, Map.of());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleUnexpected(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Nao foi possivel concluir a solicitacao",
+                request,
+                Map.of()
+        );
     }
 
     private ResponseEntity<ApiErrorResponse> build(

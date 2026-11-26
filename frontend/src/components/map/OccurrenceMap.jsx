@@ -8,28 +8,33 @@ import {
   perceivedRiskLabels,
 } from '../../constants/occurrencePresentation'
 import StatusBadge from '../ui/StatusBadge'
+import OccurrenceStrength from '../occurrences/OccurrenceStrength'
+import { getMapMarkerStrength } from '../../utils/mapMarkerStrength'
 import './Map.css'
 
 const PRAIA_GRANDE_CENTER = [-24.005833, -46.405833]
 
-function createMarkerIcon(type) {
-  const { icon: Icon, color } = getOccurrenceTypePresentation(type)
+function createMarkerIcon(occurrence) {
+  const { icon: Icon, color } = getOccurrenceTypePresentation(occurrence.type)
   const iconMarkup = renderToStaticMarkup(<Icon aria-hidden="true" size={19} strokeWidth={2.4} />)
+  const { strength, level } = getMapMarkerStrength(occurrence.strength)
+  const reportLabel = strength === 1 ? '1 relato' : `${strength} relatos`
   return divIcon({
     className: 'occurrence-marker-container',
-    html: `<span class="occurrence-marker" style="--marker-color:${color}">${iconMarkup}</span>`,
+    html: `<span class="occurrence-marker" style="--marker-color:${color}">${iconMarkup}<b class="occurrence-marker__strength occurrence-marker__strength--${level}" aria-label="${reportLabel}">${strength}</b></span>`,
     iconAnchor: [20, 20], iconSize: [40, 40], popupAnchor: [0, -21],
   })
 }
 
 function OccurrenceMap({ occurrences, activeCategories }) {
+  const mapOccurrences = Array.isArray(occurrences) ? occurrences : []
   const location = useLocation()
   const detailBasePath = location.pathname.startsWith('/admin')
     ? '/admin/ocorrencias' : '/app/ocorrencias'
   const selectedCategories = activeCategories ?? Object.keys(
-    occurrences.reduce((categories, occurrence) => ({ ...categories, [occurrence.category]: true }), {}),
+    mapOccurrences.reduce((categories, occurrence) => ({ ...categories, [occurrence.category]: true }), {}),
   )
-  const mappedOccurrences = occurrences.filter((occurrence) =>
+  const mappedOccurrences = mapOccurrences.filter((occurrence) =>
     selectedCategories.includes(occurrence.category) &&
     Number.isFinite(Number(occurrence.latitude)) && Number.isFinite(Number(occurrence.longitude)))
 
@@ -38,11 +43,12 @@ function OccurrenceMap({ occurrences, activeCategories }) {
       <MapContainer center={PRAIA_GRANDE_CENTER} scrollWheelZoom zoom={13}>
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {mappedOccurrences.map((occurrence) => (
-          <Marker icon={createMarkerIcon(occurrence.type)} key={occurrence.id} position={[Number(occurrence.latitude), Number(occurrence.longitude)]}>
+          <Marker icon={createMarkerIcon(occurrence)} key={occurrence.id} position={[Number(occurrence.latitude), Number(occurrence.longitude)]}>
             <Popup>
               <div className="map-popup">
                 <strong>{getOccurrenceTypeLabel(occurrence.type)}</strong>
                 <p>{occurrence.address || occurrence.neighborhood || 'Localização informada pelo cidadão'}</p>
+                <OccurrenceStrength compact strength={occurrence.strength} />
                 <dl>
                   <div><dt>Risco</dt><dd>{perceivedRiskLabels[occurrence.perceivedRisk] ?? occurrence.perceivedRisk}</dd></div>
                   <div><dt>Status</dt><dd><StatusBadge status={occurrence.status} /></dd></div>

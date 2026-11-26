@@ -1,32 +1,115 @@
 package br.com.cidadeemfoco.service;
 
 import br.com.cidadeemfoco.dto.UpdateWhatsappPreferencesRequest;
+import br.com.cidadeemfoco.dto.UpdateUserProfileRequest;
+import br.com.cidadeemfoco.dto.UserProfileResponse;
 import br.com.cidadeemfoco.dto.WhatsappPreferencesResponse;
 import br.com.cidadeemfoco.entity.User;
+import br.com.cidadeemfoco.entity.WhatsappNotification;
+import br.com.cidadeemfoco.enums.WhatsappNotificationStatus;
+import br.com.cidadeemfoco.config.WhatsappCloudApiProperties;
 import br.com.cidadeemfoco.exception.BusinessRuleException;
 import br.com.cidadeemfoco.exception.ResourceNotFoundException;
 import br.com.cidadeemfoco.repository.UserRepository;
+import br.com.cidadeemfoco.repository.CityRepository;
+import br.com.cidadeemfoco.repository.WhatsappNotificationRepository;
+import br.com.cidadeemfoco.util.UserDataNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Locale;
-import java.util.regex.Pattern;
+import java.util.List;
+import java.util.Set;
+import java.util.Objects;
 
 @Service
 @Transactional(readOnly = true)
 public class UserService {
 
-    private static final Pattern E164_PATTERN = Pattern.compile("^\\+[1-9]\\d{7,14}$");
+    private static final Set<WhatsappNotificationStatus> CHANGEABLE_STATUSES = Set.of(
+            WhatsappNotificationStatus.PENDING,
+            WhatsappNotificationStatus.FAILED
+    );
 
     private final UserRepository userRepository;
+    private final CityRepository cityRepository;
+    private final WhatsappNotificationRepository notificationRepository;
+    private final boolean deliveryEnabled;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(
+            UserRepository userRepository,
+            CityRepository cityRepository,
+            WhatsappNotificationRepository notificationRepository,
+            WhatsappCloudApiProperties properties
+    ) {
         this.userRepository = userRepository;
+        this.cityRepository = cityRepository;
+        this.notificationRepository = notificationRepository;
+        this.deliveryEnabled = properties.enabled();
+    }
+
+    public UserProfileResponse findProfile(String email) {
+        return UserProfileResponse.from(findUser(email));
+    }
+
+    @Transactional
+    public UserProfileResponse updateProfile(String email, UpdateUserProfileRequest request) {
+        User user = findUser(email);
+        String cpf = UserDataNormalizer.normalizeCpf(request.cpf());
+        userRepository.findByCpf(cpf)
+                .filter(existingUser -> !isSameUser(existingUser, user))
+                .ifPresent(existingUser -> {
+                    throw new BusinessRuleException("Ja existe um usuario cadastrado com este CPF");
+                });
+
+        String phone = null;
+        if (request.whatsappConsentGiven()) {
+            phone = UserDataNormalizer.normalizePhone(request.whatsappPhone());
+            userRepository.findByWhatsappPhone(phone)
+                    .filter(existingUser -> !isSameUser(existingUser, user))
+                    .ifPresent(existingUser -> {
+                        throw new BusinessRuleException("Este numero de WhatsApp ja esta cadastrado");
+                    });
+        }
+
+        var city = cityRepository.findByIbgeCodeAndActiveTrue(request.cityIbgeCode().trim())
+                .orElseThrow(() -> new BusinessRuleException(
+                        "A cidade informada nao esta disponivel para cadastro"
+                ));
+        boolean cityChanged = user.getCity() == null
+                || !Objects.equals(user.getCity().getIbgeCode(), city.getIbgeCode());
+
+        if (cityChanged) {
+            cancelPendingNotifications(user);
+        }
+
+        user.updateProfile(
+                request.name().trim(),
+                cpf,
+                request.street().trim(),
+                request.addressNumber().trim(),
+                normalizeOptional(request.addressComplement()),
+                request.neighborhood().trim(),
+                UserDataNormalizer.normalizePostalCode(request.postalCode()),
+                city
+        );
+        if (phone == null) {
+            cancelPendingNotifications(user);
+            user.disableWhatsappNotifications();
+        } else {
+            user.enableWhatsappNotifications(phone, Instant.now());
+        }
+        User savedUser = userRepository.save(user);
+
+        if (!cityChanged && phone != null) {
+            updatePendingRecipients(savedUser, phone);
+        }
+        return UserProfileResponse.from(savedUser);
     }
 
     public WhatsappPreferencesResponse findWhatsappPreferences(String email) {
-        return WhatsappPreferencesResponse.from(findUser(email));
+        return WhatsappPreferencesResponse.from(findUser(email), deliveryEnabled);
     }
 
     @Transactional
@@ -38,7 +121,7 @@ public class UserService {
             throw new BusinessRuleException("E necessario autorizar o recebimento de alertas pelo WhatsApp");
         }
         User user = findUser(email);
-        String phone = normalizePhone(request.phoneNumber());
+        String phone = UserDataNormalizer.normalizePhone(request.phoneNumber());
         userRepository.findByWhatsappPhone(phone)
                 .filter(existingUser -> !existingUser.getEmail().equalsIgnoreCase(user.getEmail()))
                 .ifPresent(existingUser -> {
@@ -46,14 +129,41 @@ public class UserService {
                 });
 
         user.enableWhatsappNotifications(phone, Instant.now());
-        return WhatsappPreferencesResponse.from(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        updatePendingRecipients(savedUser, phone);
+        return WhatsappPreferencesResponse.from(savedUser, deliveryEnabled);
     }
 
     @Transactional
     public void disableWhatsappNotifications(String email) {
         User user = findUser(email);
+        cancelPendingNotifications(user);
         user.disableWhatsappNotifications();
         userRepository.save(user);
+    }
+
+    private void updatePendingRecipients(User user, String phone) {
+        if (user.getId() == null) {
+            return;
+        }
+        List<WhatsappNotification> notifications = notificationRepository
+                .findByUserIdAndStatusIn(user.getId(), CHANGEABLE_STATUSES);
+        notifications.forEach(notification -> notification.updateRecipientPhone(phone));
+        if (!notifications.isEmpty()) {
+            notificationRepository.saveAll(notifications);
+        }
+    }
+
+    private void cancelPendingNotifications(User user) {
+        if (user.getId() == null) {
+            return;
+        }
+        List<WhatsappNotification> notifications = notificationRepository
+                .findByUserIdAndStatusIn(user.getId(), CHANGEABLE_STATUSES);
+        notifications.forEach(WhatsappNotification::cancel);
+        if (!notifications.isEmpty()) {
+            notificationRepository.saveAll(notifications);
+        }
     }
 
     private User findUser(String email) {
@@ -61,24 +171,18 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
     }
 
-    private String normalizePhone(String value) {
-        String trimmed = value.trim();
-        String digits = trimmed.replaceAll("\\D", "");
-        String normalized;
-
-        if (trimmed.startsWith("+")) {
-            normalized = "+" + digits;
-        } else if ((digits.length() == 12 || digits.length() == 13) && digits.startsWith("55")) {
-            normalized = "+" + digits;
-        } else if (digits.length() == 10 || digits.length() == 11) {
-            normalized = "+55" + digits;
-        } else {
-            throw new BusinessRuleException("Informe um numero de WhatsApp valido com DDD");
+    private boolean isSameUser(User first, User second) {
+        if (first.getId() != null && second.getId() != null) {
+            return Objects.equals(first.getId(), second.getId());
         }
-
-        if (!E164_PATTERN.matcher(normalized).matches()) {
-            throw new BusinessRuleException("Informe um numero de WhatsApp valido no formato internacional");
-        }
-        return normalized;
+        return first.getEmail().equalsIgnoreCase(second.getEmail());
     }
+
+    private String normalizeOptional(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
 }

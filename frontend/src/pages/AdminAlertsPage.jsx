@@ -1,4 +1,4 @@
-import {
+﻿import {
   AlertCircle,
   CalendarClock,
   CheckCircle2,
@@ -7,9 +7,10 @@ import {
   Power,
   PowerOff,
   RotateCw,
+  Trash2,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Button from '../components/ui/Button'
 import FeedbackState from '../components/ui/FeedbackState'
 import {
@@ -19,13 +20,16 @@ import {
   getAlertTypeLabel,
 } from '../constants/alertPresentation'
 import useAuth from '../hooks/useAuth'
+import { streamAlertUpdates } from '../services/alertService'
 import {
   activateAdminAlert,
   createAdminAlert,
   deactivateAdminAlert,
+  deleteAdminAlert,
   getAdminAlerts,
 } from '../services/adminService'
 import { formatDateTime } from '../utils/date'
+import { canDeleteAlert, isLatestAlertRequest, synchronizeAlerts } from '../utils/alertSync'
 import './AdminAlertsPage.css'
 
 const initialForm = {
@@ -45,25 +49,34 @@ function getPeriodState(alert) {
 }
 
 function AdminAlertsPage() {
-  const { logout, token } = useAuth()
+  const { logout, token, user } = useAuth()
   const [alerts, setAlerts] = useState([])
   const [form, setForm] = useState(initialForm)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [changingId, setChangingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
   const [successMessage, setSuccessMessage] = useState('')
+  const [actionError, setActionError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const requestIdRef = useRef(0)
+  const deletedIdsRef = useRef(new Set())
+  const sseRefreshInFlightRef = useRef(false)
+  const sseRefreshPendingRef = useRef(false)
 
   useEffect(() => {
     let isCurrent = true
+    const requestId = ++requestIdRef.current
 
     getAdminAlerts(token)
       .then((data) => {
-        if (isCurrent) setAlerts(data)
+        if (isCurrent && isLatestAlertRequest(requestId, requestIdRef.current)) {
+          setAlerts(synchronizeAlerts(data, deletedIdsRef.current))
+        }
       })
       .catch((requestError) => {
         if (!isCurrent) return
@@ -81,6 +94,47 @@ function AdminAlertsPage() {
       isCurrent = false
     }
   }, [logout, reloadKey, token])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function refreshFromSse() {
+      if (sseRefreshInFlightRef.current) {
+        sseRefreshPendingRef.current = true
+        return
+      }
+      sseRefreshInFlightRef.current = true
+      const requestId = ++requestIdRef.current
+      try {
+        const data = await getAdminAlerts(token, controller.signal)
+        if (!controller.signal.aborted && isLatestAlertRequest(requestId, requestIdRef.current)) {
+          setAlerts(synchronizeAlerts(data, deletedIdsRef.current))
+          setError('')
+        }
+      } catch (requestError) {
+        if (controller.signal.aborted) return
+        if (requestError.status === 401) logout()
+      } finally {
+        sseRefreshInFlightRef.current = false
+        if (!controller.signal.aborted && sseRefreshPendingRef.current) {
+          sseRefreshPendingRef.current = false
+          window.queueMicrotask(refreshFromSse)
+        }
+      }
+    }
+
+    streamAlertUpdates(token, {
+      signal: controller.signal,
+      onUpdate: refreshFromSse,
+      onUnauthorized: logout,
+    })
+
+    return () => {
+      controller.abort()
+      requestIdRef.current += 1
+      sseRefreshPendingRef.current = false
+    }
+  }, [logout, token])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -138,7 +192,7 @@ function AdminAlertsPage() {
 
   async function toggleAlert(alert) {
     setChangingId(alert.id)
-    setError('')
+    setActionError('')
     setSuccessMessage('')
 
     try {
@@ -161,9 +215,45 @@ function AdminAlertsPage() {
         logout()
         return
       }
-      setError(requestError.message)
+      setActionError(requestError.message)
     } finally {
       setChangingId(null)
+    }
+  }
+
+  async function deleteAlert(alert) {
+    const confirmed = window.confirm(
+      `Excluir o alerta “${alert.title}”? Essa ação não pode ser desfeita.`,
+    )
+    if (!confirmed) return
+
+    setDeletingId(alert.id)
+    setActionError('')
+    setSuccessMessage('')
+
+    try {
+      await deleteAdminAlert(token, alert.id)
+      deletedIdsRef.current.add(alert.id)
+      requestIdRef.current += 1
+      setAlerts((currentAlerts) => currentAlerts.filter((item) => item.id !== alert.id))
+      setSuccessMessage(`Alerta “${alert.title}” excluído com sucesso.`)
+    } catch (requestError) {
+      if (requestError.status === 401) {
+        logout()
+        return
+      }
+      if (requestError.status === 403) {
+        setActionError('Você não tem permissão para excluir alertas.')
+      } else if (requestError.status === 404) {
+        deletedIdsRef.current.add(alert.id)
+        requestIdRef.current += 1
+        setAlerts((currentAlerts) => currentAlerts.filter((item) => item.id !== alert.id))
+        setActionError('Este alerta já foi removido ou não foi encontrado.')
+      } else {
+        setActionError(requestError.message)
+      }
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -181,7 +271,7 @@ function AdminAlertsPage() {
         <div>
           <span>Administração</span>
           <h1>Alertas climáticos</h1>
-          <p>Cadastre e controle os alertas demonstrativos exibidos aos cidadãos.</p>
+          <p>Cadastre e controle os alertas publicados aos cidadãos.</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus size={18} aria-hidden="true" />
@@ -202,6 +292,11 @@ function AdminAlertsPage() {
         </div>
       )}
 
+      {actionError && (
+        <div className="form-message form-message--error" role="alert">
+          {actionError}
+        </div>
+      )}
       {isFormOpen && (
         <form className="admin-alert-form" onSubmit={handleSubmit}>
           <div className="admin-alert-form__heading">
@@ -269,7 +364,7 @@ function AdminAlertsPage() {
           <Button onClick={retry} variant="outline"><RotateCw aria-hidden="true" size={17} />Tentar novamente</Button>
         </div>
       ) : alerts.length === 0 ? (
-        <FeedbackState type="empty" title="Nenhum alerta cadastrado" message="Crie o primeiro alerta demonstrativo do sistema." />
+        <div className="admin-alerts-empty"><FeedbackState type="empty" title="Nenhum alerta cadastrado" message="Crie o primeiro alerta para comunicar uma condição climática aos cidadãos." /></div>
       ) : (
         <div className="admin-alerts-list">
           {alerts.map((alert) => (
@@ -278,8 +373,8 @@ function AdminAlertsPage() {
                 <div className="admin-alert-card__badges">
                   <span className={`admin-alert-card__state admin-alert-card__state--${alert.active ? 'active' : 'inactive'}`}>{alert.active ? 'Ativo' : 'Inativo'}</span>
                   <span>{getAlertTypeLabel(alert.type)}</span>
-                  <span>Severidade {getAlertSeverityLabel(alert.severity)}</span>
-                  <span>{getPeriodState(alert)}</span>
+                  <span className={`admin-alert-card__severity admin-alert-card__severity--${alert.severity.toLowerCase()}`}>Severidade {getAlertSeverityLabel(alert.severity)}</span>
+                  <span className="admin-alert-card__period-state">{getPeriodState(alert)}</span>
                 </div>
                 <h2>{alert.title}</h2>
                 <p>{alert.description}</p>
@@ -288,10 +383,18 @@ function AdminAlertsPage() {
                   <span>{formatDateTime(alert.startAt)} até {formatDateTime(alert.endAt)}</span>
                 </div>
               </div>
-              <Button disabled={changingId === alert.id} onClick={() => toggleAlert(alert)} variant={alert.active ? 'outline' : 'primary'}>
-                {changingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : alert.active ? <PowerOff aria-hidden="true" size={17} /> : <Power aria-hidden="true" size={17} />}
-                {changingId === alert.id ? 'Atualizando...' : alert.active ? 'Desativar' : 'Ativar'}
-              </Button>
+              <div className="admin-alert-card__actions">
+                <Button disabled={deletingId !== null || changingId === alert.id} onClick={() => toggleAlert(alert)} variant={alert.active ? 'outline' : 'primary'}>
+                  {changingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : alert.active ? <PowerOff aria-hidden="true" size={17} /> : <Power aria-hidden="true" size={17} />}
+                  {changingId === alert.id ? 'Atualizando...' : alert.active ? 'Desativar' : 'Ativar'}
+                </Button>
+                {canDeleteAlert(user.role) && (
+                  <Button aria-label={`Excluir alerta ${alert.title}`} className="admin-alert-delete-button" disabled={deletingId !== null || changingId === alert.id} onClick={() => deleteAlert(alert)} variant="outline">
+                    {deletingId === alert.id ? <LoaderCircle aria-hidden="true" className="button__spinner" size={17} /> : <Trash2 aria-hidden="true" size={17} />}
+                    {deletingId === alert.id ? 'Excluindo...' : 'Excluir'}
+                  </Button>
+                )}
+              </div>
             </article>
           ))}
         </div>
@@ -301,3 +404,7 @@ function AdminAlertsPage() {
 }
 
 export default AdminAlertsPage
+
+
+
+
